@@ -1,36 +1,17 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { gridStore } from '../../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { trigger, state, style, transition, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-top-toolbar',
   standalone: true,
   imports: [MobxAngularModule, FormsModule, CommonModule],
   templateUrl: './top-toolbar.component.html',
-  styleUrl: './top-toolbar.component.css',
-  animations: [
-    trigger('slideInOut', [
-      state('void', style({
-        transform: 'translateY(-10px)',
-        opacity: 0
-      })),
-      state('*', style({
-        transform: 'translateY(0)',
-        opacity: 1
-      })),
-      transition('void => *', [
-        animate('200ms ease-out')
-      ]),
-      transition('* => void', [
-        animate('200ms ease-in')
-      ])
-    ])
-  ]
+  styleUrl: './top-toolbar.component.css'
 })
-export class TopToolbarComponent {
+export class TopToolbarComponent implements OnInit {
   // Reference to our MobX store
   store = gridStore;
   
@@ -43,7 +24,7 @@ export class TopToolbarComponent {
   // Screen size tracking
   isSmallScreen = false;
   
-  constructor() {
+  ngOnInit() {
     this.checkScreenSize();
   }
   
@@ -61,10 +42,24 @@ export class TopToolbarComponent {
   // Listen for window resize events
   @HostListener('window:resize')
   checkScreenSize() {
+    const prevIsSmallScreen = this.isSmallScreen;
     this.isSmallScreen = window.innerWidth < 768; // 768px is the md breakpoint in Tailwind
     
     // Close mobile menu when resizing to desktop
-    if (!this.isSmallScreen) {
+    if (prevIsSmallScreen && !this.isSmallScreen) {
+      this.isMobileMenuOpen = false;
+    }
+  }
+  
+  // Close menu when clicking outside
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    // Close the menu if the click is outside the menu and hamburger button
+    const clickedElement = event.target as HTMLElement;
+    const isMenuClick = clickedElement.closest('.mobile-menu-container') !== null;
+    const isHamburgerClick = clickedElement.closest('.hamburger-button') !== null;
+    
+    if (this.isMobileMenuOpen && !isMenuClick && !isHamburgerClick) {
       this.isMobileMenuOpen = false;
     }
   }

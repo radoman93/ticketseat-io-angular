@@ -1,4 +1,4 @@
-<div class="flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-white">
+<div class="flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-white relative z-10">
     <!-- Logo - always visible -->
     <div class="text-lg font-bold text-yellow-600">TicketSeats</div>
     
@@ -35,19 +35,19 @@
     </div>
     
     <!-- Hamburger menu button - only visible on small screens -->
-    <button class="md:hidden p-1 hover:bg-gray-100 rounded-md" (click)="toggleMenu()">
+    <button class="md:hidden p-1 hover:bg-gray-100 rounded-md hamburger-button" (click)="toggleMenu()">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
     </button>
 </div>
 
-<!-- Mobile menu with animation -->
-<div *ngIf="isMobileMenuOpen" [@slideInOut] class="md:hidden bg-white shadow-lg px-4 py-3 mobile-menu">
-    <div class="flex flex-col gap-4">
-        <div class="flex items-center gap-2">
-            <span>Grid Size:</span>
-            <select class="select select-ghost w-full focus:outline-none focus:border-none focus:ring-0" 
+<!-- Mobile menu without animation -->
+<div *ngIf="isMobileMenuOpen" class="md:hidden bg-white shadow-lg px-4 py-4 fixed top-12 left-0 right-0 z-20 mobile-menu-container">
+    <div class="flex flex-col gap-5">
+        <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium mb-1">Grid Size:</label>
+            <select class="select select-bordered w-full focus:outline-none" 
                     [value]="store.gridSize" 
                     (change)="updateGridSize($event)"
                     *mobxAutorun>
@@ -55,24 +55,24 @@
             </select>
         </div>
         
-        <div class="flex items-center gap-2" *mobxAutorun>
+        <div class="flex items-center gap-3" *mobxAutorun>
             <input type="checkbox" 
                    [checked]="store.showGrid" 
                    (change)="store.toggleGrid()" 
-                   class="checkbox checkbox-warning checkbox-sm" />
-            <span>Show Grid</span>
+                   class="checkbox checkbox-warning" />
+            <span class="text-sm font-medium">Show Grid</span>
         </div>
         
-        <div class="flex items-center gap-2" *mobxAutorun>
+        <div class="flex items-center gap-3" *mobxAutorun>
             <input type="checkbox" 
                    [checked]="store.showGuides" 
                    (change)="store.toggleGuides()" 
-                   class="checkbox checkbox-warning checkbox-sm" />
-            <span>Show Guides</span>
+                   class="checkbox checkbox-warning" />
+            <span class="text-sm font-medium">Show Guides</span>
         </div>
         
         <div class="mt-2 pt-2 border-t">
-            <button class="btn btn-sm btn-warning w-full">Save</button>
+            <button class="btn btn-warning w-full mt-2">Save</button>
         </div>
     </div>
 </div>

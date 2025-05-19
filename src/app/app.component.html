@@ -1,3 +1,8 @@
-<app-top-toolbar></app-top-toolbar>
-
-<app-grid></app-grid>
+<div class="flex flex-col h-screen">
+    <app-top-toolbar></app-top-toolbar>
+    <div class="flex flex-row h-full">
+        <div><app-main-toolbar></app-main-toolbar></div>
+        <div class="flex-1"><app-grid></app-grid></div>
+        <div><app-main-toolbar></app-main-toolbar></div>
+    </div>
+</div>
