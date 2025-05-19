@@ -1,0 +1,14 @@
+<div class="relative flex-1 bg-gray-100 overflow-auto w-[calc(100vw-480px)] h-[calc(100vh-56px)]" *mobxAutorun>
+    <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
+
+    <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-10">
+        <div class="bg-white/90 px-2 py-1 rounded text-xs shadow">
+          X: {{ store.getUnscaledCoordinate(store.mouseX - store.panOffset.x) }}, Y: {{ store.getUnscaledCoordinate(store.mouseY - store.panOffset.y) }}
+        </div>
+        <div class="flex items-center bg-white/90 px-2 py-1 rounded shadow">
+          <button (click)="zoomIn()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">+</button>
+          <span class="mx-2 text-xs w-12 text-center">{{ store.zoomLevel }}%</span>
+          <button (click)="zoomOut()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">-</button>
+        </div>
+      </div>
+</div>

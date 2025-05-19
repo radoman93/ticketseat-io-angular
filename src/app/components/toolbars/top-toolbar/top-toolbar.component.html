@@ -1,0 +1,78 @@
+<div class="flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-white">
+    <!-- Logo - always visible -->
+    <div class="text-lg font-bold text-yellow-600">TicketSeats</div>
+    
+    <!-- Desktop menu - only visible on medium and larger screens -->
+    <div class="hidden md:flex flex-1 justify-center items-center gap-5"> 
+        <div class="flex items-center text-xs gap-2">
+            <span>Grid Size:</span>
+            <select class="select select-ghost w-30 focus:outline-none focus:border-none focus:ring-0 active:outline-none active:border-none hover:border-none" 
+                    [value]="store.gridSize" 
+                    (change)="updateGridSize($event)"
+                    *mobxAutorun>
+                <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
+            </select>
+        </div>
+        <div class="flex items-center text-xs gap-2" *mobxAutorun>
+            <input type="checkbox" 
+                   [checked]="store.showGrid" 
+                   (change)="store.toggleGrid()" 
+                   class="checkbox checkbox-warning checkbox-sm" />
+            Show Grid
+        </div>
+        <div class="flex items-center text-xs gap-2" *mobxAutorun>
+            <input type="checkbox" 
+                   [checked]="store.showGuides" 
+                   (change)="store.toggleGuides()" 
+                   class="checkbox checkbox-warning checkbox-sm" />
+            Show Guides
+        </div>
+    </div>
+    
+    <!-- Action buttons - visible on desktop -->
+    <div class="hidden md:block">
+        <button class="btn btn-sm btn-warning">Save</button>
+    </div>
+    
+    <!-- Hamburger menu button - only visible on small screens -->
+    <button class="md:hidden p-1 hover:bg-gray-100 rounded-md" (click)="toggleMenu()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+</div>
+
+<!-- Mobile menu with animation -->
+<div *ngIf="isMobileMenuOpen" [@slideInOut] class="md:hidden bg-white shadow-lg px-4 py-3 mobile-menu">
+    <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+            <span>Grid Size:</span>
+            <select class="select select-ghost w-full focus:outline-none focus:border-none focus:ring-0" 
+                    [value]="store.gridSize" 
+                    (change)="updateGridSize($event)"
+                    *mobxAutorun>
+                <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
+            </select>
+        </div>
+        
+        <div class="flex items-center gap-2" *mobxAutorun>
+            <input type="checkbox" 
+                   [checked]="store.showGrid" 
+                   (change)="store.toggleGrid()" 
+                   class="checkbox checkbox-warning checkbox-sm" />
+            <span>Show Grid</span>
+        </div>
+        
+        <div class="flex items-center gap-2" *mobxAutorun>
+            <input type="checkbox" 
+                   [checked]="store.showGuides" 
+                   (change)="store.toggleGuides()" 
+                   class="checkbox checkbox-warning checkbox-sm" />
+            <span>Show Guides</span>
+        </div>
+        
+        <div class="mt-2 pt-2 border-t">
+            <button class="btn btn-sm btn-warning w-full">Save</button>
+        </div>
+    </div>
+</div>

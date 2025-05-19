@@ -1,0 +1,36 @@
+/* Mobile menu styles */
+.mobile-menu-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.mobile-menu-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms, transform 200ms;
+}
+
+.mobile-menu-exit {
+  opacity: 1;
+}
+
+.mobile-menu-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 200ms, transform 200ms;
+}
+
+/* Hamburger button hover effect */
+button:hover svg {
+  color: #ff9800; /* Match your warning color */
+}
+
+/* Mobile menu container */
+.mobile-menu {
+  position: absolute;
+  top: 48px; /* Height of the toolbar */
+  left: 0;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
