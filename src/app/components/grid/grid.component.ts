@@ -1,17 +1,57 @@
 import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnDestroy } from '@angular/core';
 import { gridStore } from '../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
+import { RoundTableComponent } from '../round-table/round-table.component';
+import { ToolService, ToolType } from '../../services/tool.service';
+import { CommonModule } from '@angular/common';
+import { SelectionService, Selectable } from '../../services/selection.service';
+
+interface TablePosition extends Selectable {
+  x: number;
+  y: number;
+  radius: number;
+  seats: number;
+  name: string;
+}
 
 @Component({
   selector: 'app-grid',
-  imports: [MobxAngularModule],
+  imports: [MobxAngularModule, RoundTableComponent, CommonModule],
   standalone: true,
   templateUrl: './grid.component.html',
-  // Using Tailwind CSS classes instead of separate CSS file
+  styleUrl: './grid.component.css'
 })
 export class GridComponent implements AfterViewInit, OnDestroy {
   // Reference to our MobX store
   store = gridStore;
+  tables: TablePosition[] = [];
+  ToolType = ToolType; // Make enum available in template
+  
+  // Table preview for showing at cursor position in add mode
+  previewTable: TablePosition | null = null;
+
+  constructor(
+    public toolService: ToolService,
+    public selectionService: SelectionService
+  ) {
+    // Subscribe to tool changes to reset preview when tool changes
+    this.toolService.activeTool$.subscribe(tool => {
+      if (tool !== ToolType.RoundTable) {
+        this.previewTable = null;
+      } else {
+        // Initialize preview table when entering add mode
+        this.previewTable = {
+          id: `table-preview-${Date.now()}`,
+          type: 'roundTable',
+          x: 0,
+          y: 0,
+          radius: 50,
+          seats: 8,
+          name: `Table ${this.tables.length + 1}`
+        };
+      }
+    });
+  }
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
@@ -105,13 +145,29 @@ export class GridComponent implements AfterViewInit, OnDestroy {
     if (event.button === 1) {
       this.store.startPanning(event.clientX, event.clientY);
       event.preventDefault();
+    } else if (event.button === 0) {
+      const activeTool = this.toolService.getActiveTool();
+      
+      if (activeTool === ToolType.RoundTable && this.previewTable) {
+        // Add the preview table to the tables array with unique ID
+        const newTable: TablePosition = {
+          ...this.previewTable,
+          id: `table-${Date.now()}`
+        };
+        this.tables.push(newTable);
+        
+        // Exit add mode after placing a table
+        this.toolService.setActiveTool(ToolType.None);
+        
+        // Select the newly added table
+        this.selectionService.selectItem(newTable);
+        
+        event.preventDefault();
+      } else {
+        // Check if we clicked on a canvas element for selection
+        // We'll implement this later
+      }
     }
-
-    //
-    // Clearing selection when left click the canvas
-    // else if (!this.selectedTool && event.button === 0) {
-    //   this.selectionService.clearSelection();
-    // }
   }
 
   @HostListener('mousemove', ['$event'])
@@ -121,6 +177,16 @@ export class GridComponent implements AfterViewInit, OnDestroy {
     if (this.store.isPanning) {
       this.store.pan(event.clientX, event.clientY);
       this.drawGrid();
+    }
+    
+    // Update preview table position when in add mode
+    if (this.toolService.getActiveTool() === ToolType.RoundTable && this.previewTable) {
+      // Calculate position in canvas coordinates
+      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      
+      this.previewTable.x = x;
+      this.previewTable.y = y;
     }
   }
 
@@ -152,6 +218,26 @@ export class GridComponent implements AfterViewInit, OnDestroy {
   zoomOut(): void {
     this.store.zoomOut();
     this.drawGrid();
+  }
+
+  // Method to handle table selection
+  selectTable(table: TablePosition, event: Event): void {
+    event.stopPropagation(); // Prevent event from bubbling to canvas
+    
+    // If already selected, deselect
+    if (this.selectionService.isItemSelected(table.id)) {
+      this.selectionService.deselectItem();
+    } else {
+      this.selectionService.selectItem(table);
+    }
+  }
+  
+  // Click on canvas background to deselect
+  handleCanvasClick(): void {
+    // Only deselect if we're not in tool mode
+    if (this.toolService.getActiveTool() === ToolType.None) {
+      this.selectionService.deselectItem();
+    }
   }
 
 }

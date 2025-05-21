@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ToolService, ToolType } from '../../../services/tool.service';
 
 @Component({
   selector: 'app-main-toolbar',
@@ -9,5 +10,21 @@ import { CommonModule } from '@angular/common';
   styleUrl: './main-toolbar.component.css'
 })
 export class MainToolbarComponent {
+  ToolType = ToolType; // Make enum available in template
 
+  constructor(private toolService: ToolService) {}
+
+  toggleTool(tool: ToolType): void {
+    // If the tool is already active, deactivate it
+    if (this.toolService.getActiveTool() === tool) {
+      this.toolService.setActiveTool(ToolType.None);
+    } else {
+      // Otherwise, activate the selected tool
+      this.toolService.setActiveTool(tool);
+    }
+  }
+
+  isToolActive(tool: ToolType): boolean {
+    return this.toolService.getActiveTool() === tool;
+  }
 }

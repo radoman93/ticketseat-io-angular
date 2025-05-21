@@ -1,5 +1,47 @@
-<div class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun>
+<div class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun (click)="handleCanvasClick()">
     <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
+
+    <!-- Display all tables with position adjusted for pan offset and zoom -->
+    <div class="table-container" [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'">
+      <!-- Regular tables -->
+      <div *ngFor="let table of tables" 
+           (click)="selectTable(table, $event)"
+           class="selection-container">
+        <!-- Rectangular selection indicator that includes table and chairs -->
+        <div *ngIf="selectionService.isItemSelected(table.id)" 
+             class="selection-indicator table-selection"
+             [style.width]="(table.radius * 2 + 80) + 'px'"
+             [style.height]="(table.radius * 2 + 80) + 'px'"
+             [style.transform]="'translate(-50%, -50%)'"
+             [style.left]="table.x + 'px'"
+             [style.top]="table.y + 'px'">
+        </div>
+        
+        <app-round-table 
+          [x]="table.x" 
+          [y]="table.y" 
+          [radius]="table.radius" 
+          [seats]="table.seats" 
+          [name]="table.name"
+          [class.selected]="selectionService.isItemSelected(table.id)">
+        </app-round-table>
+      </div>
+      
+      <!-- Preview table (semi-transparent with dashed border) -->
+      <app-round-table 
+        *ngIf="previewTable && toolService.getActiveTool() === ToolType.RoundTable"
+        [x]="previewTable.x" 
+        [y]="previewTable.y" 
+        [radius]="previewTable.radius" 
+        [seats]="previewTable.seats" 
+        [name]="previewTable.name"
+        class="opacity-70 preview-table">
+      </app-round-table>
+    </div>
+
+    <!-- Show cursor as crosshair when in add mode -->
+    <div *ngIf="toolService.getActiveTool() === ToolType.RoundTable" 
+         class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
 
     <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-10">
         <div class="bg-white/90 px-2 py-1 rounded text-xs shadow">
