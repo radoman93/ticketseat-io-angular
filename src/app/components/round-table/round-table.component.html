@@ -1,4 +1,4 @@
-<div class="absolute" [style.left]="x + 'px'" [style.top]="y + 'px'" [style.transform]="'translate(-50%, -50%)'">
+<div class="absolute" [style.left]="x + 'px'" [style.top]="y + 'px'" [style.transform]="'translate(-50%, -50%) rotate(' + rotation + 'deg)'">
   <div class="table-circle bg-gray-100 border-2 border-gray-300 rounded-full flex justify-center items-center z-10" [style.width]="(radius * 2) + 'px'" [style.height]="(radius * 2) + 'px'">
     <span class="text-sm font-bold text-gray-700 text-center">{{ name }}</span>
   </div>

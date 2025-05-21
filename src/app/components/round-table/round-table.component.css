@@ -1,0 +1,21 @@
+/* Styles for the round table component */
+.table-wrapper.preview {
+    opacity: 0.5;
+    border-style: dashed;
+}
+
+.table-boundary {
+    /* Styles for the main table circle */
+    transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.table-boundary.selected {
+    box-shadow: 0 0 0 3px #3b82f6, 0 0 0 5px rgba(59, 130, 246, 0.3); /* Tailwind blue-500 */
+    /* Optional: slightly scale up selected table */
+    /* transform: scale(1.02); */
+}
+
+.seat {
+    /* Styles for the seats */
+    transition: background-color 0.2s ease-in-out;
+} 

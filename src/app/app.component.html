@@ -1,7 +1,8 @@
 <div class="flex flex-col h-screen">
     <app-top-toolbar></app-top-toolbar>
-    <div class="flex flex-row h-full">
-        <div><app-main-toolbar></app-main-toolbar></div>
-        <div class="flex-1"><app-grid></app-grid></div>
+    <div class="flex flex-row h-full overflow-hidden">
+        <div class="h-full"><app-main-toolbar></app-main-toolbar></div>
+        <div class="flex-1 h-full overflow-hidden"><app-grid></app-grid></div>
+        <div class="h-full"><app-properties-panel></app-properties-panel></div>
     </div>
 </div>

@@ -1,0 +1,91 @@
+:host {
+  height: 100%;
+  display: flex;
+}
+
+/* Simpler scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Hide number input arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Toggle switch styling */
+.transform.translate-x-5 {
+  transform: translateX(14px);
+}
+
+input[type="range"] {
+  height: 4px;
+  background: #e5e7eb;
+  outline: none;
+  border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+  border: none;
+}
+
+/* Input field styling */
+input[type="text"],
+input[type="number"] {
+  font-size: 0.875rem;
+}
+
+/* Clearer focus states */
+input:focus, button:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+}
+
+/* Radio and checkbox custom styling */
+input[type="radio"], 
+input[type="checkbox"] {
+  accent-color: #2563eb;
+}
+
+/* Transition for toggle switches */
+.transition {
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+button {
+  transition: background-color 0.2s ease;
+} 

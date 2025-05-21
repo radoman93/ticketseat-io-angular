@@ -1,18 +1,15 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { gridStore } from '../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableComponent } from '../round-table/round-table.component';
 import { ToolService, ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { SelectionService, Selectable } from '../../services/selection.service';
+import { SelectionService, Selectable, RoundTableProperties } from '../../services/selection.service';
+import { Subscription } from 'rxjs';
+// import { DraggingService, DraggableItem } from '../../services/dragging.service'; // Commented out
 
-interface TablePosition extends Selectable {
-  x: number;
-  y: number;
-  radius: number;
-  seats: number;
-  name: string;
-}
+// Use the interface from the service
+type TablePosition = RoundTableProperties;
 
 @Component({
   selector: 'app-grid',
@@ -21,7 +18,7 @@ interface TablePosition extends Selectable {
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.css'
 })
-export class GridComponent implements AfterViewInit, OnDestroy {
+export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Reference to our MobX store
   store = gridStore;
   tables: TablePosition[] = [];
@@ -29,10 +26,13 @@ export class GridComponent implements AfterViewInit, OnDestroy {
   
   // Table preview for showing at cursor position in add mode
   previewTable: TablePosition | null = null;
+  
+  private selectedItemSubscription: Subscription = new Subscription();
 
   constructor(
     public toolService: ToolService,
-    public selectionService: SelectionService
+    public selectionService: SelectionService,
+    // public draggingService: DraggingService // Commented out
   ) {
     // Subscribe to tool changes to reset preview when tool changes
     this.toolService.activeTool$.subscribe(tool => {
@@ -47,7 +47,8 @@ export class GridComponent implements AfterViewInit, OnDestroy {
           y: 0,
           radius: 50,
           seats: 8,
-          name: `Table ${this.tables.length + 1}`
+          name: `Table ${this.tables.length + 1}`,
+          rotation: 0
         };
       }
     });
@@ -135,9 +136,21 @@ export class GridComponent implements AfterViewInit, OnDestroy {
     this.drawGrid();
   }
 
+  ngOnInit(): void {
+    // Listen for delete events
+    this.selectedItemSubscription = this.selectionService.deleteItem$.subscribe(item => {
+      if (item) {
+        this.deleteTable(item.id);
+      }
+    });
+  }
+
   ngOnDestroy() {
     // Unregister the callback when component is destroyed
     this.store.unregisterRedrawCallback(this.drawGrid.bind(this));
+    
+    // Cleanup subscription
+    this.selectedItemSubscription.unsubscribe();
   }
 
   @HostListener('mousedown', ['$event'])
@@ -224,10 +237,14 @@ export class GridComponent implements AfterViewInit, OnDestroy {
   selectTable(table: TablePosition, event: Event): void {
     event.stopPropagation(); // Prevent event from bubbling to canvas
     
+    console.log('Selecting table:', table);
+    
     // If already selected, deselect
     if (this.selectionService.isItemSelected(table.id)) {
+      console.log('Table already selected, deselecting');
       this.selectionService.deselectItem();
     } else {
+      console.log('Selecting table with ID:', table.id);
       this.selectionService.selectItem(table);
     }
   }
@@ -238,6 +255,26 @@ export class GridComponent implements AfterViewInit, OnDestroy {
     if (this.toolService.getActiveTool() === ToolType.None) {
       this.selectionService.deselectItem();
     }
+  }
+
+  // Method to delete a table by ID
+  deleteTable(id: string): boolean {
+    const index = this.tables.findIndex(table => table.id === id);
+    if (index !== -1) {
+      this.tables.splice(index, 1);
+      this.selectionService.deselectItem();
+      return true;
+    }
+    return false;
+  }
+
+  // Method to delete the currently selected table
+  deleteSelectedTable(): boolean {
+    const selectedItem = this.selectionService.getSelectedItem();
+    if (selectedItem) {
+      return this.deleteTable(selectedItem.id);
+    }
+    return false;
   }
 
 }
