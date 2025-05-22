@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { reaction, IReactionDisposer, configure } from 'mobx';
 import { selectionStore } from './stores/selection.store';
@@ -18,7 +17,6 @@ import { rootStore } from './stores/root.store';
   selector: 'app-root',
   standalone: true,
   imports: [
-    RouterOutlet, 
     CommonModule, 
     TopToolbarComponent, 
     MainToolbarComponent, 

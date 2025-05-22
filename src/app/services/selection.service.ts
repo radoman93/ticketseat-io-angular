@@ -5,7 +5,13 @@ import { layoutStore } from '../stores/layout.store';
 export interface Selectable {
   id: string;
   type: string;
-  [key: string]: any; // Index signature to allow for additional properties
+  [key: string]: any;
+}
+
+export interface ChairProperties {
+  id: string;
+  label: string;
+  price: number;
 }
 
 export interface RoundTableProperties extends Selectable {
@@ -18,54 +24,35 @@ export interface RoundTableProperties extends Selectable {
   rotation?: number;
   tableLabelVisible?: boolean;
   chairLabelVisible?: boolean;
+  chairs?: ChairProperties[];
 }
 
-/**
- * Selection service that acts as a bridge to the MobX selection store
- * This allows for a smoother transition from RxJS to MobX
- */
 @Injectable({
   providedIn: 'root'
 })
 export class SelectionService {
   constructor() { }
 
-  /**
-   * Select an item - delegates to MobX store
-   */
   selectItem(item: Selectable): void {
     console.log('SelectionService: selectItem called with', item);
     selectionStore.selectItem(item);
   }
 
-  /**
-   * Deselect the current item - delegates to MobX store
-   */
   deselectItem(): void {
     console.log('SelectionService: deselectItem called');
     selectionStore.deselectItem();
   }
 
-  /**
-   * Get the currently selected item - delegates to MobX store
-   */
   getSelectedItem(): Selectable | null {
     return selectionStore.selectedItem;
   }
 
-  /**
-   * Check if a specific item is selected - delegates to MobX store
-   */
   isItemSelected(itemId: string): boolean {
     return selectionStore.isItemSelected(itemId);
   }
   
-  /**
-   * Request to delete the currently selected item - now uses MobX directly
-   */
   requestDeleteItem(item: Selectable): void {
-    // Delete the item and deselect it
     layoutStore.deleteElement(item.id);
     selectionStore.deselectItem();
   }
-} 
+}

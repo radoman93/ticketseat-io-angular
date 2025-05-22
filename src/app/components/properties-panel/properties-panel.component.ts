@@ -14,7 +14,7 @@ interface TablePropertiesForm {
   name: string;
   tableLabelVisible: boolean;
   chairLabelVisible: boolean;
-  [key: string]: any; // Index signature to allow property access via string
+  [key: string]: any;
 }
 
 @Component({
@@ -25,11 +25,9 @@ interface TablePropertiesForm {
   styleUrl: './properties-panel.component.css'
 })
 export class PropertiesPanelComponent implements OnInit, OnDestroy {
-  // Reference to MobX stores
   selectionStore = selectionStore;
   layoutStore = layoutStore;
   
-  // Copy of the properties for two-way binding
   tableProperties: TablePropertiesForm = {
     seats: 8,
     openSpaces: 0,
@@ -39,52 +37,29 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     chairLabelVisible: true
   };
 
-  // MobX reaction disposer
   private disposer: IReactionDisposer | null = null;
 
   constructor() {}
 
   ngOnInit(): void {
-    // Use MobX autorun to react to selection changes
     this.disposer = autorun(() => {
       const selectedItem = this.selectionStore.selectedItem;
       
-      if (selectedItem && selectedItem.type === 'roundTable') {
+      if (selectedItem?.type === 'roundTable') {
         const roundTable = selectedItem as RoundTableProperties;
-        
-        // Explicitly access observable properties to ensure MobX tracks them
-        const seats = roundTable.seats;
-        const openSpaces = roundTable.openSpaces;
-        const rotation = roundTable.rotation;
-        const name = roundTable.name;
-        const tableLabelVisible = roundTable.tableLabelVisible;
-        const chairLabelVisible = roundTable.chairLabelVisible;
-        
-        // Initialize or update the properties from the selected item
         this.tableProperties = {
-          seats: seats || 8,
-          openSpaces: openSpaces || 0, 
-          rotation: rotation || 0,
-          name: name || '1',
-          tableLabelVisible: tableLabelVisible !== undefined ? tableLabelVisible : true,
-          chairLabelVisible: chairLabelVisible !== undefined ? chairLabelVisible : true
-        };
-      } else {
-        // Clear properties if no item is selected or not a round table
-        this.tableProperties = {
-          seats: 8,
-          openSpaces: 0,
-          rotation: 0,
-          name: '1',
-          tableLabelVisible: true,
-          chairLabelVisible: true
+          seats: roundTable.seats || 8,
+          openSpaces: roundTable.openSpaces || 0, 
+          rotation: roundTable.rotation || 0,
+          name: roundTable.name || '1',
+          tableLabelVisible: roundTable.tableLabelVisible !== undefined ? roundTable.tableLabelVisible : true,
+          chairLabelVisible: roundTable.chairLabelVisible !== undefined ? roundTable.chairLabelVisible : true
         };
       }
     });
   }
 
   ngOnDestroy(): void {
-    // Clean up MobX reactions
     if (this.disposer) {
       this.disposer();
     }
@@ -93,15 +68,9 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   updateProperty(property: string, value: any): void {
     if (!this.selectionStore.selectedItem) return;
     
-    // Update the copy
-    this.tableProperties[property] = value;
-    
-    // Update the actual item using MobX store
     if (this.selectionStore.selectedItem.type === 'roundTable') {
       const updates: any = {};
       updates[property] = value;
-      
-      // Use the layout store to update the element
       this.layoutStore.updateElement(this.selectionStore.selectedItem.id, updates);
     }
   }
@@ -135,19 +104,16 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   }
 
   incrementRotation(): void {
-    // Increment by 15 degrees
     this.tableProperties.rotation = (this.tableProperties.rotation + 15) % 360;
     this.updateProperty('rotation', this.tableProperties.rotation);
   }
 
   decrementRotation(): void {
-    // Decrement by 15 degrees, keeping it within 0-359
     this.tableProperties.rotation = (this.tableProperties.rotation - 15 + 360) % 360;
     this.updateProperty('rotation', this.tableProperties.rotation);
   }
 
   deleteElement(): void {
-    // Use MobX store to delete the element
     if (this.selectionStore.selectedItem && confirm('Are you sure you want to delete this element?')) {
       const itemId = this.selectionStore.selectedItem.id;
       this.layoutStore.deleteElement(itemId);
@@ -155,8 +121,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     }
   }
   
-  // Getter for template
   get selectedItem() {
     return this.selectionStore.selectedItem;
   }
-} 
+}

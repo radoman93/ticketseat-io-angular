@@ -400,20 +400,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     const gridRect = (event.currentTarget as HTMLElement).closest('.table-container')?.getBoundingClientRect();
     if (!gridRect) return;
 
-    // Item's center in scaled/panned canvas coordinates
-    const itemCanvasX = item.x;
-    const itemCanvasY = item.y;
-
-    // Convert item's canvas center to viewport coordinates
-    // Item center relative to the scaled and panned container, then add gridRect offset
-    this.rotationItemCenter.x = itemCanvasX * (this.store.zoomLevel / 100) + this.store.panOffset.x + gridRect.left;
-    this.rotationItemCenter.y = itemCanvasY * (this.store.zoomLevel / 100) + this.store.panOffset.y + gridRect.top;
-
-    // Calculate initial angle from item center to mouse position
-    const initialMouseX = event.clientX;
-    const initialMouseY = event.clientY;
-    const deltaX = initialMouseX - this.rotationItemCenter.x;
-    const deltaY = initialMouseY - this.rotationItemCenter.y;
-    this.initialMouseAngleForRotation = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+    //
   }
 }

@@ -1,7 +1,7 @@
 import { Component, Input, HostBinding, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
-import { RoundTableProperties } from '../../services/selection.service';
+import { RoundTableProperties, ChairProperties } from '../../services/selection.service';
 import { makeAutoObservable, observable, computed } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
@@ -27,14 +27,11 @@ export class RoundTableComponent implements OnInit {
   @Input() tableLabelVisible: boolean = true;
   @Input() chairLabelVisible: boolean = true;
   
-  // For accessing the MobX stores
   store = rootStore;
   
-  // Allow passing class for preview styling
   @HostBinding('class') @Input() class: string = '';
   
   constructor() {
-    // Make this component's properties observable for MobX
     makeAutoObservable(this, {
       tableStyles: computed,
       seatStyles: computed,
@@ -104,6 +101,7 @@ export class RoundTableComponent implements OnInit {
     
     const seatsArray = [];
     if (totalPositions === 0) {
+      return [];
       return [];
     }
 
