@@ -13,8 +13,19 @@
          *ngFor="let seat of seatStyles; let i = index" 
          [style.transform]="seat.transform">
       <div *ngIf="!seat.isOpenSpace" 
-           class="seat-circle w-5 h-5 bg-gray-200 border border-gray-400 rounded-full transition-colors duration-200 hover:bg-gray-300 hover:cursor-pointer flex justify-center items-center">
-        <span *ngIf="chairLabelVisible" class="text-xs text-gray-700">{{ seat.label }}</span>
+           class="seat-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+           [class]="seat.isSelected ? 'w-7 h-7 bg-blue-500 border-3 border-blue-600 shadow-lg shadow-blue-400/50 scale-110 animate-pulse' : 'w-5 h-5 bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:scale-105'"
+           (click)="onChairClick($event, seat)"
+           (mousedown)="onChairMouseDown($event, seat)"
+           (mouseenter)="onChairHover(seat)"
+           [title]="'Chair ' + seat.label + ' (ID: ' + seat.id + ')'">
+        <span *ngIf="chairLabelVisible" 
+              [class]="seat.isSelected ? 'text-xs text-white font-bold' : 'text-xs text-gray-700'">
+          {{ seat.label }}
+        </span>
+        <!-- Selection glow effect -->
+        <div *ngIf="seat.isSelected" 
+             class="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping"></div>
       </div>
       <div *ngIf="seat.isOpenSpace" 
            class="open-space w-5 h-5 border-2 border-dashed border-gray-300 rounded-full">

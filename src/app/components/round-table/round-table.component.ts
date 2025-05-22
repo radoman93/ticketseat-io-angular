@@ -1,9 +1,10 @@
-import { Component, Input, HostBinding } from '@angular/core';
+import { Component, Input, HostBinding, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableProperties } from '../../services/selection.service';
 import { makeAutoObservable, observable, computed } from 'mobx';
 import { rootStore } from '../../stores/root.store';
+import { Chair } from '../../models/chair.model';
 
 @Component({
   selector: 'app-round-table',
@@ -12,7 +13,7 @@ import { rootStore } from '../../stores/root.store';
   templateUrl: './round-table.component.html',
   styleUrls: []
 })
-export class RoundTableComponent {
+export class RoundTableComponent implements OnInit {
   @Input() x: number = 0;
   @Input() y: number = 0;
   @Input() radius: number = 50;
@@ -49,6 +50,32 @@ export class RoundTableComponent {
     });
   }
 
+  ngOnInit() {
+    console.log('🔄 Round table ngOnInit called. TableData:', this.tableData, 'isPreview:', this.isPreview);
+    
+    // Generate chairs for this table if they don't exist and this is not a preview
+    if (this.tableData && this.tableData.id && !this.isPreview) {
+      const existingChairs = this.store.chairStore.getChairsByTable(this.tableData.id);
+      console.log('📋 Existing chairs for table', this.tableData.id, ':', existingChairs);
+      
+      if (existingChairs.length === 0) {
+        console.log('🪑 Generating chairs for table:', this.tableData.id);
+        this.store.chairStore.generateChairsForTable(
+          this.tableData.id, 
+          this.tableData.seats, 
+          this.tableData.radius
+        );
+        console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
+      }
+    } else {
+      console.log('❌ Not generating chairs. Conditions:', {
+        hasTableData: !!this.tableData,
+        hasId: this.tableData?.id,
+        isPreview: this.isPreview
+      });
+    }
+  }
+
   get tableStyles() {
     if (this.tableData) {
       return {
@@ -77,39 +104,107 @@ export class RoundTableComponent {
     
     const seatsArray = [];
     if (totalPositions === 0) {
-      return []; // Avoid division by zero if no seats or open spaces
+      return [];
     }
 
     const angleStep = 360 / totalPositions;
-    
-    // Calculate the distance from the table's center to the center of each seat/open space.
-    // Assuming seats/open spaces are 20px in diameter (10px radius).
-    // A 20px offset from the table's radius to the seat's center will create a 10px gap
-    // between the table's edge and the seat's inner edge.
     const distanceToItemCenter = effectiveRadius + 20; 
+    
+    console.log('🪑 Building seat styles for table:');
+    console.log('  - tableData:', this.tableData);
+    console.log('  - tableData?.id:', this.tableData?.id);
+    console.log('  - isPreview:', this.isPreview);
+    console.log('  - effectiveSeats:', effectiveSeats);
+    console.log('  - chairs in store:', this.store.chairStore.chairs.size);
     
     for (let i = 0; i < totalPositions; i++) {
       const angleDegrees = angleStep * i;
       const angleRadians = angleDegrees * Math.PI / 180;
       
-      // Calculate the x and y coordinates for the center of the seat/open space
       const x = Math.cos(angleRadians) * distanceToItemCenter;
       const y = Math.sin(angleRadians) * distanceToItemCenter;
       
       const isSeat = i < effectiveSeats;
       const isOpenSpace = i >= effectiveSeats;
       
+      const chairId = `${this.tableData ? this.tableData.id : 'preview'}-chair-${i}`;
+      const chair = this.tableData ? this.store.chairStore.chairs.get(chairId) : null;
+      
+      console.log(`  Seat ${i}: chairId=${chairId}, chair found=${!!chair}, isOpenSpace=${isOpenSpace}`);
+      if (this.tableData) {
+        console.log(`    Looking for chair with ID: ${chairId}`);
+        console.log(`    All chair IDs in store:`, Array.from(this.store.chairStore.chairs.keys()));
+      }
+      
       seatsArray.push({
-        id: `${this.tableData ? this.tableData.id : 'preview'}-seat-${i}`,
-        // The transform should move the center of the seat item to (x,y)
-        // The HTML structure already centers the item before this transform.
-        transform: `translate(${x}px, ${y}px)`, 
+        id: chairId,
+        transform: `translate(${x}px, ${y}px)`,
         isOpenSpace: isOpenSpace,
-        label: isSeat ? (i + 1).toString() : null
+        label: chair ? chair.label : (isSeat ? (i + 1).toString() : null),
+        isSelected: chair ? chair.isSelected : false,
+        chair: chair
       });
     }
+    
+    console.log('📋 Final seatsArray:', seatsArray);
     return seatsArray;
   }
 
-  // Will add more logic later as needed
+  onChairClick(event: Event, seat: any): void {
+    console.log('🪑 CHAIR CLICK DETECTED!', event, seat);
+    event.stopPropagation();
+    
+    if (!seat.isOpenSpace && seat.chair) {
+      console.log('✅ Chair found, selecting:', seat.chair);
+      
+      // Calculate click position for panel positioning
+      const mouseEvent = event as MouseEvent;
+      const clickX = mouseEvent.clientX;
+      const clickY = mouseEvent.clientY;
+      
+      this.selectChair(seat.chair, clickX, clickY);
+    } else {
+      console.log('❌ No chair found or open space. Seat chair:', seat.chair, 'isOpenSpace:', seat.isOpenSpace);
+    }
+  }
+
+  onChairMouseDown(event: Event, seat: any): void {
+    console.log('🖱️ Chair mousedown:', seat.label);
+    event.stopPropagation();
+    
+    if (!seat.isOpenSpace && seat.chair) {
+      console.log('✅ Chair found on mousedown, selecting:', seat.chair);
+      
+      // Calculate click position for panel positioning
+      const mouseEvent = event as MouseEvent;
+      const clickX = mouseEvent.clientX;
+      const clickY = mouseEvent.clientY;
+      
+      this.selectChair(seat.chair, clickX, clickY);
+    }
+  }
+
+  onChairHover(seat: any): void {
+    console.log('👆 Chair hover:', seat.label);
+  }
+
+  private selectChair(chair: Chair, clickX?: number, clickY?: number): void {
+    if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
+      this.store.chairStore.deselectChair();
+    }
+    
+    // Set panel position if click coordinates provided
+    if (clickX !== undefined && clickY !== undefined) {
+      // Add offset to position panel next to the chair, not over it
+      const offsetX = clickX + 20;
+      const offsetY = clickY - 100; // Position above the click
+      this.store.chairStore.setPanelPosition(offsetX, offsetY);
+    }
+    
+    if (chair.isSelected) {
+      this.store.chairStore.deselectChair();
+    } else {
+      this.store.chairStore.selectChair(chair.id);
+    }
+  }
 } 

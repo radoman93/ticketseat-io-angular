@@ -3,6 +3,7 @@ import { LayoutStore, layoutStore } from './layout.store';
 import { SelectionStore, selectionStore } from './selection.store';
 import { ToolStore, toolStore } from './tool.store';
 import { GridStore, gridStore } from './grid.store';
+import { ChairStore, chairStore } from './chair.store';
 import { LayoutMetricsStore, layoutMetricsStore } from './derived/layout-metrics.store';
 import { TransactionManager, transactionManager } from './transaction.manager';
 import { PersistenceManager, persistenceManager } from './persistence.manager';
@@ -17,6 +18,7 @@ export class RootStore {
   selectionStore: SelectionStore;
   toolStore: ToolStore;
   gridStore: GridStore;
+  chairStore: ChairStore;
   
   // Derived stores
   layoutMetricsStore: LayoutMetricsStore;
@@ -31,6 +33,7 @@ export class RootStore {
     this.selectionStore = selectionStore;
     this.toolStore = toolStore;
     this.gridStore = gridStore;
+    this.chairStore = chairStore;
     
     // Derived stores
     this.layoutMetricsStore = layoutMetricsStore;

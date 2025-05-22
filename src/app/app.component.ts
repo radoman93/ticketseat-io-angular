@@ -11,6 +11,7 @@ import { GridComponent } from './components/grid/grid.component';
 import { PropertiesPanelComponent } from './components/properties-panel/properties-panel.component';
 import { SelectionService } from './services/selection.service';
 import { ApplicationControlsComponent } from './components/application-controls/application-controls.component';
+import { ChairPropertiesPanelComponent } from './components/chair-properties-panel/chair-properties-panel.component';
 import { rootStore } from './stores/root.store';
 
 @Component({
@@ -23,7 +24,8 @@ import { rootStore } from './stores/root.store';
     MainToolbarComponent, 
     GridComponent,
     PropertiesPanelComponent,
-    ApplicationControlsComponent
+    ApplicationControlsComponent,
+    ChairPropertiesPanelComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'

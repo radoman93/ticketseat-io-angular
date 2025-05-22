@@ -9,6 +9,7 @@ import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { dragStore } from '../../stores/drag.store';
+import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
 
 // Use the interface from the service
@@ -24,6 +25,7 @@ type TablePosition = RoundTableProperties;
 export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Reference to our MobX stores
   store = gridStore;
+  rootStore = rootStore;
   toolStore = toolStore;
   selectionStore = selectionStore;
   layoutStore = layoutStore;
@@ -321,6 +323,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       return;
     }
     
+    // Deselect any selected chairs when selecting a table
+    this.rootStore.chairStore.deselectChair();
+    
     // Set table as selected
     this.selectionStore.selectItem(table);
     
@@ -344,6 +349,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.selectionStore.deselectItem();
       // Clear any reference to the previously dragged item
       this.dragStore.draggedItem = null;
+      
+      // Also deselect any selected chairs
+      this.rootStore.chairStore.deselectChair();
     }
   }
 
