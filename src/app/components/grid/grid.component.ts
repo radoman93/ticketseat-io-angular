@@ -38,6 +38,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // MobX reaction disposers
   private toolChangeDisposer: IReactionDisposer | null = null;
 
+  // Rotation state
+  isRotating: boolean = false;
+  rotatingItem: RoundTableProperties | null = null;
+  rotationItemCenter: { x: number, y: number } = { x: 0, y: 0 };
+  initialMouseAngleForRotation: number = 0;
+  originalItemRotationValue: number = 0;
+
   constructor() {
     // Nothing to inject
   }
@@ -164,6 +171,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
+    if (this.isRotating) return; // Already handling rotation, ignore other mousedown events
+
     if (event.button === 1) {
       // Middle mouse button for panning
       this.store.startPanning(event.clientX, event.clientY);
@@ -185,6 +194,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         event.preventDefault();
       }
       // Note: Dragging is handled by the table element's click event
+      // and rotation is handled by its own mousedown handler (startRotate)
     }
   }
 
@@ -192,7 +202,30 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   onMouseMove(event: MouseEvent): void {
     this.store.setMousePosition(event.clientX, event.clientY);
 
-    if (this.store.isPanning) {
+    if (this.isRotating && this.rotatingItem) {
+      const currentMouseX = event.clientX;
+      const currentMouseY = event.clientY;
+
+      // Calculate angle between item center and current mouse position
+      const deltaX = currentMouseX - this.rotationItemCenter.x;
+      const deltaY = currentMouseY - this.rotationItemCenter.y;
+      let currentAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+      
+      // Calculate the change in angle from the initial mouse angle
+      let angleDiff = currentAngle - this.initialMouseAngleForRotation;
+
+      // New rotation is original rotation + difference
+      let newRotation = this.originalItemRotationValue + angleDiff;
+
+      // Normalize rotation to be between 0 and 360
+      newRotation = (newRotation % 360 + 360) % 360;
+
+      // Optional: Snap to increments (e.g., 15 degrees)
+      // newRotation = Math.round(newRotation / 15) * 15;
+
+      this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
+
+    } else if (this.store.isPanning) {
       // Handle canvas panning
       this.store.pan(event.clientX, event.clientY);
       this.drawGrid();
@@ -205,12 +238,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const dy = event.clientY - this.dragStore.startMouseY;
       const moveDistance = Math.sqrt(dx * dx + dy * dy);
       
-      // Start dragging if moved more than 2 pixels - lower threshold for better responsiveness
       if (moveDistance > 2) {
-        // Make sure the item is selected before dragging
         this.selectionStore.selectItem(this.dragStore.potentialDragItem);
-        
-        // Start dragging
         this.dragStore.startDragging(
           this.dragStore.potentialDragItem,
           this.dragStore.startMouseX,
@@ -229,28 +258,31 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
+    if (this.isRotating) {
+      this.isRotating = false;
+      this.rotatingItem = null;
+      event.stopPropagation(); // Prevent other mouseup actions like deselecting
+    }
     if (event.button === 1) {
-      // End panning on middle mouse release
       this.store.stopPanning();
     } else if (event.button === 0 && this.dragStore.isDragging) {
-      // End dragging on left mouse release
       this.dragStore.endDragging();
     }
-    
-    // Reset potential drag item
     this.dragStore.potentialDragItem = null;
   }
 
   @HostListener('mouseleave')
   onMouseLeave(): void {
+    if (this.isRotating) {
+      this.isRotating = false;
+      this.rotatingItem = null;
+    }
     if (this.store.isPanning) {
       this.store.stopPanning();
     }
     if (this.dragStore.isDragging) {
       this.dragStore.endDragging();
     }
-    
-    // Reset potential drag item
     this.dragStore.potentialDragItem = null;
   }
 
@@ -346,5 +378,34 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.dragStore.cancelDragging();
       event.preventDefault();
     }
+  }
+
+  startRotate(item: RoundTableProperties, event: MouseEvent): void {
+    event.stopPropagation(); // Prevent triggering select/drag
+    event.preventDefault();
+
+    this.isRotating = true;
+    this.rotatingItem = item;
+    this.originalItemRotationValue = item.rotation || 0;
+
+    // Get the grid container's bounding box to calculate item center in viewport coordinates
+    const gridRect = (event.currentTarget as HTMLElement).closest('.table-container')?.getBoundingClientRect();
+    if (!gridRect) return;
+
+    // Item's center in scaled/panned canvas coordinates
+    const itemCanvasX = item.x;
+    const itemCanvasY = item.y;
+
+    // Convert item's canvas center to viewport coordinates
+    // Item center relative to the scaled and panned container, then add gridRect offset
+    this.rotationItemCenter.x = itemCanvasX * (this.store.zoomLevel / 100) + this.store.panOffset.x + gridRect.left;
+    this.rotationItemCenter.y = itemCanvasY * (this.store.zoomLevel / 100) + this.store.panOffset.y + gridRect.top;
+
+    // Calculate initial angle from item center to mouse position
+    const initialMouseX = event.clientX;
+    const initialMouseY = event.clientY;
+    const deltaX = initialMouseX - this.rotationItemCenter.x;
+    const deltaY = initialMouseY - this.rotationItemCenter.y;
+    this.initialMouseAngleForRotation = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
   }
 }
