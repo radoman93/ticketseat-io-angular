@@ -1,9 +1,10 @@
 import { Component, Input, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
-import { RoundTableProperties } from '../../services/selection.service';
+import { RoundTableProperties, ChairProperties } from '../../services/selection.service';
 import { makeAutoObservable, observable, computed } from 'mobx';
 import { rootStore } from '../../stores/root.store';
+import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-round-table',
@@ -26,14 +27,11 @@ export class RoundTableComponent {
   @Input() tableLabelVisible: boolean = true;
   @Input() chairLabelVisible: boolean = true;
   
-  // For accessing the MobX stores
   store = rootStore;
   
-  // Allow passing class for preview styling
   @HostBinding('class') @Input() class: string = '';
   
   constructor() {
-    // Make this component's properties observable for MobX
     makeAutoObservable(this, {
       tableStyles: computed,
       seatStyles: computed,
@@ -77,39 +75,54 @@ export class RoundTableComponent {
     
     const seatsArray = [];
     if (totalPositions === 0) {
-      return []; // Avoid division by zero if no seats or open spaces
+      return [];
     }
 
     const angleStep = 360 / totalPositions;
-    
-    // Calculate the distance from the table's center to the center of each seat/open space.
-    // Assuming seats/open spaces are 20px in diameter (10px radius).
-    // A 20px offset from the table's radius to the seat's center will create a 10px gap
-    // between the table's edge and the seat's inner edge.
-    const distanceToItemCenter = effectiveRadius + 20; 
+    const distanceToItemCenter = effectiveRadius + 20;
     
     for (let i = 0; i < totalPositions; i++) {
       const angleDegrees = angleStep * i;
       const angleRadians = angleDegrees * Math.PI / 180;
       
-      // Calculate the x and y coordinates for the center of the seat/open space
       const x = Math.cos(angleRadians) * distanceToItemCenter;
       const y = Math.sin(angleRadians) * distanceToItemCenter;
       
       const isSeat = i < effectiveSeats;
       const isOpenSpace = i >= effectiveSeats;
-      
-      seatsArray.push({
-        id: `${this.tableData ? this.tableData.id : 'preview'}-seat-${i}`,
-        // The transform should move the center of the seat item to (x,y)
-        // The HTML structure already centers the item before this transform.
-        transform: `translate(${x}px, ${y}px)`, 
-        isOpenSpace: isOpenSpace,
-        label: isSeat ? (i + 1).toString() : null
-      });
+
+      if (isSeat) {
+        const chairId = this.tableData?.chairs?.[i]?.id || `chair-${uuidv4()}`;
+        const chairLabel = this.tableData?.chairs?.[i]?.label || (i + 1).toString();
+        const chairPrice = this.tableData?.chairs?.[i]?.price || 0;
+
+        seatsArray.push({
+          id: chairId,
+          transform: `translate(${x}px, ${y}px)`,
+          isOpenSpace: false,
+          label: chairLabel,
+          price: chairPrice,
+          isSelected: this.store.selectionStore.isItemSelected(chairId)
+        });
+      } else {
+        seatsArray.push({
+          id: `open-space-${i}`,
+          transform: `translate(${x}px, ${y}px)`,
+          isOpenSpace: true
+        });
+      }
     }
     return seatsArray;
   }
 
-  // Will add more logic later as needed
-} 
+  onChairClick(event: MouseEvent, chair: any): void {
+    event.stopPropagation();
+    this.store.selectionStore.selectItem({
+      id: chair.id,
+      type: 'chair',
+      label: chair.label,
+      price: chair.price,
+      tableId: this.tableData?.id
+    });
+  }
+}
