@@ -1,8 +1,8 @@
 import { makeAutoObservable, action } from 'mobx';
-import { RoundTableProperties, RectangleTableProperties } from '../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../services/selection.service';
 
 // Union type for all table types
-type TableElement = RoundTableProperties | RectangleTableProperties;
+type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
 
 export class LayoutStore {
   elements: TableElement[] = [];

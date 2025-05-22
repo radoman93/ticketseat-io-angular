@@ -7,6 +7,16 @@
   border-style: dashed;
 }
 
+/* Seating row preview specific styles */
+.preview-table.seating-row {
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+
+.preview-table ::ng-deep .chair-circle {
+  border-style: dashed;
+  border-color: #3b82f6;
+}
+
 /* Selection container styling */
 .selection-container {
   position: relative;

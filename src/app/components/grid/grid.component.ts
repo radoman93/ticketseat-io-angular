@@ -3,9 +3,10 @@ import { gridStore } from '../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableComponent } from '../round-table/round-table.component';
 import { RectangleTableComponent } from '../rectangle-table/rectangle-table.component';
+import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { Selectable, RoundTableProperties, RectangleTableProperties } from '../../services/selection.service';
+import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
@@ -14,11 +15,11 @@ import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
 
 // Use union type for table positions  
-type TablePosition = RoundTableProperties | RectangleTableProperties;
+type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
 
 @Component({
   selector: 'app-grid',
-  imports: [MobxAngularModule, RoundTableComponent, RectangleTableComponent, CommonModule],
+  imports: [MobxAngularModule, RoundTableComponent, RectangleTableComponent, SeatingRowComponent, CommonModule],
   standalone: true,
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.css'
@@ -47,6 +48,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   rotationItemCenter: { x: number, y: number } = { x: 0, y: 0 };
   initialMouseAngleForRotation: number = 0;
   originalItemRotationValue: number = 0;
+
+  // Seating row drag-to-create state
+  isCreatingSeatingRow: boolean = false;
+  seatingRowStartX: number = 0;
+  seatingRowStartY: number = 0;
+  seatingRowCurrentX: number = 0;
+  seatingRowCurrentY: number = 0;
 
   constructor() {
     // Nothing to inject
@@ -87,6 +95,22 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           rightChairs: 0,
           name: `Table ${this.layoutStore.elements.length + 1}`,
           rotation: 0
+        };
+      } else if (activeTool === ToolType.SeatingRow) {
+        // Initialize preview seating row when entering add mode
+        this.previewTable = {
+          id: `seatingrow-preview-${Date.now()}`,
+          type: 'seatingRow',
+          x: 0,
+          y: 0,
+          endX: 35, // Start with just one seat width
+          endY: 0,
+          seatCount: 1,
+          seatSpacing: 35,
+          name: `Row ${this.layoutStore.elements.length + 1}`,
+          rotation: 0,
+          chairLabelVisible: true,
+          rowLabelVisible: true
         };
       } else {
         this.previewTable = null;
@@ -200,8 +224,27 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       // Left mouse button for selection/dragging/adding
       const activeTool = this.toolStore.activeTool;
       
-      if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
-        // We're in add mode, add a new table
+      if (activeTool === ToolType.SeatingRow && this.previewTable) {
+        // Start drag-to-create seating row mode
+        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        
+        this.isCreatingSeatingRow = true;
+        this.seatingRowStartX = x;
+        this.seatingRowStartY = y;
+        this.seatingRowCurrentX = x;
+        this.seatingRowCurrentY = y;
+        
+        // Update preview table to start point, centered at mouse
+        this.previewTable.x = x;
+        this.previewTable.y = y;
+        this.previewTable.endX = x;
+        this.previewTable.endY = y;
+        (this.previewTable as SeatingRowProperties).seatCount = 1;
+        
+        event.preventDefault();
+      } else if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
+        // We're in add mode for round/rectangle tables, add a new table
         const newTable: TablePosition = {
           ...this.previewTable,
           id: `table-${Date.now()}`
@@ -221,7 +264,27 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   onMouseMove(event: MouseEvent): void {
     this.store.setMousePosition(event.clientX, event.clientY);
 
-    if (this.isRotating && this.rotatingItem) {
+    if (this.isCreatingSeatingRow && this.previewTable) {
+      // Handle seating row drag-to-create with stable positioning
+      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      
+      this.seatingRowCurrentX = x;
+      this.seatingRowCurrentY = y;
+      
+      // Calculate distance and number of seats
+      const dx = x - this.seatingRowStartX;
+      const dy = y - this.seatingRowStartY;
+      const totalDistance = Math.sqrt(dx * dx + dy * dy);
+      const seatSpacing = (this.previewTable as SeatingRowProperties).seatSpacing || 35;
+      const seatCount = Math.max(1, Math.floor(totalDistance / seatSpacing) + 1);
+      
+      // Update preview table - follow mouse exactly for smooth dragging
+      this.previewTable.endX = x;
+      this.previewTable.endY = y;
+      (this.previewTable as SeatingRowProperties).seatCount = seatCount;
+      
+    } else if (this.isRotating && this.rotatingItem) {
       const currentMouseX = event.clientX;
       const currentMouseY = event.clientY;
 
@@ -265,18 +328,49 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           this.dragStore.startMouseY
         );
       }
-    } else if ((this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable) && this.previewTable) {
-      // Handle preview table positioning in add mode
+    } else if ((this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow) && this.previewTable && !this.isCreatingSeatingRow) {
+      // Handle preview table positioning in add mode (only if not creating seating row)
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
       
-      this.previewTable.x = x;
-      this.previewTable.y = y;
+      if (this.toolStore.activeTool === ToolType.SeatingRow) {
+        // For seating row, center the first chair at mouse position
+        this.previewTable.x = x;
+        this.previewTable.y = y;
+        this.previewTable.endX = x;
+        this.previewTable.endY = y;
+      } else {
+        this.previewTable.x = x;
+        this.previewTable.y = y;
+      }
     }
   }
 
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
+    if (this.isCreatingSeatingRow && this.previewTable) {
+      // Complete seating row creation
+      const newSeatingRow: SeatingRowProperties = {
+        ...this.previewTable as SeatingRowProperties,
+        id: `seatingrow-${Date.now()}`,
+        chairLabelVisible: true,
+        rowLabelVisible: true
+      };
+      
+      this.layoutStore.addElement(newSeatingRow);
+      this.toolStore.setActiveTool(ToolType.None);
+      this.selectionStore.selectItem(newSeatingRow);
+      
+      // Reset seating row creation state
+      this.isCreatingSeatingRow = false;
+      this.seatingRowStartX = 0;
+      this.seatingRowStartY = 0;
+      this.seatingRowCurrentX = 0;
+      this.seatingRowCurrentY = 0;
+      
+      event.preventDefault();
+    }
+    
     if (this.isRotating) {
       this.isRotating = false;
       this.rotatingItem = null;
@@ -292,6 +386,15 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mouseleave')
   onMouseLeave(): void {
+    // Cancel seating row creation if mouse leaves
+    if (this.isCreatingSeatingRow) {
+      this.isCreatingSeatingRow = false;
+      this.seatingRowStartX = 0;
+      this.seatingRowStartY = 0;
+      this.seatingRowCurrentX = 0;
+      this.seatingRowCurrentY = 0;
+    }
+    
     if (this.isRotating) {
       this.isRotating = false;
       this.rotatingItem = null;
@@ -336,7 +439,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
     
     // Prevent starting a drag if we're in table add mode
-    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable) {
+    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow) {
       return;
     }
     
@@ -381,7 +484,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Delete the currently selected table
   deleteSelectedTable(): boolean {
     const selectedItem = this.selectionStore.selectedItem;
-    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable')) {
+    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable' || selectedItem.type === 'seatingRow')) {
       this.layoutStore.deleteElement(selectedItem.id);
       this.selectionStore.deselectItem();
       return true;
@@ -398,39 +501,53 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       event.preventDefault();
     }
     
-    // Escape key to cancel dragging
-    if (event.key === 'Escape' && this.dragStore.isDragging) {
-      this.dragStore.cancelDragging();
-      event.preventDefault();
+    // Escape key to cancel operations
+    if (event.key === 'Escape') {
+      if (this.isCreatingSeatingRow) {
+        this.isCreatingSeatingRow = false;
+        this.seatingRowStartX = 0;
+        this.seatingRowStartY = 0;
+        this.seatingRowCurrentX = 0;
+        this.seatingRowCurrentY = 0;
+      }
+      if (this.toolStore.activeTool !== ToolType.None) {
+        this.toolStore.setActiveTool(ToolType.None);
+      }
     }
   }
 
+  // Start rotation mode for an item
   startRotate(item: TablePosition, event: MouseEvent): void {
-    event.stopPropagation(); // Prevent triggering select/drag
+    event.stopPropagation();
     event.preventDefault();
 
     this.isRotating = true;
     this.rotatingItem = item;
-    this.originalItemRotationValue = item.rotation || 0;
 
-    // Calculate the item center in viewport coordinates
-    // First, convert the item's world position to screen coordinates
-    const itemCenterWorldX = item.x;
-    const itemCenterWorldY = item.y;
-    
-    // Transform to screen coordinates considering pan and zoom
-    const itemCenterScreenX = (itemCenterWorldX * (this.store.zoomLevel / 100)) + this.store.panOffset.x;
-    const itemCenterScreenY = (itemCenterWorldY * (this.store.zoomLevel / 100)) + this.store.panOffset.y;
-    
-    // Store the center point in viewport coordinates
-    this.rotationItemCenter = {
-      x: itemCenterScreenX,
-      y: itemCenterScreenY
-    };
+    // Calculate the center point of the item for rotation
+    if (item.type === 'roundTable') {
+      this.rotationItemCenter = { x: item.x, y: item.y };
+    } else if (item.type === 'rectangleTable') {
+      this.rotationItemCenter = { x: item.x, y: item.y };
+    } else if (item.type === 'seatingRow') {
+      const seatingRow = item as SeatingRowProperties;
+      this.rotationItemCenter = {
+        x: (seatingRow.x + seatingRow.endX) / 2,
+        y: (seatingRow.y + seatingRow.endY) / 2
+      };
+    }
 
-    // Calculate the initial angle from the item center to the mouse position
+    // Convert to screen coordinates
+    const screenX = this.rotationItemCenter.x * (this.store.zoomLevel / 100) + this.store.panOffset.x;
+    const screenY = this.rotationItemCenter.y * (this.store.zoomLevel / 100) + this.store.panOffset.y;
+    this.rotationItemCenter = { x: screenX, y: screenY };
+
+    // Calculate initial angle between center and mouse
     const deltaX = event.clientX - this.rotationItemCenter.x;
     const deltaY = event.clientY - this.rotationItemCenter.y;
     this.initialMouseAngleForRotation = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+    
+    // Store the original rotation value
+    this.originalItemRotationValue = item.rotation || 0;
   }
-}
+} 

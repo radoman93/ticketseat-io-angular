@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RoundTableProperties, RectangleTableProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { MobxAngularModule } from 'mobx-angular';
@@ -28,6 +28,15 @@ interface RectangleTablePropertiesForm {
   name: string;
   tableLabelVisible: boolean;
   chairLabelVisible: boolean;
+}
+
+interface SeatingRowPropertiesForm {
+  seatCount: number;
+  seatSpacing: number;
+  name: string;
+  chairLabelVisible: boolean;
+  rowLabelVisible: boolean;
+  labelPosition: 'left' | 'center' | 'right';
 }
 
 @Component({
@@ -64,6 +73,15 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     chairLabelVisible: true
   };
 
+  seatingRowProperties: SeatingRowPropertiesForm = {
+    seatCount: 1,
+    seatSpacing: 35,
+    name: '1',
+    chairLabelVisible: true,
+    rowLabelVisible: true,
+    labelPosition: 'left'
+  };
+
   private disposer: IReactionDisposer | null = null;
 
   constructor() {}
@@ -97,6 +115,16 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
           tableLabelVisible: rectangleTable.tableLabelVisible !== undefined ? rectangleTable.tableLabelVisible : true,
           chairLabelVisible: rectangleTable.chairLabelVisible !== undefined ? rectangleTable.chairLabelVisible : true
         };
+      } else if (selectedItem?.type === 'seatingRow') {
+        const seatingRow = selectedItem as SeatingRowProperties;
+        this.seatingRowProperties = {
+          seatCount: seatingRow.seatCount,
+          seatSpacing: seatingRow.seatSpacing,
+          name: seatingRow.name,
+          chairLabelVisible: seatingRow.chairLabelVisible !== undefined ? seatingRow.chairLabelVisible : true,
+          rowLabelVisible: seatingRow.rowLabelVisible !== undefined ? seatingRow.rowLabelVisible : true,
+          labelPosition: seatingRow.labelPosition || 'left'
+        };
       }
     });
   }
@@ -109,6 +137,18 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
 
   updateProperty(property: string, value: any): void {
     if (!this.selectionStore.selectedItem) return;
+    
+    // Validate numeric inputs
+    if (typeof value === 'string' && !isNaN(Number(value))) {
+      value = Number(value);
+    }
+
+    // Apply min/max constraints for specific properties
+    if (property === 'seatCount') {
+      value = Math.max(1, Math.min(50, value));
+    } else if (property === 'seatSpacing') {
+      value = Math.max(20, Math.min(100, value));
+    }
     
     const updates: any = {};
     updates[property] = value;
@@ -294,4 +334,4 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
            this.rectangleTableProperties.leftChairs + 
            this.rectangleTableProperties.rightChairs;
   }
-}
+} 

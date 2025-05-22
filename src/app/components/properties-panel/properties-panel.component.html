@@ -408,7 +408,9 @@
         Delete
       </button>
     </div>
-  </div>  <!-- Empty state panel -->
+  </div>
+
+  <!-- Empty state panel -->
   <div *ngIf="!selectedItem" class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -416,4 +418,131 @@
     <h3 class="text-base font-medium text-gray-700 mb-1">No Element Selected</h3>
     <p class="text-xs text-gray-500">Select an element on the canvas to edit properties</p>
   </div>
-</div>
+
+  <!-- Seating Row Properties -->
+  <div *ngIf="selectedItem?.type === 'seatingRow'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Seating Row
+    </div>
+
+    <!-- Row Settings Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Row Settings</label>
+      </div>
+      
+      <!-- Number of seats -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Number of seats:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="updateProperty('seatCount', ($any(selectedItem)['seatCount'] || 1) - 1)">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [value]="$any(selectedItem)['seatCount']" 
+            (change)="updateProperty('seatCount', $any($event.target)['value'])"
+            min="1" 
+            max="50">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="updateProperty('seatCount', ($any(selectedItem)['seatCount'] || 1) + 1)">+</button>
+        </div>
+      </div>
+      
+      <!-- Seat spacing -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Seat spacing:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="updateProperty('seatSpacing', ($any(selectedItem)['seatSpacing'] || 35) - 1)">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [value]="$any(selectedItem)['seatSpacing']" 
+            (change)="updateProperty('seatSpacing', $any($event.target)['value'])"
+            min="20" 
+            max="100">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="updateProperty('seatSpacing', ($any(selectedItem)['seatSpacing'] || 35) + 1)">+</button>
+          <span class="text-xs text-gray-500 ml-1">px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row Label Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Row Label</label>
+      </div>
+      
+      <!-- Row name -->
+      <div class="mb-2">
+        <input 
+          type="text" 
+          class="input input-bordered input-sm w-full"
+          [value]="$any(selectedItem)['name']" 
+          (input)="updateProperty('name', $any($event.target)['value'])"
+          placeholder="Enter row name">
+      </div>
+
+      <!-- Label position -->
+      <div class="mb-2">
+        <label class="text-sm text-gray-600 block mb-1">Label position:</label>
+        <div class="grid grid-cols-3 gap-1">
+          <button 
+            class="btn btn-xs"
+            [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'left'"
+            (click)="updateProperty('labelPosition', 'left')">Left</button>
+          <button 
+            class="btn btn-xs"
+            [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'center'"
+            (click)="updateProperty('labelPosition', 'center')">Center</button>
+          <button 
+            class="btn btn-xs"
+            [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'right'"
+            (click)="updateProperty('labelPosition', 'right')">Right</button>
+        </div>
+      </div>
+
+      <!-- Row Label Visibility -->
+      <div class="flex items-center justify-between mt-3">
+        <label class="text-sm text-gray-600">Show row label</label>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            class="sr-only peer"
+            [checked]="$any(selectedItem)['rowLabelVisible']"
+            (change)="updateProperty('rowLabelVisible', $any($event.target)['checked'])">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+
+      <!-- Show seat labels toggle -->
+      <div class="flex items-center justify-between mt-3">
+        <label class="text-sm text-gray-600">Show seat labels</label>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            class="sr-only peer"
+            [checked]="$any(selectedItem)['chairLabelVisible']"
+            (change)="updateProperty('chairLabelVisible', $any($event.target)['checked'])">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Delete button -->
+    <div class="px-4 py-3">
+      <button 
+        class="btn btn-error btn-sm w-full"
+        (click)="deleteElement()">
+        Delete Row
+      </button>
+    </div>
+  </div>
+</div> 
