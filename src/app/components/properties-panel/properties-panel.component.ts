@@ -99,7 +99,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   }
 
   decrementChairs(): void {
-    if (this.tableProperties.seats > 1) {
+    if (this.tableProperties.seats > 4) {
       this.tableProperties.seats--;
       this.updateProperty('seats', this.tableProperties.seats);
     }

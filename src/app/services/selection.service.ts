@@ -13,6 +13,7 @@ export interface RoundTableProperties extends Selectable {
   y: number;
   radius: number;
   seats: number;
+  openSpaces: number;
   name: string;
   rotation?: number;
 }

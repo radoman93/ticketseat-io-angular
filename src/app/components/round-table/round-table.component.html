@@ -10,9 +10,14 @@
   </div>
   <div class="absolute w-full h-full left-0 top-0">
     <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5" 
-         *ngFor="let seat of [].constructor(tableData ? tableData.seats : seats); let i = index" 
-         [style.transform]="'rotate(' + (i * 360 / (tableData ? tableData.seats : seats)) + 'deg) translate(0, -' + ((tableData ? tableData.radius : radius) + 20) + 'px)'">
-      <div class="seat-circle w-5 h-5 bg-gray-200 border border-gray-400 rounded-full transition-colors duration-200 hover:bg-gray-300 hover:cursor-pointer"></div>
+         *ngFor="let seat of seatStyles; let i = index" 
+         [style.transform]="seat.transform">
+      <div *ngIf="!seat.isOpenSpace" 
+           class="seat-circle w-5 h-5 bg-gray-200 border border-gray-400 rounded-full transition-colors duration-200 hover:bg-gray-300 hover:cursor-pointer">
+      </div>
+      <div *ngIf="seat.isOpenSpace" 
+           class="open-space w-5 h-5 border-2 border-dashed border-gray-300 rounded-full">
+      </div>
     </div>
   </div>
 </div> 

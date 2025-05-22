@@ -17,6 +17,7 @@ export class RoundTableComponent {
   @Input() y: number = 0;
   @Input() radius: number = 50;
   @Input() seats: number = 10;
+  @Input() openSpaces: number = 0;
   @Input() name: string = 'Table';
   @Input() tableData!: RoundTableProperties;
   @Input() isSelected!: boolean;
@@ -38,6 +39,7 @@ export class RoundTableComponent {
       y: observable,
       radius: observable,
       seats: observable,
+      openSpaces: observable,
       name: observable,
       rotation: observable
     });
@@ -65,17 +67,38 @@ export class RoundTableComponent {
 
   get seatStyles() {
     const effectiveSeats = this.tableData ? this.tableData.seats : this.seats;
+    const effectiveOpenSpaces = this.tableData ? this.tableData.openSpaces : this.openSpaces;
     const effectiveRadius = this.tableData ? this.tableData.radius : this.radius;
+    const totalPositions = effectiveSeats + effectiveOpenSpaces;
     
     const seatsArray = [];
-    const angleStep = 360 / effectiveSeats;
-    for (let i = 0; i < effectiveSeats; i++) {
-      const angle = angleStep * i;
-      // Adjust positioning to be around the circumference
-      const x = Math.cos(angle * Math.PI / 180) * (effectiveRadius * 0.75); // 0.75 to bring seats a bit inward
-      const y = Math.sin(angle * Math.PI / 180) * (effectiveRadius * 0.75);
+    if (totalPositions === 0) {
+      return []; // Avoid division by zero if no seats or open spaces
+    }
+
+    const angleStep = 360 / totalPositions;
+    
+    // Calculate the distance from the table's center to the center of each seat/open space.
+    // Assuming seats/open spaces are 20px in diameter (10px radius).
+    // A 20px offset from the table's radius to the seat's center will create a 10px gap
+    // between the table's edge and the seat's inner edge.
+    const distanceToItemCenter = effectiveRadius + 20; 
+    
+    for (let i = 0; i < totalPositions; i++) {
+      const angleDegrees = angleStep * i;
+      const angleRadians = angleDegrees * Math.PI / 180;
+      
+      // Calculate the x and y coordinates for the center of the seat/open space
+      const x = Math.cos(angleRadians) * distanceToItemCenter;
+      const y = Math.sin(angleRadians) * distanceToItemCenter;
+      
+      const isOpenSpace = i >= effectiveSeats;
+      
       seatsArray.push({
-        transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` // Center seats
+        // The transform should move the center of the seat item to (x,y)
+        // The HTML structure already centers the item before this transform.
+        transform: `translate(${x}px, ${y}px)`, 
+        isOpenSpace: isOpenSpace
       });
     }
     return seatsArray;

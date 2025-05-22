@@ -60,6 +60,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           y: 0,
           radius: 50,
           seats: 8,
+          openSpaces: 0,
           name: `Table ${this.layoutStore.elements.length + 1}`,
           rotation: 0
         };
