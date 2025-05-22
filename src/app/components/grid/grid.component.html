@@ -12,8 +12,8 @@
         <!-- Rectangular selection indicator that includes table and chairs -->
         <div *ngIf="selectionStore.isItemSelected(table.id)" 
              class="selection-indicator table-selection"
-             [style.width]="(table.radius * 2 + 80) + 'px'"
-             [style.height]="(table.radius * 2 + 80) + 'px'"
+             [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : $any(table).width + 80) + 'px'"
+             [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : $any(table).height + 80) + 'px'"
              [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
              [style.left]="table.x + 'px'"
              [style.top]="table.y + 'px'">
@@ -21,42 +21,77 @@
           <div class="rotation-line"></div>
           <!-- Rotation Handle -->
           <div class="rotation-handle"
-               (mousedown)="startRotate(table, $event)">
+               (mousedown)="startRotate($any(table), $event)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-white">
               <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path>
             </svg>
           </div>
         </div>
         
+        <!-- Round Table -->
         <app-round-table 
-          [tableData]="table"
+          *ngIf="table.type === 'roundTable'"
+          [tableData]="$any(table)"
           [x]="table.x" 
           [y]="table.y" 
-          [radius]="table.radius" 
-          [seats]="table.seats"
-          [openSpaces]="table.openSpaces" 
+          [radius]="$any(table).radius" 
+          [seats]="$any(table).seats"
+          [openSpaces]="$any(table).openSpaces" 
           [name]="table.name"
           [rotation]="table.rotation || 0"
           [class.selected]="selectionStore.isItemSelected(table.id)"
           [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true"
           [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true">
         </app-round-table>
+        
+        <!-- Rectangle Table -->
+        <app-rectangle-table 
+          *ngIf="table.type === 'rectangleTable'"
+          [tableData]="$any(table)"
+          [x]="table.x" 
+          [y]="table.y" 
+          [width]="$any(table).width" 
+          [height]="$any(table).height"
+          [upChairs]="$any(table).upChairs"
+          [downChairs]="$any(table).downChairs"
+          [leftChairs]="$any(table).leftChairs"
+          [rightChairs]="$any(table).rightChairs" 
+          [name]="table.name"
+          [rotation]="table.rotation || 0"
+          [class.selected]="selectionStore.isItemSelected(table.id)"
+          [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true"
+          [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true">
+        </app-rectangle-table>
       </div>
       
-      <!-- Preview table (semi-transparent with dashed border) -->
+      <!-- Preview tables (semi-transparent with dashed border) -->
       <app-round-table 
         *ngIf="previewTable && toolStore.activeTool === ToolType.RoundTable"
         [x]="previewTable.x" 
         [y]="previewTable.y" 
-        [radius]="previewTable.radius" 
-        [seats]="previewTable.seats" 
+        [radius]="$any(previewTable).radius" 
+        [seats]="$any(previewTable).seats" 
         [name]="previewTable.name"
         class="opacity-70 preview-table">
       </app-round-table>
+      
+      <app-rectangle-table 
+        *ngIf="previewTable && toolStore.activeTool === ToolType.RectangleTable"
+        [x]="previewTable.x" 
+        [y]="previewTable.y" 
+        [width]="$any(previewTable).width" 
+        [height]="$any(previewTable).height"
+        [upChairs]="$any(previewTable).upChairs"
+        [downChairs]="$any(previewTable).downChairs"
+        [leftChairs]="$any(previewTable).leftChairs"
+        [rightChairs]="$any(previewTable).rightChairs"
+        [name]="previewTable.name"
+        class="opacity-70 preview-table">
+      </app-rectangle-table>
     </div>
 
     <!-- Show cursor as crosshair when in add mode -->
-    <div *ngIf="toolStore.activeTool === ToolType.RoundTable" 
+    <div *ngIf="toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable" 
          class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
 
     <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-10">

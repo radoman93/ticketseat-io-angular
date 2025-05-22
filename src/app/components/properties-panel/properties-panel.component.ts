@@ -1,20 +1,33 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RoundTableProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties } from '../../services/selection.service';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { autorun, IReactionDisposer } from 'mobx';
 
-interface TablePropertiesForm {
+interface RoundTablePropertiesForm {
   seats: number;
   openSpaces: number;
+  radius: number;
   rotation: number;
   name: string;
   tableLabelVisible: boolean;
   chairLabelVisible: boolean;
-  [key: string]: any;
+}
+
+interface RectangleTablePropertiesForm {
+  width: number;
+  height: number;
+  upChairs: number;
+  downChairs: number;
+  leftChairs: number;
+  rightChairs: number;
+  rotation: number;
+  name: string;
+  tableLabelVisible: boolean;
+  chairLabelVisible: boolean;
 }
 
 @Component({
@@ -28,9 +41,23 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   selectionStore = selectionStore;
   layoutStore = layoutStore;
   
-  tableProperties: TablePropertiesForm = {
+  roundTableProperties: RoundTablePropertiesForm = {
     seats: 8,
     openSpaces: 0,
+    radius: 50,
+    rotation: 0,
+    name: '1',
+    tableLabelVisible: true,
+    chairLabelVisible: true
+  };
+
+  rectangleTableProperties: RectangleTablePropertiesForm = {
+    width: 120,
+    height: 80,
+    upChairs: 4,
+    downChairs: 4,
+    leftChairs: 0,
+    rightChairs: 0,
     rotation: 0,
     name: '1',
     tableLabelVisible: true,
@@ -47,13 +74,28 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
       
       if (selectedItem?.type === 'roundTable') {
         const roundTable = selectedItem as RoundTableProperties;
-        this.tableProperties = {
+        this.roundTableProperties = {
           seats: roundTable.seats || 8,
-          openSpaces: roundTable.openSpaces || 0, 
+          openSpaces: roundTable.openSpaces || 0,
+          radius: roundTable.radius || 50,
           rotation: roundTable.rotation || 0,
           name: roundTable.name || '1',
           tableLabelVisible: roundTable.tableLabelVisible !== undefined ? roundTable.tableLabelVisible : true,
           chairLabelVisible: roundTable.chairLabelVisible !== undefined ? roundTable.chairLabelVisible : true
+        };
+      } else if (selectedItem?.type === 'rectangleTable') {
+        const rectangleTable = selectedItem as RectangleTableProperties;
+        this.rectangleTableProperties = {
+          width: rectangleTable.width || 120,
+          height: rectangleTable.height || 80,
+          upChairs: rectangleTable.upChairs || 4,
+          downChairs: rectangleTable.downChairs || 4,
+          leftChairs: rectangleTable.leftChairs || 0,
+          rightChairs: rectangleTable.rightChairs || 0,
+          rotation: rectangleTable.rotation || 0,
+          name: rectangleTable.name || '1',
+          tableLabelVisible: rectangleTable.tableLabelVisible !== undefined ? rectangleTable.tableLabelVisible : true,
+          chairLabelVisible: rectangleTable.chairLabelVisible !== undefined ? rectangleTable.chairLabelVisible : true
         };
       }
     });
@@ -68,49 +110,170 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   updateProperty(property: string, value: any): void {
     if (!this.selectionStore.selectedItem) return;
     
-    if (this.selectionStore.selectedItem.type === 'roundTable') {
-      const updates: any = {};
-      updates[property] = value;
-      this.layoutStore.updateElement(this.selectionStore.selectedItem.id, updates);
-    }
+    const updates: any = {};
+    updates[property] = value;
+    this.layoutStore.updateElement(this.selectionStore.selectedItem.id, updates);
   }
 
+  // Round Table Methods
   incrementChairs(): void {
-    if (this.tableProperties.seats < 20) {
-      this.tableProperties.seats++;
-      this.updateProperty('seats', this.tableProperties.seats);
+    if (this.roundTableProperties.seats < 20) {
+      this.roundTableProperties.seats++;
+      this.updateProperty('seats', this.roundTableProperties.seats);
     }
   }
 
   decrementChairs(): void {
-    if (this.tableProperties.seats > 4) {
-      this.tableProperties.seats--;
-      this.updateProperty('seats', this.tableProperties.seats);
+    if (this.roundTableProperties.seats > 4) {
+      this.roundTableProperties.seats--;
+      this.updateProperty('seats', this.roundTableProperties.seats);
     }
   }
 
   incrementOpenSpaces(): void {
-    if (this.tableProperties.openSpaces < 20) {
-      this.tableProperties.openSpaces++;
-      this.updateProperty('openSpaces', this.tableProperties.openSpaces);
+    if (this.roundTableProperties.openSpaces < 20) {
+      this.roundTableProperties.openSpaces++;
+      this.updateProperty('openSpaces', this.roundTableProperties.openSpaces);
     }
   }
 
   decrementOpenSpaces(): void {
-    if (this.tableProperties.openSpaces > 0) {
-      this.tableProperties.openSpaces--;
-      this.updateProperty('openSpaces', this.tableProperties.openSpaces);
+    if (this.roundTableProperties.openSpaces > 0) {
+      this.roundTableProperties.openSpaces--;
+      this.updateProperty('openSpaces', this.roundTableProperties.openSpaces);
     }
   }
 
+  incrementRadius(): void {
+    if (this.roundTableProperties.radius < 100) {
+      this.roundTableProperties.radius += 5;
+      this.updateProperty('radius', this.roundTableProperties.radius);
+    }
+  }
+
+  decrementRadius(): void {
+    if (this.roundTableProperties.radius > 20) {
+      this.roundTableProperties.radius -= 5;
+      this.updateProperty('radius', this.roundTableProperties.radius);
+    }
+  }
+
+  // Rectangle Table Methods
+  incrementWidth(): void {
+    if (this.rectangleTableProperties.width < 300) {
+      this.rectangleTableProperties.width += 10;
+      this.updateProperty('width', this.rectangleTableProperties.width);
+    }
+  }
+
+  decrementWidth(): void {
+    if (this.rectangleTableProperties.width > 60) {
+      this.rectangleTableProperties.width -= 10;
+      this.updateProperty('width', this.rectangleTableProperties.width);
+    }
+  }
+
+  incrementHeight(): void {
+    if (this.rectangleTableProperties.height < 200) {
+      this.rectangleTableProperties.height += 10;
+      this.updateProperty('height', this.rectangleTableProperties.height);
+    }
+  }
+
+  decrementHeight(): void {
+    if (this.rectangleTableProperties.height > 40) {
+      this.rectangleTableProperties.height -= 10;
+      this.updateProperty('height', this.rectangleTableProperties.height);
+    }
+  }
+
+  incrementUpChairs(): void {
+    if (this.rectangleTableProperties.upChairs < 20) {
+      this.rectangleTableProperties.upChairs++;
+      this.updateProperty('upChairs', this.rectangleTableProperties.upChairs);
+    }
+  }
+
+  decrementUpChairs(): void {
+    if (this.rectangleTableProperties.upChairs > 0) {
+      this.rectangleTableProperties.upChairs--;
+      this.updateProperty('upChairs', this.rectangleTableProperties.upChairs);
+    }
+  }
+
+  incrementDownChairs(): void {
+    if (this.rectangleTableProperties.downChairs < 20) {
+      this.rectangleTableProperties.downChairs++;
+      this.updateProperty('downChairs', this.rectangleTableProperties.downChairs);
+    }
+  }
+
+  decrementDownChairs(): void {
+    if (this.rectangleTableProperties.downChairs > 0) {
+      this.rectangleTableProperties.downChairs--;
+      this.updateProperty('downChairs', this.rectangleTableProperties.downChairs);
+    }
+  }
+
+  incrementLeftChairs(): void {
+    if (this.rectangleTableProperties.leftChairs < 20) {
+      this.rectangleTableProperties.leftChairs++;
+      this.updateProperty('leftChairs', this.rectangleTableProperties.leftChairs);
+    }
+  }
+
+  decrementLeftChairs(): void {
+    if (this.rectangleTableProperties.leftChairs > 0) {
+      this.rectangleTableProperties.leftChairs--;
+      this.updateProperty('leftChairs', this.rectangleTableProperties.leftChairs);
+    }
+  }
+
+  incrementRightChairs(): void {
+    if (this.rectangleTableProperties.rightChairs < 20) {
+      this.rectangleTableProperties.rightChairs++;
+      this.updateProperty('rightChairs', this.rectangleTableProperties.rightChairs);
+    }
+  }
+
+  decrementRightChairs(): void {
+    if (this.rectangleTableProperties.rightChairs > 0) {
+      this.rectangleTableProperties.rightChairs--;
+      this.updateProperty('rightChairs', this.rectangleTableProperties.rightChairs);
+    }
+  }
+
+  // Common Methods
   incrementRotation(): void {
-    this.tableProperties.rotation = (this.tableProperties.rotation + 15) % 360;
-    this.updateProperty('rotation', this.tableProperties.rotation);
+    const currentRotation = this.selectedItem?.type === 'roundTable' 
+      ? this.roundTableProperties.rotation 
+      : this.rectangleTableProperties.rotation;
+    
+    const newRotation = (currentRotation + 15) % 360;
+    
+    if (this.selectedItem?.type === 'roundTable') {
+      this.roundTableProperties.rotation = newRotation;
+    } else {
+      this.rectangleTableProperties.rotation = newRotation;
+    }
+    
+    this.updateProperty('rotation', newRotation);
   }
 
   decrementRotation(): void {
-    this.tableProperties.rotation = (this.tableProperties.rotation - 15 + 360) % 360;
-    this.updateProperty('rotation', this.tableProperties.rotation);
+    const currentRotation = this.selectedItem?.type === 'roundTable' 
+      ? this.roundTableProperties.rotation 
+      : this.rectangleTableProperties.rotation;
+    
+    const newRotation = (currentRotation - 15 + 360) % 360;
+    
+    if (this.selectedItem?.type === 'roundTable') {
+      this.roundTableProperties.rotation = newRotation;
+    } else {
+      this.rectangleTableProperties.rotation = newRotation;
+    }
+    
+    this.updateProperty('rotation', newRotation);
   }
 
   deleteElement(): void {
@@ -123,5 +286,12 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   
   get selectedItem() {
     return this.selectionStore.selectedItem;
+  }
+
+  get totalChairsRect(): number {
+    return this.rectangleTableProperties.upChairs + 
+           this.rectangleTableProperties.downChairs + 
+           this.rectangleTableProperties.leftChairs + 
+           this.rectangleTableProperties.rightChairs;
   }
 }

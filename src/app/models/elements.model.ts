@@ -11,7 +11,10 @@ export interface RectangleTableElement extends LayoutElement {
   type: ElementType.RECTANGLE_TABLE;
   width: number;
   height: number;
-  seats: number;
+  upChairs: number;
+  downChairs: number;
+  leftChairs: number;
+  rightChairs: number;
   seatRadius?: number;
 }
 

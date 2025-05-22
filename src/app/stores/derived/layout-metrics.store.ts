@@ -1,6 +1,9 @@
 import { makeAutoObservable, computed, reaction } from 'mobx';
 import { layoutStore } from '../layout.store';
-import { RoundTableProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties } from '../../services/selection.service';
+
+// Union type for table elements
+type TableElement = RoundTableProperties | RectangleTableProperties;
 
 /**
  * Interface for metrics about the current layout
@@ -60,8 +63,15 @@ export class LayoutMetricsStore {
    */
   get totalSeats() {
     return layoutStore.elements
-      .filter(e => e.type.includes('Table') && e.seats)
-      .reduce((sum, table) => sum + (table.seats || 0), 0);
+      .filter(e => e.type.includes('Table'))
+      .reduce((sum, table) => {
+        if (table.type === 'roundTable') {
+          return sum + ((table as RoundTableProperties).seats || 0);
+        } else {
+          const rectTable = table as RectangleTableProperties;
+          return sum + (rectTable.upChairs + rectTable.downChairs + rectTable.leftChairs + rectTable.rightChairs);
+        }
+      }, 0);
   }
 
   /**
@@ -107,11 +117,21 @@ export class LayoutMetricsStore {
     layoutStore.elements.forEach(element => {
       // Handle different element types
       if (element.type.includes('Table')) {
-        const radius = element.radius || 0;
-        minX = Math.min(minX, element.x - radius);
-        minY = Math.min(minY, element.y - radius);
-        maxX = Math.max(maxX, element.x + radius);
-        maxY = Math.max(maxY, element.y + radius);
+        if (element.type === 'roundTable') {
+          const radius = (element as RoundTableProperties).radius || 0;
+          minX = Math.min(minX, element.x - radius);
+          minY = Math.min(minY, element.y - radius);
+          maxX = Math.max(maxX, element.x + radius);
+          maxY = Math.max(maxY, element.y + radius);
+        } else {
+          const rectTable = element as RectangleTableProperties;
+          const halfWidth = rectTable.width / 2;
+          const halfHeight = rectTable.height / 2;
+          minX = Math.min(minX, element.x - halfWidth);
+          minY = Math.min(minY, element.y - halfHeight);
+          maxX = Math.max(maxX, element.x + halfWidth);
+          maxY = Math.max(maxY, element.y + halfHeight);
+        }
       } else if (element.type === 'rectangle' || element.type === 'standingArea') {
         minX = Math.min(minX, element.x);
         minY = Math.min(minY, element.y);
@@ -168,9 +188,32 @@ export class LayoutMetricsStore {
   get tablesBySize(): { small: number, medium: number, large: number } {
     const tables = layoutStore.elements.filter(e => e.type.includes('Table'));
     return {
-      small: tables.filter(t => t.radius < 40).length,
-      medium: tables.filter(t => t.radius >= 40 && t.radius < 60).length,
-      large: tables.filter(t => t.radius >= 60).length
+      small: tables.filter(t => {
+        if (t.type === 'roundTable') {
+          return (t as RoundTableProperties).radius < 40;
+        } else {
+          const rectTable = t as RectangleTableProperties;
+          return Math.max(rectTable.width, rectTable.height) < 80;
+        }
+      }).length,
+      medium: tables.filter(t => {
+        if (t.type === 'roundTable') {
+          const radius = (t as RoundTableProperties).radius;
+          return radius >= 40 && radius < 60;
+        } else {
+          const rectTable = t as RectangleTableProperties;
+          const maxDim = Math.max(rectTable.width, rectTable.height);
+          return maxDim >= 80 && maxDim < 120;
+        }
+      }).length,
+      large: tables.filter(t => {
+        if (t.type === 'roundTable') {
+          return (t as RoundTableProperties).radius >= 60;
+        } else {
+          const rectTable = t as RectangleTableProperties;
+          return Math.max(rectTable.width, rectTable.height) >= 120;
+        }
+      }).length
     };
   }
 
@@ -190,11 +233,21 @@ export class LayoutMetricsStore {
     let maxY = Number.MIN_VALUE;
     
     tables.forEach(table => {
-      const radius = table.radius || 0;
-      minX = Math.min(minX, table.x - radius);
-      minY = Math.min(minY, table.y - radius);
-      maxX = Math.max(maxX, table.x + radius);
-      maxY = Math.max(maxY, table.y + radius);
+      if (table.type === 'roundTable') {
+        const radius = (table as RoundTableProperties).radius || 0;
+        minX = Math.min(minX, table.x - radius);
+        minY = Math.min(minY, table.y - radius);
+        maxX = Math.max(maxX, table.x + radius);
+        maxY = Math.max(maxY, table.y + radius);
+      } else {
+        const rectTable = table as RectangleTableProperties;
+        const halfWidth = rectTable.width / 2;
+        const halfHeight = rectTable.height / 2;
+        minX = Math.min(minX, table.x - halfWidth);
+        minY = Math.min(minY, table.y - halfHeight);
+        maxX = Math.max(maxX, table.x + halfWidth);
+        maxY = Math.max(maxY, table.y + halfHeight);
+      }
     });
     
     return { 
@@ -231,8 +284,15 @@ export class LayoutMetricsStore {
     return layoutStore.elements
       .filter(e => e.type.includes('Table'))
       .reduce((sum, table) => {
-        // For round tables, area = πr²
-        return sum + (Math.PI * Math.pow(table.radius || 0, 2));
+        if (table.type === 'roundTable') {
+          // For round tables, area = πr²
+          const radius = (table as RoundTableProperties).radius || 0;
+          return sum + (Math.PI * Math.pow(radius, 2));
+        } else {
+          // For rectangle tables, area = width * height
+          const rectTable = table as RectangleTableProperties;
+          return sum + (rectTable.width * rectTable.height);
+        }
       }, 0);
   }
   
@@ -252,9 +312,9 @@ export class LayoutMetricsStore {
   /**
    * Find tables that are potentially too close to each other
    */
-  getCloseProximityTables(proximityThreshold: number = 10): RoundTableProperties[][] {
+  getCloseProximityTables(proximityThreshold: number = 10): TableElement[][] {
     const tables = layoutStore.elements.filter(e => e.type.includes('Table'));
-    const result: RoundTableProperties[][] = [];
+    const result: TableElement[][] = [];
     
     // Check each pair of tables
     for (let i = 0; i < tables.length; i++) {
@@ -268,8 +328,19 @@ export class LayoutMetricsStore {
           Math.pow(table1.y - table2.y, 2)
         );
         
-        // Check if tables are too close (considering their radii)
-        const minDistance = table1.radius + table2.radius + proximityThreshold;
+        // For different table types, calculate effective radius
+        const getEffectiveRadius = (table: TableElement): number => {
+          if (table.type === 'roundTable') {
+            return (table as RoundTableProperties).radius;
+          } else {
+            // For rectangle tables, use half diagonal as effective radius
+            const rectTable = table as RectangleTableProperties;
+            return Math.sqrt(rectTable.width * rectTable.width + rectTable.height * rectTable.height) / 2;
+          }
+        };
+        
+        // Check if tables are too close (considering their effective radii)
+        const minDistance = getEffectiveRadius(table1) + getEffectiveRadius(table2) + proximityThreshold;
         if (distance < minDistance) {
           result.push([table1, table2]);
         }

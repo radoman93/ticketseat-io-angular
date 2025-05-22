@@ -1,8 +1,11 @@
 import { makeAutoObservable, action } from 'mobx';
-import { RoundTableProperties } from '../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties } from '../services/selection.service';
+
+// Union type for all table types
+type TableElement = RoundTableProperties | RectangleTableProperties;
 
 export class LayoutStore {
-  elements: RoundTableProperties[] = [];
+  elements: TableElement[] = [];
   lastAddedId: string | null = null;
   
   constructor() {
@@ -10,6 +13,7 @@ export class LayoutStore {
       // Specify computed properties
       tableCount: true,
       roundTableCount: true,
+      rectangleTableCount: true,
       lastAddedElement: true,
       // Explicitly mark actions
       addElement: action,
@@ -19,7 +23,7 @@ export class LayoutStore {
     });
   }
   
-  addElement = action('addElement', (element: RoundTableProperties) => {
+  addElement = action('addElement', (element: TableElement) => {
     // Create a copy to ensure we don't mutate the original object
     const newElement = {...element};
     this.elements.push(newElement);
@@ -27,7 +31,7 @@ export class LayoutStore {
     return newElement;
   });
   
-  updateElement = action('updateElement', (id: string, updates: Partial<RoundTableProperties>) => {
+  updateElement = action('updateElement', (id: string, updates: Partial<TableElement>) => {
     const index = this.elements.findIndex(el => el.id === id);
     if (index !== -1) {
       // Update properties of the existing object instead of creating a new one
@@ -46,11 +50,11 @@ export class LayoutStore {
     return false;
   });
   
-  getElements(): RoundTableProperties[] {
+  getElements(): TableElement[] {
     return this.elements;
   }
   
-  getElementById(id: string): RoundTableProperties | undefined {
+  getElementById(id: string): TableElement | undefined {
     return this.elements.find(el => el.id === id);
   }
   
@@ -64,8 +68,13 @@ export class LayoutStore {
     return this.elements.filter(el => el.type === 'roundTable').length;
   }
   
+  // Computed property to get count of rectangle tables
+  get rectangleTableCount(): number {
+    return this.elements.filter(el => el.type === 'rectangleTable').length;
+  }
+  
   // Computed property to get the last added element
-  get lastAddedElement(): RoundTableProperties | null {
+  get lastAddedElement(): TableElement | null {
     if (!this.lastAddedId) return null;
     return this.elements.find(el => el.id === this.lastAddedId) || null;
   }

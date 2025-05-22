@@ -1,5 +1,5 @@
 <div *mobxAutorun>
-  <!-- Table Properties Panel -->
+  <!-- Round Table Properties Panel -->
   <div *ngIf="selectedItem?.type === 'roundTable'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
     <!-- Header with element title -->
     <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
@@ -12,6 +12,27 @@
         <label for="tableSettings" class="text-gray-700 font-medium">Table Settings</label>
       </div>
       
+      <!-- Radius -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Radius:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementRadius()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="roundTableProperties.radius" 
+            (change)="updateProperty('radius', roundTableProperties.radius)"
+            min="20" 
+            max="100"
+            step="5">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementRadius()">+</button>
+        </div>
+      </div>
+      
       <!-- Chairs -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Chairs:</label>
@@ -22,8 +43,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="tableProperties.seats" 
-            (change)="updateProperty('seats', tableProperties.seats)"
+            [(ngModel)]="roundTableProperties.seats" 
+            (change)="updateProperty('seats', roundTableProperties.seats)"
             min="4" 
             max="20">
           <button 
@@ -42,8 +63,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="tableProperties.openSpaces" 
-            (change)="updateProperty('openSpaces', tableProperties.openSpaces)"
+            [(ngModel)]="roundTableProperties.openSpaces" 
+            (change)="updateProperty('openSpaces', roundTableProperties.openSpaces)"
             min="0" 
             max="20">
           <button 
@@ -69,8 +90,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="tableProperties.rotation" 
-            (change)="updateProperty('rotation', tableProperties.rotation)"
+            [(ngModel)]="roundTableProperties.rotation" 
+            (change)="updateProperty('rotation', roundTableProperties.rotation)"
             step="15">
           <button 
             class="join-item btn btn-xs" 
@@ -101,16 +122,16 @@
         <input 
           type="text" 
           class="input input-bordered input-sm w-36 max-w-xs" 
-          [(ngModel)]="tableProperties.name" 
-          (input)="updateProperty('name', tableProperties.name)">
+          [(ngModel)]="roundTableProperties.name" 
+          (input)="updateProperty('name', roundTableProperties.name)">
       </div>
       
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="tableProperties.tableLabelVisible" 
-            (change)="updateProperty('tableLabelVisible', tableProperties.tableLabelVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="roundTableProperties.tableLabelVisible" 
+            (change)="updateProperty('tableLabelVisible', roundTableProperties.tableLabelVisible)">
         </label>
       </div>
     </div>
@@ -125,15 +146,18 @@
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="tableProperties.chairLabelVisible" 
-            (change)="updateProperty('chairLabelVisible', tableProperties.chairLabelVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="roundTableProperties.chairLabelVisible" 
+            (change)="updateProperty('chairLabelVisible', roundTableProperties.chairLabelVisible)">
         </label>
       </div>
     </div>
 
-        <!-- Table position info (read-only) -->    <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50">      X: {{selectedItem?.['x'] | number:'1.0-0'}}, Y: {{selectedItem?.['y'] | number:'1.0-0'}}    </div>
+    <!-- Table position info (read-only) -->
+    <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50">
+      X: {{selectedItem?.['x'] | number:'1.0-0'}}, Y: {{selectedItem?.['y'] | number:'1.0-0'}}
+    </div>
 
-    <!-- Delete Button - Now smaller and positioned at bottom -->
+    <!-- Delete Button -->
     <div class="px-4 py-2 mt-auto">
       <button 
         class="btn btn-error btn-sm w-full"
@@ -146,7 +170,245 @@
     </div>
   </div>
 
-  <!-- Empty state panel -->
+  <!-- Rectangle Table Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'rectangleTable'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Rectangle Table
+    </div>
+
+    <!-- Table Settings Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label for="tableSettings" class="text-gray-700 font-medium">Table Settings</label>
+      </div>
+      
+      <!-- Width -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Width:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementWidth()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.width" 
+            (change)="updateProperty('width', rectangleTableProperties.width)"
+            min="60" 
+            max="300"
+            step="10">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementWidth()">+</button>
+        </div>
+      </div>
+      
+      <!-- Height -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Height:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementHeight()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.height" 
+            (change)="updateProperty('height', rectangleTableProperties.height)"
+            min="40" 
+            max="200"
+            step="10">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementHeight()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chair Distribution Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Chair Distribution</label>
+        <span class="ml-auto text-xs text-gray-500">Total: {{totalChairsRect}}</span>
+      </div>
+      
+      <!-- Top Chairs -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Top:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementUpChairs()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.upChairs" 
+            (change)="updateProperty('upChairs', rectangleTableProperties.upChairs)"
+            min="0" 
+            max="20">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementUpChairs()">+</button>
+        </div>
+      </div>
+      
+      <!-- Bottom Chairs -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Bottom:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementDownChairs()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.downChairs" 
+            (change)="updateProperty('downChairs', rectangleTableProperties.downChairs)"
+            min="0" 
+            max="20">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementDownChairs()">+</button>
+        </div>
+      </div>
+      
+      <!-- Left Chairs -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Left:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementLeftChairs()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.leftChairs" 
+            (change)="updateProperty('leftChairs', rectangleTableProperties.leftChairs)"
+            min="0" 
+            max="20">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementLeftChairs()">+</button>
+        </div>
+      </div>
+      
+      <!-- Right Chairs -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Right:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementRightChairs()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.rightChairs" 
+            (change)="updateProperty('rightChairs', rectangleTableProperties.rightChairs)"
+            min="0" 
+            max="20">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementRightChairs()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shape Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label for="shapeToggle" class="text-gray-700 font-medium">Shape</label>
+      </div>
+      
+      <!-- Rotation -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Rotation:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementRotation()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="rectangleTableProperties.rotation" 
+            (change)="updateProperty('rotation', rectangleTableProperties.rotation)"
+            step="15">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementRotation()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Labeling Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Table Labeling</label>
+      </div>
+      
+      <!-- ID (non-editable) -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Id</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
+          [value]="selectedItem?.id || ''" 
+          disabled>
+      </div>
+      
+      <!-- Displayed Label -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Display Label</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-sm w-36 max-w-xs" 
+          [(ngModel)]="rectangleTableProperties.name" 
+          (input)="updateProperty('name', rectangleTableProperties.name)">
+      </div>
+      
+      <!-- Visible Toggle -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Visible</label>
+        <label class="cursor-pointer">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="rectangleTableProperties.tableLabelVisible" 
+            (change)="updateProperty('tableLabelVisible', rectangleTableProperties.tableLabelVisible)">
+        </label>
+      </div>
+    </div>
+
+    <!-- Chair Labeling Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Chair Labeling</label>
+      </div>
+      
+      <!-- Visible Toggle -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Visible</label>
+        <label class="cursor-pointer">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="rectangleTableProperties.chairLabelVisible" 
+            (change)="updateProperty('chairLabelVisible', rectangleTableProperties.chairLabelVisible)">
+        </label>
+      </div>
+    </div>
+
+    <!-- Table position info (read-only) -->
+    <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50">
+      X: {{selectedItem?.['x'] | number:'1.0-0'}}, Y: {{selectedItem?.['y'] | number:'1.0-0'}}
+    </div>
+
+    <!-- Delete Button -->
+    <div class="px-4 py-2 mt-auto">
+      <button 
+        class="btn btn-error btn-sm w-full"
+        (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  </div>  <!-- Empty state panel -->
   <div *ngIf="!selectedItem" class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

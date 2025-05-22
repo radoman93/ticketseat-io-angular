@@ -58,7 +58,10 @@ export class LayoutValidatorService {
       case ElementType.RECTANGLE_TABLE:
         if (!element.width) errors.push('Rectangle table missing width');
         if (!element.height) errors.push('Rectangle table missing height');
-        if (!element.seats) errors.push('Rectangle table missing seats count');
+        if (element.upChairs === undefined) errors.push('Rectangle table missing upChairs count');
+        if (element.downChairs === undefined) errors.push('Rectangle table missing downChairs count');
+        if (element.leftChairs === undefined) errors.push('Rectangle table missing leftChairs count');
+        if (element.rightChairs === undefined) errors.push('Rectangle table missing rightChairs count');
         break;
       case ElementType.SEATING_ROW:
         if (!element.length) errors.push('Seating row missing length');

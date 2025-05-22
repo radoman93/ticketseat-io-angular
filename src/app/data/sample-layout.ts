@@ -22,7 +22,10 @@ export const SAMPLE_LAYOUT: LayoutData = {
       y: 150,
       width: 120,
       height: 80,
-      seats: 6,
+      upChairs: 4,
+      downChairs: 4,
+      leftChairs: 0,
+      rightChairs: 0,
       rotation: 0,
       label: "Table 2"
     } as RectangleTableElement,

@@ -4,7 +4,8 @@ import { toolStore } from '../stores/tool.store';
 export enum ToolType {
   None = 'none',
   Select = 'select',
-  RoundTable = 'roundTable'
+  RoundTable = 'roundTable',
+  RectangleTable = 'rectangleTable'
 }
 
 @Injectable({

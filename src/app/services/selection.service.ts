@@ -27,6 +27,22 @@ export interface RoundTableProperties extends Selectable {
   chairs?: ChairProperties[];
 }
 
+export interface RectangleTableProperties extends Selectable {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  upChairs: number;
+  downChairs: number;
+  leftChairs: number;
+  rightChairs: number;
+  name: string;
+  rotation?: number;
+  tableLabelVisible?: boolean;
+  chairLabelVisible?: boolean;
+  chairs?: ChairProperties[];
+}
+
 @Injectable({
   providedIn: 'root'
 })

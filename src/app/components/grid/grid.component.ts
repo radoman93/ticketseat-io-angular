@@ -2,9 +2,10 @@ import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnDestro
 import { gridStore } from '../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableComponent } from '../round-table/round-table.component';
+import { RectangleTableComponent } from '../rectangle-table/rectangle-table.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { Selectable, RoundTableProperties } from '../../services/selection.service';
+import { Selectable, RoundTableProperties, RectangleTableProperties } from '../../services/selection.service';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
@@ -12,12 +13,12 @@ import { dragStore } from '../../stores/drag.store';
 import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
 
-// Use the interface from the service
-type TablePosition = RoundTableProperties;
+// Use union type for table positions  
+type TablePosition = RoundTableProperties | RectangleTableProperties;
 
 @Component({
   selector: 'app-grid',
-  imports: [MobxAngularModule, RoundTableComponent, CommonModule],
+  imports: [MobxAngularModule, RoundTableComponent, RectangleTableComponent, CommonModule],
   standalone: true,
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.css'
@@ -42,7 +43,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   // Rotation state
   isRotating: boolean = false;
-  rotatingItem: RoundTableProperties | null = null;
+  rotatingItem: TablePosition | null = null;
   rotationItemCenter: { x: number, y: number } = { x: 0, y: 0 };
   initialMouseAngleForRotation: number = 0;
   originalItemRotationValue: number = 0;
@@ -58,10 +59,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     // Use MobX autorun to react to tool changes
     this.toolChangeDisposer = autorun(() => {
       const activeTool = this.toolStore.activeTool;
-      if (activeTool !== ToolType.RoundTable) {
-        this.previewTable = null;
-      } else {
-        // Initialize preview table when entering add mode
+      if (activeTool === ToolType.RoundTable) {
+        // Initialize preview round table when entering add mode
         this.previewTable = {
           id: `table-preview-${Date.now()}`,
           type: 'roundTable',
@@ -73,6 +72,24 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           name: `Table ${this.layoutStore.elements.length + 1}`,
           rotation: 0
         };
+      } else if (activeTool === ToolType.RectangleTable) {
+        // Initialize preview rectangle table when entering add mode
+        this.previewTable = {
+          id: `table-preview-${Date.now()}`,
+          type: 'rectangleTable',
+          x: 0,
+          y: 0,
+          width: 120,
+          height: 80,
+          upChairs: 4,
+          downChairs: 4,
+          leftChairs: 0,
+          rightChairs: 0,
+          name: `Table ${this.layoutStore.elements.length + 1}`,
+          rotation: 0
+        };
+      } else {
+        this.previewTable = null;
       }
     });
     
@@ -183,7 +200,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       // Left mouse button for selection/dragging/adding
       const activeTool = this.toolStore.activeTool;
       
-      if (activeTool === ToolType.RoundTable && this.previewTable) {
+      if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
         // We're in add mode, add a new table
         const newTable: TablePosition = {
           ...this.previewTable,
@@ -248,7 +265,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           this.dragStore.startMouseY
         );
       }
-    } else if (this.toolStore.activeTool === ToolType.RoundTable && this.previewTable) {
+    } else if ((this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable) && this.previewTable) {
       // Handle preview table positioning in add mode
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
@@ -319,7 +336,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
     
     // Prevent starting a drag if we're in table add mode
-    if (this.toolStore.activeTool === ToolType.RoundTable) {
+    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable) {
       return;
     }
     
@@ -364,7 +381,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Delete the currently selected table
   deleteSelectedTable(): boolean {
     const selectedItem = this.selectionStore.selectedItem;
-    if (selectedItem && selectedItem.type === 'roundTable') {
+    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable')) {
       this.layoutStore.deleteElement(selectedItem.id);
       this.selectionStore.deselectItem();
       return true;
@@ -388,7 +405,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
   }
 
-  startRotate(item: RoundTableProperties, event: MouseEvent): void {
+  startRotate(item: TablePosition, event: MouseEvent): void {
     event.stopPropagation(); // Prevent triggering select/drag
     event.preventDefault();
 
@@ -396,10 +413,24 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.rotatingItem = item;
     this.originalItemRotationValue = item.rotation || 0;
 
-    // Get the grid container's bounding box to calculate item center in viewport coordinates
-    const gridRect = (event.currentTarget as HTMLElement).closest('.table-container')?.getBoundingClientRect();
-    if (!gridRect) return;
+    // Calculate the item center in viewport coordinates
+    // First, convert the item's world position to screen coordinates
+    const itemCenterWorldX = item.x;
+    const itemCenterWorldY = item.y;
+    
+    // Transform to screen coordinates considering pan and zoom
+    const itemCenterScreenX = (itemCenterWorldX * (this.store.zoomLevel / 100)) + this.store.panOffset.x;
+    const itemCenterScreenY = (itemCenterWorldY * (this.store.zoomLevel / 100)) + this.store.panOffset.y;
+    
+    // Store the center point in viewport coordinates
+    this.rotationItemCenter = {
+      x: itemCenterScreenX,
+      y: itemCenterScreenY
+    };
 
-    //
+    // Calculate the initial angle from the item center to the mouse position
+    const deltaX = event.clientX - this.rotationItemCenter.x;
+    const deltaY = event.clientY - this.rotationItemCenter.y;
+    this.initialMouseAngleForRotation = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
   }
 }

@@ -1,0 +1,33 @@
+<div class="absolute" *mobxAutorun
+     [style.left]="x + 'px'" 
+     [style.top]="y + 'px'" 
+     [style.transform]="'translate(-50%, -50%) rotate(' + rotation + 'deg)'">
+  <div class="table-rectangle bg-gray-100 border-2 border-gray-300 flex justify-center items-center z-10" 
+       [style.width]="(width) + 'px'" 
+       [style.height]="(height) + 'px'"
+       [class.border-blue-500]="tableData && tableData.id && store.selectionStore.isItemSelected(tableData.id)">
+    <span *ngIf="tableLabelVisible" class="text-sm font-bold text-gray-700 text-center">{{ name }}</span>
+  </div>
+  
+  <!-- Rectangle Table Chairs -->
+  <div class="absolute w-full h-full left-0 top-0">
+    <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5" 
+         *ngFor="let chair of chairStyles; let i = index" 
+         [style.transform]="chair.transform">
+      <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+           [class]="chair.isSelected ? 'w-7 h-7 bg-blue-500 border-3 border-blue-600 shadow-lg shadow-blue-400/50 scale-110 animate-pulse' : 'w-5 h-5 bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:scale-105'"
+           (click)="onChairClick($event, chair)"
+           (mousedown)="onChairMouseDown($event, chair)"
+           (mouseenter)="onChairHover(chair)"
+           [title]="'Chair ' + chair.label + ' (ID: ' + chair.id + ') - ' + chair.side">
+        <span *ngIf="chairLabelVisible" 
+              [class]="chair.isSelected ? 'text-xs text-white font-bold' : 'text-xs text-gray-700'">
+          {{ chair.label }}
+        </span>
+        <!-- Selection glow effect -->
+        <div *ngIf="chair.isSelected" 
+             class="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping"></div>
+      </div>
+    </div>
+  </div>
+</div> 
