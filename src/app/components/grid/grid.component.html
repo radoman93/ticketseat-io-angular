@@ -36,7 +36,8 @@
           [openSpaces]="table.openSpaces" 
           [name]="table.name"
           [rotation]="table.rotation || 0"
-          [class.selected]="selectionStore.isItemSelected(table.id)">
+          [class.selected]="selectionStore.isItemSelected(table.id)"
+          [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true">
         </app-round-table>
       </div>
       

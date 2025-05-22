@@ -16,6 +16,7 @@ export interface RoundTableProperties extends Selectable {
   openSpaces: number;
   name: string;
   rotation?: number;
+  tableLabelVisible?: boolean;
 }
 
 /**

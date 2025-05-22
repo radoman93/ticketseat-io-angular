@@ -101,15 +101,15 @@
           type="text" 
           class="input input-bordered input-sm w-36 max-w-xs" 
           [(ngModel)]="tableProperties.name" 
-          (change)="updateProperty('name', tableProperties.name)">
+          (input)="updateProperty('name', tableProperties.name)">
       </div>
       
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="tableProperties.tableVisible" 
-            (change)="updateProperty('tableVisible', tableProperties.tableVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="tableProperties.tableLabelVisible" 
+            (change)="updateProperty('tableLabelVisible', tableProperties.tableLabelVisible)">
         </label>
       </div>
     </div>

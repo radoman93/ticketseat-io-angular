@@ -12,7 +12,7 @@ interface TablePropertiesForm {
   openSpaces: number;
   rotation: number;
   name: string;
-  tableVisible: boolean;
+  tableLabelVisible: boolean;
   chairsVisible: boolean;
   [key: string]: any; // Index signature to allow property access via string
 }
@@ -35,7 +35,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     openSpaces: 0,
     rotation: 0,
     name: '1',
-    tableVisible: true,
+    tableLabelVisible: true,
     chairsVisible: true
   };
 
@@ -61,7 +61,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
           openSpaces: 0, // Default value since it's not in our current model
           rotation: roundTable.rotation || 0, // Use the item's rotation if available
           name: roundTable.name || '1',
-          tableVisible: true, // Default value
+          tableLabelVisible: roundTable.tableLabelVisible !== undefined ? roundTable.tableLabelVisible : true,
           chairsVisible: true // Default value
         };
       }

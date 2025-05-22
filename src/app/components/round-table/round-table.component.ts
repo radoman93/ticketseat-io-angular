@@ -23,6 +23,7 @@ export class RoundTableComponent {
   @Input() isSelected!: boolean;
   @Input() isPreview: boolean = false;
   @Input() rotation: number = 0;
+  @Input() tableLabelVisible: boolean = true;
   
   // For accessing the MobX stores
   store = rootStore;
@@ -41,7 +42,8 @@ export class RoundTableComponent {
       seats: observable,
       openSpaces: observable,
       name: observable,
-      rotation: observable
+      rotation: observable,
+      tableLabelVisible: observable
     });
   }
 
