@@ -1,5 +1,45 @@
 <div *mobxAutorun>
-  <div *ngIf="selectedItem" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+  <!-- Chair Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'chair'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Chair Properties
+    </div>
+
+    <div class="px-4 py-3 border-b border-gray-100">
+      <!-- Chair ID (non-editable) -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Chair ID</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
+          [value]="selectedItem.id.substring(0, 12) + '...'" 
+          disabled>
+      </div>
+
+      <!-- Chair Label -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Label</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-sm w-36" 
+          [(ngModel)]="chairProperties.label"
+          (change)="updateChairProperty('label', chairProperties.label)">
+      </div>
+
+      <!-- Chair Price -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Price</label>
+        <input 
+          type="number" 
+          class="input input-bordered input-sm w-36" 
+          [(ngModel)]="chairProperties.price"
+          (change)="updateChairProperty('price', chairProperties.price)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Original Table Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'roundTable'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
     <!-- Header with element title -->
     <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
       Round Table
@@ -117,7 +157,6 @@
     <!-- Chair Labeling Section -->
     <div class="px-4 py-3 border-b border-gray-100">
       <div class="flex items-center mb-3">
-
         <label class="text-gray-700 font-medium">Chair Labeling</label>
       </div>
       
@@ -149,7 +188,7 @@
     </div>
   </div>
 
-  <!-- Empty state panel (more compact) -->
+  <!-- Empty state panel -->
   <div *ngIf="!selectedItem" class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -157,4 +196,4 @@
     <h3 class="text-base font-medium text-gray-700 mb-1">No Element Selected</h3>
     <p class="text-xs text-gray-500">Select an element on the canvas to edit properties</p>
   </div>
-</div> 
+</div>
