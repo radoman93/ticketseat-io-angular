@@ -8,6 +8,7 @@ import { Selectable, RoundTableProperties } from '../../services/selection.servi
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
+import { dragStore } from '../../stores/drag.store';
 import { autorun, IReactionDisposer } from 'mobx';
 
 // Use the interface from the service
@@ -26,6 +27,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   toolStore = toolStore;
   selectionStore = selectionStore;
   layoutStore = layoutStore;
+  dragStore = dragStore;
   
   // Make enum available in template
   ToolType = ToolType;
@@ -162,32 +164,26 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
     if (event.button === 1) {
+      // Middle mouse button for panning
       this.store.startPanning(event.clientX, event.clientY);
       event.preventDefault();
     } else if (event.button === 0) {
+      // Left mouse button for selection/dragging/adding
       const activeTool = this.toolStore.activeTool;
       
       if (activeTool === ToolType.RoundTable && this.previewTable) {
-        // Add the preview table to the tables array with unique ID
+        // We're in add mode, add a new table
         const newTable: TablePosition = {
           ...this.previewTable,
           id: `table-${Date.now()}`
         };
         
-        // Add the table using MobX
         this.layoutStore.addElement(newTable);
-        
-        // Exit add mode after placing a table
         this.toolStore.setActiveTool(ToolType.None);
-        
-        // Select the newly added table
         this.selectionStore.selectItem(newTable);
-        
         event.preventDefault();
-      } else {
-        // Check if we clicked on a canvas element for selection
-        // We'll implement this later
       }
+      // Note: Dragging is handled by the table element's click event
     }
   }
 
@@ -196,13 +192,32 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.store.setMousePosition(event.clientX, event.clientY);
 
     if (this.store.isPanning) {
+      // Handle canvas panning
       this.store.pan(event.clientX, event.clientY);
       this.drawGrid();
-    }
-    
-    // Update preview table position when in add mode
-    if (this.toolStore.activeTool === ToolType.RoundTable && this.previewTable) {
-      // Calculate position in canvas coordinates
+    } else if (this.dragStore.isDragging) {
+      // Handle element dragging
+      this.dragStore.updateDragPosition(event.clientX, event.clientY);
+    } else if (this.dragStore.potentialDragItem && event.buttons === 1) {
+      // Check if we should start dragging (mouse has moved while button is pressed)
+      const dx = event.clientX - this.dragStore.startMouseX;
+      const dy = event.clientY - this.dragStore.startMouseY;
+      const moveDistance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Start dragging if moved more than 2 pixels - lower threshold for better responsiveness
+      if (moveDistance > 2) {
+        // Make sure the item is selected before dragging
+        this.selectionStore.selectItem(this.dragStore.potentialDragItem);
+        
+        // Start dragging
+        this.dragStore.startDragging(
+          this.dragStore.potentialDragItem,
+          this.dragStore.startMouseX,
+          this.dragStore.startMouseY
+        );
+      }
+    } else if (this.toolStore.activeTool === ToolType.RoundTable && this.previewTable) {
+      // Handle preview table positioning in add mode
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
       
@@ -214,8 +229,15 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
     if (event.button === 1) {
+      // End panning on middle mouse release
       this.store.stopPanning();
+    } else if (event.button === 0 && this.dragStore.isDragging) {
+      // End dragging on left mouse release
+      this.dragStore.endDragging();
     }
+    
+    // Reset potential drag item
+    this.dragStore.potentialDragItem = null;
   }
 
   @HostListener('mouseleave')
@@ -223,6 +245,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     if (this.store.isPanning) {
       this.store.stopPanning();
     }
+    if (this.dragStore.isDragging) {
+      this.dragStore.endDragging();
+    }
+    
+    // Reset potential drag item
+    this.dragStore.potentialDragItem = null;
   }
 
   @HostListener('wheel', ['$event'])
@@ -240,15 +268,50 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.store.zoomOut();
   }
 
-  // Handle table selection
+  // Handle table selection and start dragging
   selectTable(table: TablePosition, event: Event): void {
     event.stopPropagation();
+    
+    // Also prevent any click event from bubbling up
+    if (event.type === 'mousedown') {
+      const mousedownEvent = event as MouseEvent;
+      // Create a one-time click event handler to stop propagation
+      const clickHandler = (e: Event) => {
+        e.stopPropagation();
+        window.removeEventListener('click', clickHandler, true);
+      };
+      window.addEventListener('click', clickHandler, true);
+    }
+    
+    // Prevent starting a drag if we're in table add mode
+    if (this.toolStore.activeTool === ToolType.RoundTable) {
+      return;
+    }
+    
+    // Set table as selected
     this.selectionStore.selectItem(table);
+    
+    // Get the mouse event if available
+    const mouseEvent = event as MouseEvent;
+    if (mouseEvent && mouseEvent.clientX && mouseEvent.clientY) {
+      // Only prepare for dragging by setting the potential drag item
+      this.dragStore.prepareForDragging(
+        table, 
+        mouseEvent.clientX, 
+        mouseEvent.clientY
+      );
+    }
   }
 
   // Handle canvas click to deselect
   handleCanvasClick(): void {
-    this.selectionStore.deselectItem();
+    // Only deselect if we're not in the middle of a drag operation
+    // and not immediately after completing a drag
+    if (!this.dragStore.isDragging && !this.dragStore.justEndedDragging) {
+      this.selectionStore.deselectItem();
+      // Clear any reference to the previously dragged item
+      this.dragStore.draggedItem = null;
+    }
   }
 
   // Delete a table by ID
@@ -274,6 +337,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     // Delete key to remove selected table
     if (event.key === 'Delete' && this.selectionStore.hasSelection) {
       this.deleteSelectedTable();
+      event.preventDefault();
+    }
+    
+    // Escape key to cancel dragging
+    if (event.key === 'Escape' && this.dragStore.isDragging) {
+      this.dragStore.cancelDragging();
       event.preventDefault();
     }
   }

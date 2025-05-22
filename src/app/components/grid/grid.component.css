@@ -15,9 +15,10 @@
 /* Common selection indicator styles */
 .selection-indicator {
   position: absolute;
-  border: 2px dashed #2563eb; /* blue-600 */
+  border: 2px dashed #3498db;
+  border-radius: 10px;
   pointer-events: none;
-  z-index: 20;
+  z-index: 0;
 }
 
 /* Rectangular selection for all table types */
@@ -53,4 +54,23 @@
       background-position: 24px 0;
     }
   }
+}
+
+.preview-table {
+  pointer-events: none;
+}
+
+/* Draggable element styles */
+.draggable {
+  cursor: grab;
+}
+
+.dragging {
+  cursor: grabbing;
+  opacity: 0.8;
+}
+
+/* Hide dragging cursor when in add mode */
+.cursor-crosshair * {
+  cursor: crosshair !important;
 } 

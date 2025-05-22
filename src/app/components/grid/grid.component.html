@@ -5,8 +5,10 @@
     <div class="table-container" [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'">
       <!-- Tables from MobX store -->
       <div *ngFor="let table of layoutStore.elements" 
-           (click)="selectTable(table, $event)"
-           class="selection-container">
+           (mousedown)="selectTable(table, $event)"
+           class="selection-container"
+           [class.draggable]="toolStore.activeTool !== ToolType.RoundTable"
+           [class.dragging]="dragStore.isDragging && dragStore.draggedItem?.id === table.id">
         <!-- Rectangular selection indicator that includes table and chairs -->
         <div *ngIf="selectionStore.isItemSelected(table.id)" 
              class="selection-indicator table-selection"
@@ -53,9 +55,14 @@
           <button (click)="zoomOut()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">-</button>
         </div>
         
-        <!-- MobX indicator -->
-        <div class="bg-blue-500 text-white px-2 py-1 rounded text-xs shadow">
-          Using MobX
+        <!-- Status indicators -->
+        <div class="flex flex-col gap-1">
+          <div class="bg-blue-500 text-white px-2 py-1 rounded text-xs shadow">
+            Using MobX
+          </div>
+          <div *ngIf="dragStore.isDragging" class="bg-green-500 text-white px-2 py-1 rounded text-xs shadow">
+            Dragging: {{ dragStore.draggedItem?.['name'] }}
+          </div>
         </div>
       </div>
 </div>

@@ -91,6 +91,46 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  incrementChairs(): void {
+    if (this.tableProperties.seats < 20) {
+      this.tableProperties.seats++;
+      this.updateProperty('seats', this.tableProperties.seats);
+    }
+  }
+
+  decrementChairs(): void {
+    if (this.tableProperties.seats > 1) {
+      this.tableProperties.seats--;
+      this.updateProperty('seats', this.tableProperties.seats);
+    }
+  }
+
+  incrementOpenSpaces(): void {
+    if (this.tableProperties.openSpaces < 20) {
+      this.tableProperties.openSpaces++;
+      this.updateProperty('openSpaces', this.tableProperties.openSpaces);
+    }
+  }
+
+  decrementOpenSpaces(): void {
+    if (this.tableProperties.openSpaces > 0) {
+      this.tableProperties.openSpaces--;
+      this.updateProperty('openSpaces', this.tableProperties.openSpaces);
+    }
+  }
+
+  incrementRotation(): void {
+    // Increment by 15 degrees
+    this.tableProperties.rotation = (this.tableProperties.rotation + 15) % 360;
+    this.updateProperty('rotation', this.tableProperties.rotation);
+  }
+
+  decrementRotation(): void {
+    // Decrement by 15 degrees, keeping it within 0-359
+    this.tableProperties.rotation = (this.tableProperties.rotation - 15 + 360) % 360;
+    this.updateProperty('rotation', this.tableProperties.rotation);
+  }
+
   deleteElement(): void {
     // Use MobX store to delete the element
     if (this.selectionStore.selectedItem && confirm('Are you sure you want to delete this element?')) {
