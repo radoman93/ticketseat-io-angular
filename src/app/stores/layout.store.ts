@@ -20,7 +20,6 @@ export class LayoutStore {
   }
   
   addElement = action('addElement', (element: RoundTableProperties) => {
-    console.log('MobX Layout Store: addElement', element);
     // Create a copy to ensure we don't mutate the original object
     const newElement = {...element};
     this.elements.push(newElement);
@@ -31,8 +30,8 @@ export class LayoutStore {
   updateElement = action('updateElement', (id: string, updates: Partial<RoundTableProperties>) => {
     const index = this.elements.findIndex(el => el.id === id);
     if (index !== -1) {
-      this.elements[index] = { ...this.elements[index], ...updates };
-      console.log('MobX Layout Store: updateElement', this.elements[index]);
+      // Update properties of the existing object instead of creating a new one
+      Object.assign(this.elements[index], updates);
       return this.elements[index];
     }
     return null;
@@ -42,7 +41,6 @@ export class LayoutStore {
     const index = this.elements.findIndex(el => el.id === id);
     if (index !== -1) {
       this.elements.splice(index, 1);
-      console.log('MobX Layout Store: deleteElement', id);
       return true;
     }
     return false;
@@ -76,7 +74,6 @@ export class LayoutStore {
   clearAll = action('clearAll', () => {
     this.elements = [];
     this.lastAddedId = null;
-    console.log('MobX Layout Store: clearAll');
   });
   
   // Method to check if an element exists

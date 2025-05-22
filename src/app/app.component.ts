@@ -36,38 +36,24 @@ export class AppComponent implements OnInit, OnDestroy {
   private reactions: IReactionDisposer[] = [];
   
   constructor(public selectionService: SelectionService) {
-    // Configure MobX with strict mode enabled
+    // Configure MobX with strict mode disabled
     configure({
-      enforceActions: 'always',     // Don't allow state changes outside actions
-      computedRequiresReaction: true, // Computed values are only evaluated when needed
-      reactionRequiresObservable: true, // Reactions should depend on observable values
+      enforceActions: 'never',     // Allow state changes outside actions
+      computedRequiresReaction: false, // Allow computed values to be evaluated anytime
+      reactionRequiresObservable: false, // Allow reactions without observable dependencies
       disableErrorBoundaries: false, // Keep error boundaries enabled for production
       isolateGlobalState: true      // Useful when multiple MobX instances might exist
     });
-    
-    console.log('MobX configured with strict mode enabled');
   }
   
   ngOnInit() {
-    // Make sure our root store is initialized
-    console.log('Root store initialized:', rootStore);
-    
-    // Log any initial state if needed
-    console.log('Initial layout elements:', rootStore.layoutStore.elements.length);
-    
     // Set up MobX reactions for debugging
     
     // React to selection changes
     this.reactions.push(
       reaction(
         () => this.store.selectionStore.selectedItem,
-        (selected) => {
-          if (selected) {
-            console.log('Reaction: Item selected', selected.id);
-          } else {
-            console.log('Reaction: Selection cleared');
-          }
-        }
+        (selected) => {}
       )
     );
     
@@ -77,12 +63,6 @@ export class AppComponent implements OnInit, OnDestroy {
         () => this.store.layoutStore.tableCount,
         (count, prevCount) => {
           if (prevCount === undefined) return; // Skip first run
-          
-          if (count > prevCount) {
-            console.log(`Reaction: Table count increased from ${prevCount} to ${count}`);
-          } else if (count < prevCount) {
-            console.log(`Reaction: Table count decreased from ${prevCount} to ${count}`);
-          }
         }
       )
     );
@@ -91,9 +71,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.reactions.push(
       reaction(
         () => this.store.toolStore.activeTool,
-        (tool) => {
-          console.log('Reaction: Active tool changed to', tool);
-        }
+        (tool) => {}
       )
     );
   }

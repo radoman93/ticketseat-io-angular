@@ -17,6 +17,7 @@ export interface RoundTableProperties extends Selectable {
   name: string;
   rotation?: number;
   tableLabelVisible?: boolean;
+  chairLabelVisible?: boolean;
 }
 
 /**

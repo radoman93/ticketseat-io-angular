@@ -13,7 +13,7 @@ interface TablePropertiesForm {
   rotation: number;
   name: string;
   tableLabelVisible: boolean;
-  chairsVisible: boolean;
+  chairLabelVisible: boolean;
   [key: string]: any; // Index signature to allow property access via string
 }
 
@@ -36,7 +36,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     rotation: 0,
     name: '1',
     tableLabelVisible: true,
-    chairsVisible: true
+    chairLabelVisible: true
   };
 
   // MobX reaction disposer
@@ -45,24 +45,39 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
-    console.log('PropertiesPanelComponent initialized');
-    
     // Use MobX autorun to react to selection changes
     this.disposer = autorun(() => {
       const selectedItem = this.selectionStore.selectedItem;
-      console.log('Selected item changed:', selectedItem);
       
       if (selectedItem && selectedItem.type === 'roundTable') {
-        console.log('Initializing properties for round table');
         const roundTable = selectedItem as RoundTableProperties;
-        // Initialize the properties from the selected item
+        
+        // Explicitly access observable properties to ensure MobX tracks them
+        const seats = roundTable.seats;
+        const openSpaces = roundTable.openSpaces;
+        const rotation = roundTable.rotation;
+        const name = roundTable.name;
+        const tableLabelVisible = roundTable.tableLabelVisible;
+        const chairLabelVisible = roundTable.chairLabelVisible;
+        
+        // Initialize or update the properties from the selected item
         this.tableProperties = {
-          seats: roundTable.seats || 8,
-          openSpaces: 0, // Default value since it's not in our current model
-          rotation: roundTable.rotation || 0, // Use the item's rotation if available
-          name: roundTable.name || '1',
-          tableLabelVisible: roundTable.tableLabelVisible !== undefined ? roundTable.tableLabelVisible : true,
-          chairsVisible: true // Default value
+          seats: seats || 8,
+          openSpaces: openSpaces || 0, 
+          rotation: rotation || 0,
+          name: name || '1',
+          tableLabelVisible: tableLabelVisible !== undefined ? tableLabelVisible : true,
+          chairLabelVisible: chairLabelVisible !== undefined ? chairLabelVisible : true
+        };
+      } else {
+        // Clear properties if no item is selected or not a round table
+        this.tableProperties = {
+          seats: 8,
+          openSpaces: 0,
+          rotation: 0,
+          name: '1',
+          tableLabelVisible: true,
+          chairLabelVisible: true
         };
       }
     });

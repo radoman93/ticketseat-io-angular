@@ -20,12 +20,10 @@ export class SelectionStore {
   }
   
   selectItem = action('selectItem', (item: Selectable) => {
-    console.log('MobX Selection Store: selectItem', item);
     this.selectedItem = item;
   });
   
   deselectItem = action('deselectItem', () => {
-    console.log('MobX Selection Store: deselectItem');
     this.selectedItem = null;
   });
   
@@ -44,8 +42,6 @@ export class SelectionStore {
   
   // Delete functionality
   requestDeleteItem = action('requestDeleteItem', (item: Selectable) => {
-    console.log('MobX Selection Store: requestDeleteItem', item);
-    
     // Notify all registered handlers
     this.deleteHandlers.forEach(handler => handler(item));
     

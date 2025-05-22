@@ -24,6 +24,7 @@ export class RoundTableComponent {
   @Input() isPreview: boolean = false;
   @Input() rotation: number = 0;
   @Input() tableLabelVisible: boolean = true;
+  @Input() chairLabelVisible: boolean = true;
   
   // For accessing the MobX stores
   store = rootStore;
@@ -43,7 +44,8 @@ export class RoundTableComponent {
       openSpaces: observable,
       name: observable,
       rotation: observable,
-      tableLabelVisible: observable
+      tableLabelVisible: observable,
+      chairLabelVisible: observable
     });
   }
 
@@ -94,13 +96,16 @@ export class RoundTableComponent {
       const x = Math.cos(angleRadians) * distanceToItemCenter;
       const y = Math.sin(angleRadians) * distanceToItemCenter;
       
+      const isSeat = i < effectiveSeats;
       const isOpenSpace = i >= effectiveSeats;
       
       seatsArray.push({
+        id: `${this.tableData ? this.tableData.id : 'preview'}-seat-${i}`,
         // The transform should move the center of the seat item to (x,y)
         // The HTML structure already centers the item before this transform.
         transform: `translate(${x}px, ${y}px)`, 
-        isOpenSpace: isOpenSpace
+        isOpenSpace: isOpenSpace,
+        label: isSeat ? (i + 1).toString() : null
       });
     }
     return seatsArray;
