@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { toolStore } from '../stores/tool.store';
 
 export enum ToolType {
   None = 'none',
+  Select = 'select',
   RoundTable = 'roundTable'
 }
 
@@ -10,16 +11,13 @@ export enum ToolType {
   providedIn: 'root'
 })
 export class ToolService {
-  private activeToolSubject = new BehaviorSubject<ToolType>(ToolType.None);
-  public activeTool$: Observable<ToolType> = this.activeToolSubject.asObservable();
-
   constructor() { }
 
   setActiveTool(tool: ToolType): void {
-    this.activeToolSubject.next(tool);
+    toolStore.setActiveTool(tool);
   }
 
   getActiveTool(): ToolType {
-    return this.activeToolSubject.getValue();
+    return toolStore.activeTool;
   }
 } 

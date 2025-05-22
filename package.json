@@ -23,7 +23,6 @@
     "mobx": "^6.13.7",
     "mobx-angular": "^4.8.0",
     "postcss": "^8.5.3",
-    "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.7",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, action } from 'mobx';
 
 export class GridStore {
   // Grid properties
@@ -18,31 +18,46 @@ export class GridStore {
   private redrawCallbacks: (() => void)[] = [];
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this, {
+      // Explicitly mark actions
+      setMousePosition: action,
+      setGridSize: action,
+      startPanning: action,
+      stopPanning: action,
+      pan: action,
+      adjustZoom: action,
+      zoomIn: action,
+      zoomOut: action,
+      toggleGrid: action,
+      toggleGuides: action,
+      registerRedrawCallback: false,
+      unregisterRedrawCallback: false,
+      triggerRedraw: false
+    });
   }
 
   // Actions
-  setMousePosition(x: number, y: number) {
+  setMousePosition = action('setMousePosition', (x: number, y: number) => {
     this.mouseX = x;
     this.mouseY = y;
-  }
+  });
 
-  setGridSize(size: number) {
+  setGridSize = action('setGridSize', (size: number) => {
     this.gridSize = size;
     this.triggerRedraw();
-  }
+  });
 
-  startPanning(x: number, y: number) {
+  startPanning = action('startPanning', (x: number, y: number) => {
     this.isPanning = true;
     this.panStart.x = x;
     this.panStart.y = y;
-  }
+  });
 
-  stopPanning() {
+  stopPanning = action('stopPanning', () => {
     this.isPanning = false;
-  }
+  });
 
-  pan(x: number, y: number) {
+  pan = action('pan', (x: number, y: number) => {
     if (this.isPanning) {
       const dx = x - this.panStart.x;
       const dy = y - this.panStart.y;
@@ -53,30 +68,30 @@ export class GridStore {
       this.panStart.x = x;
       this.panStart.y = y;
     }
-  }
+  });
 
-  adjustZoom(amount: number) {
+  adjustZoom = action('adjustZoom', (amount: number) => {
     this.zoomLevel = Math.max(10, Math.min(200, this.zoomLevel + amount));
     this.triggerRedraw();
-  }
+  });
 
-  zoomIn() {
+  zoomIn = action('zoomIn', () => {
     this.adjustZoom(10);
-  }
+  });
 
-  zoomOut() {
+  zoomOut = action('zoomOut', () => {
     this.adjustZoom(-10);
-  }
+  });
 
-  toggleGrid() {
+  toggleGrid = action('toggleGrid', () => {
     this.showGrid = !this.showGrid;
     this.triggerRedraw();
-  }
+  });
 
-  toggleGuides() {
+  toggleGuides = action('toggleGuides', () => {
     this.showGuides = !this.showGuides;
     this.triggerRedraw();
-  }
+  });
 
   getUnscaledCoordinate(coord: number): number {
     return Math.floor(coord / (this.zoomLevel / 100));

@@ -2,11 +2,13 @@ import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnDestro
 import { gridStore } from '../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableComponent } from '../round-table/round-table.component';
-import { ToolService, ToolType } from '../../services/tool.service';
+import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { SelectionService, Selectable, RoundTableProperties } from '../../services/selection.service';
-import { Subscription } from 'rxjs';
-// import { DraggingService, DraggableItem } from '../../services/dragging.service'; // Commented out
+import { Selectable, RoundTableProperties } from '../../services/selection.service';
+import { toolStore } from '../../stores/tool.store';
+import { selectionStore } from '../../stores/selection.store';
+import { layoutStore } from '../../stores/layout.store';
+import { autorun, IReactionDisposer } from 'mobx';
 
 // Use the interface from the service
 type TablePosition = RoundTableProperties;
@@ -19,24 +21,33 @@ type TablePosition = RoundTableProperties;
   styleUrl: './grid.component.css'
 })
 export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
-  // Reference to our MobX store
+  // Reference to our MobX stores
   store = gridStore;
-  tables: TablePosition[] = [];
-  ToolType = ToolType; // Make enum available in template
+  toolStore = toolStore;
+  selectionStore = selectionStore;
+  layoutStore = layoutStore;
+  
+  // Make enum available in template
+  ToolType = ToolType;
   
   // Table preview for showing at cursor position in add mode
   previewTable: TablePosition | null = null;
   
-  private selectedItemSubscription: Subscription = new Subscription();
+  // MobX reaction disposers
+  private toolChangeDisposer: IReactionDisposer | null = null;
 
-  constructor(
-    public toolService: ToolService,
-    public selectionService: SelectionService,
-    // public draggingService: DraggingService // Commented out
-  ) {
-    // Subscribe to tool changes to reset preview when tool changes
-    this.toolService.activeTool$.subscribe(tool => {
-      if (tool !== ToolType.RoundTable) {
+  constructor() {
+    // Nothing to inject
+  }
+
+  @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  private ctx!: CanvasRenderingContext2D;
+
+  ngOnInit(): void {
+    // Use MobX autorun to react to tool changes
+    this.toolChangeDisposer = autorun(() => {
+      const activeTool = this.toolStore.activeTool;
+      if (activeTool !== ToolType.RoundTable) {
         this.previewTable = null;
       } else {
         // Initialize preview table when entering add mode
@@ -47,15 +58,17 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           y: 0,
           radius: 50,
           seats: 8,
-          name: `Table ${this.tables.length + 1}`,
+          name: `Table ${this.layoutStore.elements.length + 1}`,
           rotation: 0
         };
       }
     });
+    
+    // Register delete handler with MobX selection store
+    this.selectionStore.registerDeleteHandler((item) => {
+      this.layoutStore.deleteElement(item.id);
+    });
   }
-
-  @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-  private ctx!: CanvasRenderingContext2D;
 
   ngAfterViewInit() {
     const canvas = this.canvasRef.nativeElement;
@@ -136,21 +149,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.drawGrid();
   }
 
-  ngOnInit(): void {
-    // Listen for delete events
-    this.selectedItemSubscription = this.selectionService.deleteItem$.subscribe(item => {
-      if (item) {
-        this.deleteTable(item.id);
-      }
-    });
-  }
-
   ngOnDestroy() {
     // Unregister the callback when component is destroyed
     this.store.unregisterRedrawCallback(this.drawGrid.bind(this));
     
-    // Cleanup subscription
-    this.selectedItemSubscription.unsubscribe();
+    // Clean up MobX reactions
+    if (this.toolChangeDisposer) {
+      this.toolChangeDisposer();
+    }
   }
 
   @HostListener('mousedown', ['$event'])
@@ -159,7 +165,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.store.startPanning(event.clientX, event.clientY);
       event.preventDefault();
     } else if (event.button === 0) {
-      const activeTool = this.toolService.getActiveTool();
+      const activeTool = this.toolStore.activeTool;
       
       if (activeTool === ToolType.RoundTable && this.previewTable) {
         // Add the preview table to the tables array with unique ID
@@ -167,13 +173,15 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           ...this.previewTable,
           id: `table-${Date.now()}`
         };
-        this.tables.push(newTable);
+        
+        // Add the table using MobX
+        this.layoutStore.addElement(newTable);
         
         // Exit add mode after placing a table
-        this.toolService.setActiveTool(ToolType.None);
+        this.toolStore.setActiveTool(ToolType.None);
         
         // Select the newly added table
-        this.selectionService.selectItem(newTable);
+        this.selectionStore.selectItem(newTable);
         
         event.preventDefault();
       } else {
@@ -193,7 +201,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
     
     // Update preview table position when in add mode
-    if (this.toolService.getActiveTool() === ToolType.RoundTable && this.previewTable) {
+    if (this.toolStore.activeTool === ToolType.RoundTable && this.previewTable) {
       // Calculate position in canvas coordinates
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
@@ -212,69 +220,61 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mouseleave')
   onMouseLeave(): void {
-    this.store.stopPanning();
+    if (this.store.isPanning) {
+      this.store.stopPanning();
+    }
   }
 
   @HostListener('wheel', ['$event'])
   onMouseWheel(event: WheelEvent): void {
     event.preventDefault();
-    const zoomDirection = event.deltaY > 0 ? -1 : 1;
-    this.store.adjustZoom(zoomDirection * 10);
-    this.drawGrid();
+    const zoomChange = event.deltaY > 0 ? -5 : 5;
+    this.store.adjustZoom(zoomChange);
   }
 
   zoomIn(): void {
     this.store.zoomIn();
-    this.drawGrid();
   }
 
   zoomOut(): void {
     this.store.zoomOut();
-    this.drawGrid();
   }
 
-  // Method to handle table selection
+  // Handle table selection
   selectTable(table: TablePosition, event: Event): void {
-    event.stopPropagation(); // Prevent event from bubbling to canvas
-    
-    console.log('Selecting table:', table);
-    
-    // If already selected, deselect
-    if (this.selectionService.isItemSelected(table.id)) {
-      console.log('Table already selected, deselecting');
-      this.selectionService.deselectItem();
-    } else {
-      console.log('Selecting table with ID:', table.id);
-      this.selectionService.selectItem(table);
-    }
-  }
-  
-  // Click on canvas background to deselect
-  handleCanvasClick(): void {
-    // Only deselect if we're not in tool mode
-    if (this.toolService.getActiveTool() === ToolType.None) {
-      this.selectionService.deselectItem();
-    }
+    event.stopPropagation();
+    this.selectionStore.selectItem(table);
   }
 
-  // Method to delete a table by ID
+  // Handle canvas click to deselect
+  handleCanvasClick(): void {
+    this.selectionStore.deselectItem();
+  }
+
+  // Delete a table by ID
   deleteTable(id: string): boolean {
-    const index = this.tables.findIndex(table => table.id === id);
-    if (index !== -1) {
-      this.tables.splice(index, 1);
-      this.selectionService.deselectItem();
+    this.layoutStore.deleteElement(id);
+    return true;
+  }
+
+  // Delete the currently selected table
+  deleteSelectedTable(): boolean {
+    const selectedItem = this.selectionStore.selectedItem;
+    if (selectedItem && selectedItem.type === 'roundTable') {
+      this.layoutStore.deleteElement(selectedItem.id);
+      this.selectionStore.deselectItem();
       return true;
     }
     return false;
   }
 
-  // Method to delete the currently selected table
-  deleteSelectedTable(): boolean {
-    const selectedItem = this.selectionService.getSelectedItem();
-    if (selectedItem) {
-      return this.deleteTable(selectedItem.id);
+  // Handle keyboard events
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    // Delete key to remove selected table
+    if (event.key === 'Delete' && this.selectionStore.hasSelection) {
+      this.deleteSelectedTable();
+      event.preventDefault();
     }
-    return false;
   }
-
 }

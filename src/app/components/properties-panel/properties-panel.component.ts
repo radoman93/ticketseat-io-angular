@@ -1,8 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SelectionService, Selectable, RoundTableProperties } from '../../services/selection.service';
-import { Subscription } from 'rxjs';
+import { RoundTableProperties } from '../../services/selection.service';
+import { selectionStore } from '../../stores/selection.store';
+import { layoutStore } from '../../stores/layout.store';
+import { MobxAngularModule } from 'mobx-angular';
+import { autorun, IReactionDisposer } from 'mobx';
 
 interface TablePropertiesForm {
   seats: number;
@@ -17,14 +20,15 @@ interface TablePropertiesForm {
 @Component({
   selector: 'app-properties-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MobxAngularModule],
   templateUrl: './properties-panel.component.html',
   styleUrl: './properties-panel.component.css'
 })
 export class PropertiesPanelComponent implements OnInit, OnDestroy {
-  selectedItem: Selectable | null = null;
-  private subscription: Subscription = new Subscription();
-
+  // Reference to MobX stores
+  selectionStore = selectionStore;
+  layoutStore = layoutStore;
+  
   // Copy of the properties for two-way binding
   tableProperties: TablePropertiesForm = {
     seats: 8,
@@ -35,18 +39,22 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     chairsVisible: true
   };
 
-  constructor(public selectionService: SelectionService) {}
+  // MobX reaction disposer
+  private disposer: IReactionDisposer | null = null;
+
+  constructor() {}
 
   ngOnInit(): void {
     console.log('PropertiesPanelComponent initialized');
     
-    this.subscription = this.selectionService.selectedItem$.subscribe(item => {
-      console.log('Selected item changed:', item);
-      this.selectedItem = item;
+    // Use MobX autorun to react to selection changes
+    this.disposer = autorun(() => {
+      const selectedItem = this.selectionStore.selectedItem;
+      console.log('Selected item changed:', selectedItem);
       
-      if (item && item.type === 'roundTable') {
+      if (selectedItem && selectedItem.type === 'roundTable') {
         console.log('Initializing properties for round table');
-        const roundTable = item as RoundTableProperties;
+        const roundTable = selectedItem as RoundTableProperties;
         // Initialize the properties from the selected item
         this.tableProperties = {
           seats: roundTable.seats || 8,
@@ -61,35 +69,39 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+    // Clean up MobX reactions
+    if (this.disposer) {
+      this.disposer();
+    }
   }
 
   updateProperty(property: string, value: any): void {
-    if (!this.selectedItem) return;
+    if (!this.selectionStore.selectedItem) return;
     
     // Update the copy
     this.tableProperties[property] = value;
     
-    // Update the actual item based on its type
-    if (this.selectedItem.type === 'roundTable') {
-      const roundTable = this.selectedItem as RoundTableProperties;
+    // Update the actual item using MobX store
+    if (this.selectionStore.selectedItem.type === 'roundTable') {
+      const updates: any = {};
+      updates[property] = value;
       
-      if (property === 'seats') {
-        roundTable.seats = value;
-      } else if (property === 'name') {
-        roundTable.name = value;
-      } else if (property === 'rotation') {
-        roundTable.rotation = value;
-      }
-      
-      // Other properties would be handled here
+      // Use the layout store to update the element
+      this.layoutStore.updateElement(this.selectionStore.selectedItem.id, updates);
     }
   }
 
   deleteElement(): void {
-    // Use the deletion service to request deletion
-    if (this.selectedItem && confirm('Are you sure you want to delete this element?')) {
-      this.selectionService.requestDeleteItem(this.selectedItem);
+    // Use MobX store to delete the element
+    if (this.selectionStore.selectedItem && confirm('Are you sure you want to delete this element?')) {
+      const itemId = this.selectionStore.selectedItem.id;
+      this.layoutStore.deleteElement(itemId);
+      this.selectionStore.deselectItem();
     }
+  }
+  
+  // Getter for template
+  get selectedItem() {
+    return this.selectionStore.selectedItem;
   }
 } 

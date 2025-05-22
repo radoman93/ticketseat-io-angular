@@ -3,12 +3,12 @@
 
     <!-- Display all tables with position adjusted for pan offset and zoom -->
     <div class="table-container" [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'">
-      <!-- Regular tables -->
-      <div *ngFor="let table of tables" 
+      <!-- Tables from MobX store -->
+      <div *ngFor="let table of layoutStore.elements" 
            (click)="selectTable(table, $event)"
            class="selection-container">
         <!-- Rectangular selection indicator that includes table and chairs -->
-        <div *ngIf="selectionService.isItemSelected(table.id)" 
+        <div *ngIf="selectionStore.isItemSelected(table.id)" 
              class="selection-indicator table-selection"
              [style.width]="(table.radius * 2 + 80) + 'px'"
              [style.height]="(table.radius * 2 + 80) + 'px'"
@@ -23,13 +23,13 @@
           [radius]="table.radius" 
           [seats]="table.seats" 
           [name]="table.name"
-          [class.selected]="selectionService.isItemSelected(table.id)">
+          [class.selected]="selectionStore.isItemSelected(table.id)">
         </app-round-table>
       </div>
       
       <!-- Preview table (semi-transparent with dashed border) -->
       <app-round-table 
-        *ngIf="previewTable && toolService.getActiveTool() === ToolType.RoundTable"
+        *ngIf="previewTable && toolStore.activeTool === ToolType.RoundTable"
         [x]="previewTable.x" 
         [y]="previewTable.y" 
         [radius]="previewTable.radius" 
@@ -40,7 +40,7 @@
     </div>
 
     <!-- Show cursor as crosshair when in add mode -->
-    <div *ngIf="toolService.getActiveTool() === ToolType.RoundTable" 
+    <div *ngIf="toolStore.activeTool === ToolType.RoundTable" 
          class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
 
     <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-10">
@@ -51,6 +51,11 @@
           <button (click)="zoomIn()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">+</button>
           <span class="mx-2 text-xs w-12 text-center">{{ store.zoomLevel }}%</span>
           <button (click)="zoomOut()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">-</button>
+        </div>
+        
+        <!-- MobX indicator -->
+        <div class="bg-blue-500 text-white px-2 py-1 rounded text-xs shadow">
+          Using MobX
         </div>
       </div>
 </div>

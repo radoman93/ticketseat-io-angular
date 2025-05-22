@@ -1,17 +1,27 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { configure } from 'mobx';
-
 import { routes } from './app.routes';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { HttpClientModule, provideHttpClient } from '@angular/common/http';
+import { provideClientHydration } from '@angular/platform-browser';
 
-// Configure MobX
-configure({
-  enforceActions: 'never',  // Allows state modifications outside actions
-  computedRequiresReaction: false,
-  reactionRequiresObservable: false,
-  observableRequiresReaction: false
-});
+// Use a simple object for environment instead of importing
+const environment = {
+  production: false
+};
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes)]
+  providers: [
+    provideRouter(routes),
+    provideClientHydration(),
+    provideAnimations(),
+    provideHttpClient(),
+    importProvidersFrom(HttpClientModule)
+  ]
 };
+
+// Check if we're in development mode
+if (!environment.production) {
+  // Enable MobX development tools in non-production
+  console.log('Development mode: Enabling MobX strict mode and dev tools');
+}

@@ -27,6 +27,27 @@
                    class="checkbox checkbox-warning checkbox-sm" />
             Show Guides
         </div>
+        
+        <!-- Element counter - MobX computed properties -->
+        <div *mobxAutorun class="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center gap-2">
+            <span class="font-semibold">Tables:</span>
+            <span class="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 rounded-full h-5 min-w-5 px-1">{{ layoutStore.tableCount }}</span>
+            <span *ngIf="selectionStore.hasSelection" class="text-blue-600">(1 selected)</span>
+            
+            <!-- Delete button only appears when an item is selected -->
+            <button *ngIf="selectionStore.hasSelection" 
+                    (click)="deleteSelected()" 
+                    class="btn btn-xs btn-error text-xs ml-2">
+                Delete
+            </button>
+        </div>
+        
+        <!-- MobX status indicator -->
+        <div class="flex items-center">
+            <div class="btn btn-xs btn-primary px-2 py-1 text-xs">
+                Using MobX
+            </div>
+        </div>
     </div>
     
     <!-- Action buttons - visible on desktop -->
@@ -69,6 +90,13 @@
                    (change)="store.toggleGuides()" 
                    class="checkbox checkbox-warning" />
             <span class="text-sm font-medium">Show Guides</span>
+        </div>
+        
+        <!-- MobX status for mobile -->
+        <div class="flex items-center gap-3 mt-2">
+            <div class="btn btn-sm btn-primary w-full">
+              Using MobX
+            </div>
         </div>
         
         <div class="mt-2 pt-2 border-t">

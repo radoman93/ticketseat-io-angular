@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { selectionStore } from '../stores/selection.store';
+import { layoutStore } from '../stores/layout.store';
 
 export interface Selectable {
   id: string;
@@ -16,40 +17,52 @@ export interface RoundTableProperties extends Selectable {
   rotation?: number;
 }
 
+/**
+ * Selection service that acts as a bridge to the MobX selection store
+ * This allows for a smoother transition from RxJS to MobX
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class SelectionService {
-  private selectedItemSubject = new BehaviorSubject<Selectable | null>(null);
-  public selectedItem$: Observable<Selectable | null> = this.selectedItemSubject.asObservable();
-  
-  // Event emitter for deletion requests
-  private deleteItemSubject = new Subject<Selectable>();
-  public deleteItem$: Observable<Selectable> = this.deleteItemSubject.asObservable();
-
   constructor() { }
 
+  /**
+   * Select an item - delegates to MobX store
+   */
   selectItem(item: Selectable): void {
     console.log('SelectionService: selectItem called with', item);
-    this.selectedItemSubject.next(item);
+    selectionStore.selectItem(item);
   }
 
+  /**
+   * Deselect the current item - delegates to MobX store
+   */
   deselectItem(): void {
     console.log('SelectionService: deselectItem called');
-    this.selectedItemSubject.next(null);
+    selectionStore.deselectItem();
   }
 
+  /**
+   * Get the currently selected item - delegates to MobX store
+   */
   getSelectedItem(): Selectable | null {
-    return this.selectedItemSubject.getValue();
+    return selectionStore.selectedItem;
   }
 
+  /**
+   * Check if a specific item is selected - delegates to MobX store
+   */
   isItemSelected(itemId: string): boolean {
-    const selectedItem = this.selectedItemSubject.getValue();
-    return selectedItem?.id === itemId;
+    return selectionStore.isItemSelected(itemId);
   }
   
-  // Request to delete the currently selected item
+  /**
+   * Request to delete the currently selected item - now uses MobX directly
+   */
   requestDeleteItem(item: Selectable): void {
-    this.deleteItemSubject.next(item);
+    // Delete the item and deselect it
+    layoutStore.deleteElement(item.id);
+    selectionStore.deselectItem();
   }
 } 
