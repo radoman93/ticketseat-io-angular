@@ -130,7 +130,7 @@
         <input 
           type="text" 
           class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
-          [value]="(selectedItem['id'] ? selectedItem['id'].substring(0, 12) + '...' : '')" 
+          [value]="(selectedItem?.['id'] ? selectedItem?.['id'].substring(0, 12) + '...' : '')" 
           disabled>
       </div>
       
@@ -172,7 +172,7 @@
 
     <!-- Table position info (read-only) -->
     <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50">
-      X: {{selectedItem['x'] | number:'1.0-0'}}, Y: {{selectedItem['y'] | number:'1.0-0'}}
+      X: {{selectedItem?.['x'] | number:'1.0-0'}}, Y: {{selectedItem?.['y'] | number:'1.0-0'}}
     </div>
 
     <!-- Delete Button - Now smaller and positioned at bottom -->
