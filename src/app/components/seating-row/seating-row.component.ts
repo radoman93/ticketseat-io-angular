@@ -72,7 +72,7 @@ export class SeatingRowComponent implements OnInit {
   }
 
   get seatingRowStyles() {
-    // Position the seating row container at the start point without centering
+    // Position the seating row container at the start point
     if (this.seatingRowData) {
       return {
         left: `${this.seatingRowData.x}px`,
@@ -124,12 +124,18 @@ export class SeatingRowComponent implements OnInit {
     console.log('  - seatCount:', effectiveSeatCount);
     console.log('  - seatSpacing:', effectiveSeatSpacing);
     
-    // Calculate seat positions sequentially from the start point
+    // Calculate seat positions along the line (now using rotation)
     for (let i = 0; i < effectiveSeatCount; i++) {
-      // Position seats sequentially from start, with proper spacing
-      // In preview mode, center the chair by offsetting by half spacing and half chair width (2.5px)
-      const x = i * effectiveSeatSpacing - (this.isPreview ? (effectiveSeatSpacing / 2 + 2.5) : 0);
-      const y = 0; // All seats are on the same horizontal line
+      // Position seats along the local x-axis (rotation is handled by container transform)
+      // In preview mode, adjust for centering the first chair
+      let x = i * effectiveSeatSpacing;
+      
+      // In preview mode, only center if it's a single chair
+      if (this.isPreview && effectiveSeatCount === 1) {
+        x = -2.5; // Center the single preview chair
+      }
+      
+      const y = 0; // All seats are on the same line (rotation handled by container)
       
       const chairId = `${this.seatingRowData ? this.seatingRowData.id : 'preview'}-chair-${i}`;
       const chair = this.seatingRowData ? this.store.chairStore.chairs.get(chairId) : null;
@@ -153,7 +159,7 @@ export class SeatingRowComponent implements OnInit {
     const effectiveSeatSpacing = this.seatingRowData ? this.seatingRowData.seatSpacing : this.seatSpacing;
     const labelPosition = this.seatingRowData?.labelPosition || 'left';
     
-    // Calculate total row width
+    // Calculate total row width (along the local x-axis)
     const totalRowWidth = (effectiveSeatCount - 1) * effectiveSeatSpacing;
     
     switch (labelPosition) {
@@ -175,7 +181,7 @@ export class SeatingRowComponent implements OnInit {
     const effectiveSeatCount = this.seatingRowData ? this.seatingRowData.seatCount : this.seatCount;
     const effectiveSeatSpacing = this.seatingRowData ? this.seatingRowData.seatSpacing : this.seatSpacing;
     
-    // Calculate the width from first seat to last seat
+    // Calculate the width from first seat to last seat (along local x-axis)
     return (effectiveSeatCount - 1) * effectiveSeatSpacing + 20; // Add 20px for the seat width
   }
 

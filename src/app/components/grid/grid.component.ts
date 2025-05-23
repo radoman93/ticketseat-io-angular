@@ -265,24 +265,34 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.store.setMousePosition(event.clientX, event.clientY);
 
     if (this.isCreatingSeatingRow && this.previewTable) {
-      // Handle seating row drag-to-create with stable positioning
+      // Handle seating row drag-to-create with free rotation
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
       
       this.seatingRowCurrentX = x;
       this.seatingRowCurrentY = y;
       
-      // Calculate distance and number of seats
+      // Calculate distance and angle from start to current position
       const dx = x - this.seatingRowStartX;
       const dy = y - this.seatingRowStartY;
       const totalDistance = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      
       const seatSpacing = (this.previewTable as SeatingRowProperties).seatSpacing || 35;
       const seatCount = Math.max(1, Math.floor(totalDistance / seatSpacing) + 1);
       
-      // Update preview table - follow mouse exactly for smooth dragging
-      this.previewTable.endX = x;
-      this.previewTable.endY = y;
+      // Calculate the end position based on the actual number of seats and direction
+      const actualDistance = (seatCount - 1) * seatSpacing;
+      const normalizedDx = dx / totalDistance || 0;
+      const normalizedDy = dy / totalDistance || 0;
+      
+      // Update preview table - keep start position fixed, calculate end based on actual seats
+      this.previewTable.x = this.seatingRowStartX;
+      this.previewTable.y = this.seatingRowStartY;
+      this.previewTable.endX = this.seatingRowStartX + (normalizedDx * actualDistance);
+      this.previewTable.endY = this.seatingRowStartY + (normalizedDy * actualDistance);
       (this.previewTable as SeatingRowProperties).seatCount = seatCount;
+      (this.previewTable as SeatingRowProperties).rotation = angle;
       
     } else if (this.isRotating && this.rotatingItem) {
       const currentMouseX = event.clientX;
@@ -530,11 +540,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     } else if (item.type === 'rectangleTable') {
       this.rotationItemCenter = { x: item.x, y: item.y };
     } else if (item.type === 'seatingRow') {
-      const seatingRow = item as SeatingRowProperties;
-      this.rotationItemCenter = {
-        x: (seatingRow.x + seatingRow.endX) / 2,
-        y: (seatingRow.y + seatingRow.endY) / 2
-      };
+      // For seating rows, use the start point (x, y) as rotation center
+      // This matches the transformOrigin: '0 0' set in the component
+      this.rotationItemCenter = { x: item.x, y: item.y };
     }
 
     // Convert to screen coordinates
