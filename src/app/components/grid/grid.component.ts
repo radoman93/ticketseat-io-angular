@@ -13,6 +13,8 @@ import { layoutStore } from '../../stores/layout.store';
 import { dragStore } from '../../stores/drag.store';
 import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
+import { HistoryStore } from '../../stores/history.store';
+import { AddObjectCommand } from '../../commands/add-object.command';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
@@ -56,7 +58,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   seatingRowCurrentX: number = 0;
   seatingRowCurrentY: number = 0;
 
-  constructor() {
+  constructor(private historyStore: HistoryStore) {
     // Nothing to inject
   }
 
@@ -249,11 +251,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           ...this.previewTable,
           id: `table-${Date.now()}`
         };
-        
-        this.layoutStore.addElement(newTable);
+        const command = new AddObjectCommand(newTable);
+        this.historyStore.executeCommand(command);
         this.toolStore.setActiveTool(ToolType.None);
-        this.selectionStore.selectItem(newTable);
-        event.preventDefault();
       }
       // Note: Dragging is handled by the table element's click event
       // and rotation is handled by its own mousedown handler (startRotate)
@@ -358,29 +358,43 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
-    if (this.isCreatingSeatingRow && this.previewTable) {
-      // Complete seating row creation
-      const newSeatingRow: SeatingRowProperties = {
-        ...this.previewTable as SeatingRowProperties,
-        id: `seatingrow-${Date.now()}`,
-        chairLabelVisible: true,
-        rowLabelVisible: true
-      };
+    if (this.isCreatingSeatingRow) {
+      this.isCreatingSeatingRow = false; // Turn off creation mode first
       
-      this.layoutStore.addElement(newSeatingRow);
+      const dx = this.seatingRowCurrentX - this.seatingRowStartX;
+      const dy = this.seatingRowCurrentY - this.seatingRowStartY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI); // Angle in degrees
+      
+      // Only add if the line is long enough to be meaningful
+      if (length > 10) { 
+        const newSeatingRow: SeatingRowProperties = {
+          id: `seatingrow-${Date.now()}`,
+          type: 'seatingRow',
+          x: this.seatingRowStartX,
+          y: this.seatingRowStartY,
+          endX: this.seatingRowCurrentX,
+          endY: this.seatingRowCurrentY,
+          seatCount: Math.max(1, Math.floor(length / 35)), // Example calculation
+          seatSpacing: 35,
+          name: `Row ${this.layoutStore.elements.length + 1}`,
+          rotation: angle,
+          chairLabelVisible: true,
+          rowLabelVisible: true
+        };
+        const command = new AddObjectCommand(newSeatingRow);
+        this.historyStore.executeCommand(command);
+      }
+
       this.toolStore.setActiveTool(ToolType.None);
-      this.selectionStore.selectItem(newSeatingRow);
-      
-      // Reset seating row creation state
-      this.isCreatingSeatingRow = false;
-      this.seatingRowStartX = 0;
-      this.seatingRowStartY = 0;
-      this.seatingRowCurrentX = 0;
-      this.seatingRowCurrentY = 0;
-      
-      event.preventDefault();
     }
     
+    // Finalize drag
+    if (this.dragStore.isDragging) {
+      this.dragStore.endDragging(this.historyStore);
+    }
+    
+    // Finalize rotation
     if (this.isRotating) {
       this.isRotating = false;
       this.rotatingItem = null;
@@ -389,7 +403,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     if (event.button === 1) {
       this.store.stopPanning();
     } else if (event.button === 0 && this.dragStore.isDragging) {
-      this.dragStore.endDragging();
+      this.dragStore.endDragging(this.historyStore);
     }
     this.dragStore.potentialDragItem = null;
   }
@@ -413,7 +427,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.store.stopPanning();
     }
     if (this.dragStore.isDragging) {
-      this.dragStore.endDragging();
+      this.dragStore.endDragging(this.historyStore);
     }
     this.dragStore.potentialDragItem = null;
   }

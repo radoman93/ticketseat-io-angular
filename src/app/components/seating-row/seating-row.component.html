@@ -33,16 +33,16 @@
       <div *ngIf="isPreview && i === chairStyles.length - 1"
            class="absolute text-xs text-blue-600 font-medium whitespace-nowrap bg-white/90 px-2 py-1 rounded shadow-lg"
            style="left: 20px; top: -8px;">
-        {{ seatCount || (seatingRowData?.seatCount) }} seats
+        {{ seatCount || (seatingRowData.seatCount) }} seats
       </div>
     </div>
   </div>
   
   <!-- Row label -->
-  <div *ngIf="((seatingRowData?.name || name) && !isPreview) && rowLabelVisible"
+  <div *ngIf="((seatingRowData.name || name) && !isPreview) && rowLabelVisible"
        class="absolute text-xs text-gray-600 font-medium whitespace-nowrap"
        [style.left.px]="getLabelLeftPosition()"
        [style.top.px]="-12">
-    {{ seatingRowData?.name || name }}
+    {{ seatingRowData.name || name }}
   </div>
 </div> 

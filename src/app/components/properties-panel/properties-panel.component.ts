@@ -6,6 +6,8 @@ import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { autorun, IReactionDisposer } from 'mobx';
+import { HistoryStore } from '../../stores/history.store';
+import { DeleteObjectCommand } from '../../commands/delete-object.command';
 
 interface RoundTablePropertiesForm {
   seats: number;
@@ -84,7 +86,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
 
   private disposer: IReactionDisposer | null = null;
 
-  constructor() {}
+  constructor(private historyStore: HistoryStore) {}
 
   ngOnInit(): void {
     this.disposer = autorun(() => {
@@ -317,10 +319,10 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   }
 
   deleteElement(): void {
-    if (this.selectionStore.selectedItem && confirm('Are you sure you want to delete this element?')) {
-      const itemId = this.selectionStore.selectedItem.id;
-      this.layoutStore.deleteElement(itemId);
-      this.selectionStore.deselectItem();
+    const selectedItem = this.selectionStore.getSelectedItem();
+    if (selectedItem) {
+      const command = new DeleteObjectCommand(selectedItem);
+      this.historyStore.executeCommand(command);
     }
   }
   

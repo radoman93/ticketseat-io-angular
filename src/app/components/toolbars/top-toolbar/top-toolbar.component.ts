@@ -3,6 +3,7 @@ import { gridStore } from '../../../stores/grid.store';
 import { toolStore } from '../../../stores/tool.store';
 import { layoutStore } from '../../../stores/layout.store';
 import { selectionStore } from '../../../stores/selection.store';
+import { HistoryStore } from '../../../stores/history.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -21,6 +22,7 @@ export class TopToolbarComponent implements OnInit {
   toolStore = toolStore;
   layoutStore = layoutStore;
   selectionStore = selectionStore;
+  historyStore: HistoryStore;
   
   // Make the ToolType enum available in the template
   ToolType = ToolType;
@@ -34,7 +36,9 @@ export class TopToolbarComponent implements OnInit {
   // Screen size tracking
   isSmallScreen = false;
   
-  constructor() { }
+  constructor(historyStore: HistoryStore) {
+    this.historyStore = historyStore;
+  }
   
   ngOnInit() {
     this.checkScreenSize();
@@ -49,14 +53,6 @@ export class TopToolbarComponent implements OnInit {
   updateGridSize(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.store.setGridSize(Number(select.value));
-  }
-  
-  // Delete the selected item using MobX
-  deleteSelected() {
-    if (this.selectionStore.hasSelection) {
-      console.log('TopToolbarComponent: Deleting selected item');
-      this.selectionStore.deleteSelectedItem();
-    }
   }
   
   // Listen for window resize events

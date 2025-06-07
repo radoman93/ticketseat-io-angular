@@ -34,11 +34,16 @@
             <span class="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 rounded-full h-5 min-w-5 px-1">{{ layoutStore.tableCount }}</span>
             <span *ngIf="selectionStore.hasSelection" class="text-blue-600">(1 selected)</span>
             
-            <!-- Delete button only appears when an item is selected -->
-            <button *ngIf="selectionStore.hasSelection" 
-                    (click)="deleteSelected()" 
-                    class="btn btn-xs btn-error text-xs ml-2">
-                Delete
+            <!-- Undo/Redo Buttons -->
+            <button (click)="historyStore.undo()"
+                    [disabled]="!historyStore.canUndo"
+                    class="btn btn-xs btn-ghost ml-2">
+                Undo
+            </button>
+            <button (click)="historyStore.redo()"
+                    [disabled]="!historyStore.canRedo"
+                    class="btn btn-xs btn-ghost">
+                Redo
             </button>
         </div>
         
@@ -101,6 +106,18 @@
         
         <div class="mt-2 pt-2 border-t">
             <button class="btn btn-warning w-full mt-2">Save</button>
+            <div class="flex justify-center gap-2 mt-2">
+                <button (click)="historyStore.undo()"
+                        [disabled]="!historyStore.canUndo"
+                        class="btn btn-sm btn-ghost w-1/2">
+                    Undo
+                </button>
+                <button (click)="historyStore.redo()"
+                        [disabled]="!historyStore.canRedo"
+                        class="btn btn-sm btn-ghost w-1/2">
+                    Redo
+                </button>
+            </div>
         </div>
     </div>
 </div>

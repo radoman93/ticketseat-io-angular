@@ -3,6 +3,8 @@ import { Selectable } from '../services/selection.service';
 import { layoutStore } from './layout.store';
 import { selectionStore } from './selection.store';
 import { gridStore } from './grid.store';
+import { HistoryStore } from './history.store';
+import { MoveObjectCommand } from '../commands/move-object.command';
 
 /**
  * Store that manages dragging state for elements on the canvas
@@ -122,20 +124,27 @@ export class DragStore {
     const newX = this.startElementX + canvasDx;
     const newY = this.startElementY + canvasDy;
     
-    // Update the element position through layoutStore
-    layoutStore.updateElement(this.draggedItem.id, {
-      x: newX,
-      y: newY
-    });
+    // Directly update the object in memory for visual feedback
+    // This requires the layoutStore.elements to be a deep observable
+    Object.assign(this.draggedItem, { x: newX, y: newY });
   });
 
   /**
    * End dragging operation
    */
-  endDragging = action('endDragging', () => {
-    if (!this.isDragging) return;
+  endDragging = action('endDragging', (historyStore: HistoryStore) => {
+    if (!this.isDragging || !this.draggedItem) return;
     
     console.log('Finished dragging item:', this.draggedItem?.id);
+    
+    const oldPosition = { x: this.startElementX, y: this.startElementY };
+    const newPosition = { x: this.draggedItem['x'], y: this.draggedItem['y'] };
+
+    // Only create a command if the position actually changed
+    if (oldPosition.x !== newPosition.x || oldPosition.y !== newPosition.y) {
+      const command = new MoveObjectCommand(this.draggedItem.id, oldPosition, newPosition);
+      historyStore.executeCommand(command);
+    }
     
     // Reset dragging state but keep the item selected
     this.isDragging = false;

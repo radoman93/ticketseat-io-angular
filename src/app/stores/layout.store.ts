@@ -2,7 +2,7 @@ import { makeAutoObservable, action } from 'mobx';
 import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../services/selection.service';
 
 // Union type for all table types
-type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
+export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
 
 export class LayoutStore {
   elements: TableElement[] = [];
@@ -10,7 +10,7 @@ export class LayoutStore {
   
   constructor() {
     makeAutoObservable(this, {
-      // Specify computed properties
+      elements: true, // Make elements observable, using default deep observation
       tableCount: true,
       roundTableCount: true,
       rectangleTableCount: true,
