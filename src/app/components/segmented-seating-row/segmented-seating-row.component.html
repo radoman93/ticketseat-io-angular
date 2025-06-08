@@ -21,7 +21,7 @@
              (click)="!isPreview && onChairClick($event, chair, segmentIndex)"
              (mousedown)="!isPreview && onChairMouseDown($event, chair)"
              (mouseenter)="!isPreview && onChairHover(chair)"
-             [title]="'Segment ' + (segmentIndex + 1) + ' Seat ' + chair.label + ' (ID: ' + chair.id + ')">
+             [title]="'Segment ' + (segmentIndex + 1) + ' Seat ' + chair.label + ' (ID: ' + chair.id + ')'">
           <span *ngIf="chairLabelVisible" 
                 [class]="chair.isSelected ? 'text-xs text-white font-bold' : 'text-xs text-blue-700'">
             {{ chair.label }}
@@ -66,12 +66,12 @@
     <div *ngIf="isPreview"
          class="absolute text-xs text-blue-600 font-medium whitespace-nowrap bg-white/90 px-2 py-1 rounded shadow-lg"
          style="left: 20px; top: -25px;">
-      Segment {{ (completedSegments?.length || 0) + 1 }}: {{ previewSegment.seatCount }} seats
+      Segment {{ (completedSegments.length || 0) + 1 }}: {{ previewSegment.seatCount }} seats
     </div>
   </div>
 
   <!-- Row label -->
-  <div *ngIf="rowLabelVisible && seatingRowData?.name && !isPreview"
+  <div *ngIf="rowLabelVisible && seatingRowData.name && !isPreview"
        class="absolute text-xs text-gray-600 font-medium whitespace-nowrap"
        [ngStyle]="getRowLabelPosition()">
     {{ seatingRowData.name }}

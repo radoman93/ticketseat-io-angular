@@ -2,8 +2,17 @@
   
   <!-- Row line (visual indicator) - only visible when not in preview mode -->
   <div class="absolute h-0.5 transition-all duration-200"
-       *ngIf="!isPreview"
-       [class]="'bg-gray-300 opacity-30'"
+       *ngIf="!isEffectivePreview"
+       [class]="'bg-green-400 opacity-50'"
+       [style.width.px]="getRowWidth()"
+       [style.left.px]="0"
+       [style.top.px]="-1">
+  </div>
+  
+  <!-- Preview line (visual indicator) - only visible in preview mode -->
+  <div class="absolute h-0.5 transition-all duration-200"
+       *ngIf="isEffectivePreview"
+       [class]="'bg-blue-400 opacity-70'"
        [style.width.px]="getRowWidth()"
        [style.left.px]="0"
        [style.top.px]="-1">
@@ -16,30 +25,30 @@
          [style.transform]="chair.transform">
       <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
            [class]="getChairClasses(chair)"
-           (click)="!isPreview && onChairClick($event, chair)"
-           (mousedown)="!isPreview && onChairMouseDown($event, chair)"
-           (mouseenter)="!isPreview && onChairHover(chair)"
+           (click)="!isEffectivePreview && onChairClick($event, chair)"
+           (mousedown)="!isEffectivePreview && onChairMouseDown($event, chair)"
+           (mouseenter)="!isEffectivePreview && onChairHover(chair)"
            [title]="'Seat ' + chair.label + ' (ID: ' + chair.id + ') - Row seat ' + (chair.index + 1)">
         <span *ngIf="chairLabelVisible" 
-              [class]="chair.isSelected ? 'text-xs text-white font-bold' : (isPreview ? 'text-xs text-blue-600 font-medium' : 'text-xs text-blue-700')">
+              [class]="chair.isSelected ? 'text-xs text-white font-bold' : (isEffectivePreview ? 'text-xs text-blue-600 font-medium' : 'text-xs text-blue-700')">
           {{ chair.label }}
         </span>
         <!-- Selection glow effect -->
-        <div *ngIf="chair.isSelected && !isPreview" 
+        <div *ngIf="chair.isSelected && !isEffectivePreview" 
              class="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping"></div>
       </div>
       
       <!-- Preview info display - positioned next to the last chair -->
-      <div *ngIf="isPreview && i === chairStyles.length - 1"
+      <div *ngIf="isEffectivePreview && i === chairStyles.length - 1"
            class="absolute text-xs text-blue-600 font-medium whitespace-nowrap bg-white/90 px-2 py-1 rounded shadow-lg"
            style="left: 20px; top: -8px;">
-        {{ seatCount || (seatingRowData.seatCount) }} seats
+        {{ chairStyles.length }} seats
       </div>
     </div>
   </div>
   
   <!-- Row label -->
-  <div *ngIf="((seatingRowData.name || name) && !isPreview) && rowLabelVisible"
+  <div *ngIf="((seatingRowData.name || name) && !isEffectivePreview) && rowLabelVisible"
        class="absolute text-xs text-gray-600 font-medium whitespace-nowrap"
        [style.left.px]="getLabelLeftPosition()"
        [style.top.px]="-12">

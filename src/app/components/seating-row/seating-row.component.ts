@@ -120,18 +120,22 @@ export class SeatingRowComponent implements OnInit {
     
     console.log('🪑 Building chair styles for seating row:');
     console.log('  - seatingRowData:', this.seatingRowData);
-    console.log('  - isPreview:', this.isPreview);
+    console.log('  - isPreview:', this.isEffectivePreview);
     console.log('  - seatCount:', effectiveSeatCount);
     console.log('  - seatSpacing:', effectiveSeatSpacing);
     
-    // Calculate seat positions along the line (now using rotation)
+    // Handle special case for zero seats
+    if (effectiveSeatCount <= 0) {
+      return [];
+    }
+    
+    // Calculate seat positions with consistent spacing
     for (let i = 0; i < effectiveSeatCount; i++) {
-      // Position seats along the local x-axis (rotation is handled by container transform)
-      // In preview mode, adjust for centering the first chair
+      // Position seats with exact spacing
       let x = i * effectiveSeatSpacing;
       
       // In preview mode, only center if it's a single chair
-      if (this.isPreview && effectiveSeatCount === 1) {
+      if (this.isEffectivePreview && effectiveSeatCount === 1) {
         x = -2.5; // Center the single preview chair
       }
       
@@ -146,7 +150,8 @@ export class SeatingRowComponent implements OnInit {
         label: chair ? chair.label : (i + 1).toString(),
         isSelected: chair ? chair.isSelected : false,
         chair: chair,
-        index: i
+        index: i,
+        isPreview: this.isEffectivePreview
       });
     }
     
@@ -181,8 +186,13 @@ export class SeatingRowComponent implements OnInit {
     const effectiveSeatCount = this.seatingRowData ? this.seatingRowData.seatCount : this.seatCount;
     const effectiveSeatSpacing = this.seatingRowData ? this.seatingRowData.seatSpacing : this.seatSpacing;
     
-    // Calculate the width from first seat to last seat (along local x-axis)
-    return (effectiveSeatCount - 1) * effectiveSeatSpacing + 20; // Add 20px for the seat width
+    // Use exact chair spacing for consistent width
+    if (effectiveSeatCount <= 1) {
+      return 20; // Just the chair width for a single seat
+    }
+    
+    // Calculate the distance from first to last chair and add chair width
+    return (effectiveSeatCount - 1) * effectiveSeatSpacing + 5; // Add 5px for the chair display
   }
 
   private generateChairsForSeatingRow(): void {
@@ -246,15 +256,16 @@ export class SeatingRowComponent implements OnInit {
   }
 
   getChairClasses(chair: any): string {
-    if (this.isPreview) {
-      return 'w-5 h-5 bg-blue-300 border border-blue-500 opacity-80';
+    // Use the getter for consistent preview state
+    if (this.isEffectivePreview || chair.isPreview) {
+      return 'w-5 h-5 bg-blue-100 border-2 border-blue-400 opacity-80 rounded-full';
     }
     
     if (chair.isSelected) {
-      return 'w-7 h-7 bg-blue-500 border-3 border-blue-600 shadow-lg shadow-blue-400/50 scale-110 animate-pulse';
+      return 'w-6 h-6 bg-blue-500 border-2 border-blue-600 shadow-lg rounded-full';
     }
     
-    return 'w-5 h-5 bg-blue-200 border border-blue-400 hover:bg-blue-300 hover:scale-105';
+    return 'w-5 h-5 bg-white border-2 border-blue-400 hover:bg-blue-50 rounded-full';
   }
 
   private selectChair(chair: Chair, clickX?: number, clickY?: number): void {
@@ -275,5 +286,10 @@ export class SeatingRowComponent implements OnInit {
     } else {
       this.store.chairStore.selectChair(chair.id);
     }
+  }
+
+  // Helper getter to simplify HTML templates
+  get isEffectivePreview(): boolean {
+    return this.isPreview || (this.seatingRowData && !!this.seatingRowData.isPreview);
   }
 } 

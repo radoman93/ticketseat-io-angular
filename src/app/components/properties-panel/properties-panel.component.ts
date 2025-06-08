@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
 import { DeleteObjectCommand } from '../../commands/delete-object.command';
+import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 
 interface RoundTablePropertiesForm {
   seats: number;
@@ -39,6 +40,16 @@ interface SeatingRowPropertiesForm {
   chairLabelVisible: boolean;
   rowLabelVisible: boolean;
   labelPosition: 'left' | 'center' | 'right';
+}
+
+interface SegmentedSeatingRowPropertiesForm {
+  seatSpacing: number;
+  name: string;
+  chairLabelVisible: boolean;
+  rowLabelVisible: boolean;
+  labelPosition: 'left' | 'center' | 'right';
+  totalSegments: number;
+  totalSeats: number;
 }
 
 @Component({
@@ -83,10 +94,26 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     rowLabelVisible: true,
     labelPosition: 'left'
   };
+  
+  segmentedSeatingRowProperties: SegmentedSeatingRowPropertiesForm = {
+    seatSpacing: 35,
+    name: '1',
+    chairLabelVisible: true,
+    rowLabelVisible: true,
+    labelPosition: 'left',
+    totalSegments: 0,
+    totalSeats: 0
+  };
+  
+  // Store segments for the selected segmented row
+  segmentsList: SegmentProperties[] = [];
 
   private disposer: IReactionDisposer | null = null;
 
-  constructor(private historyStore: HistoryStore) {}
+  constructor(
+    private historyStore: HistoryStore,
+    private segmentedSeatingRowService: SegmentedSeatingRowService
+  ) {}
 
   ngOnInit(): void {
     this.disposer = autorun(() => {
@@ -127,6 +154,20 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
           rowLabelVisible: seatingRow.rowLabelVisible !== undefined ? seatingRow.rowLabelVisible : true,
           labelPosition: seatingRow.labelPosition || 'left'
         };
+      } else if (selectedItem?.type === 'segmentedSeatingRow') {
+        const segmentedRow = selectedItem as SeatingRowProperties;
+        this.segmentedSeatingRowProperties = {
+          seatSpacing: segmentedRow.seatSpacing,
+          name: segmentedRow.name,
+          chairLabelVisible: segmentedRow.chairLabelVisible !== undefined ? segmentedRow.chairLabelVisible : true,
+          rowLabelVisible: segmentedRow.rowLabelVisible !== undefined ? segmentedRow.rowLabelVisible : true,
+          labelPosition: segmentedRow.labelPosition || 'left',
+          totalSegments: segmentedRow.totalSegments || 0,
+          totalSeats: segmentedRow.totalSeats || 0
+        };
+        
+        // Store segments for display in the UI
+        this.segmentsList = segmentedRow.segments || [];
       }
     });
   }
@@ -155,6 +196,124 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     const updates: any = {};
     updates[property] = value;
     this.layoutStore.updateElement(this.selectionStore.selectedItem.id, updates);
+  }
+  
+  // Update segment property
+  updateSegmentProperty(segmentIndex: number, property: string, value: any): void {
+    if (!this.selectionStore.selectedItem) return;
+    
+    // Validate numeric inputs
+    if (typeof value === 'string' && !isNaN(Number(value))) {
+      value = Number(value);
+    }
+    
+    // Get current segments
+    const selectedItem = this.selectionStore.selectedItem as SeatingRowProperties;
+    if (!selectedItem.segments) return;
+    
+    // Create a copy of the segments array
+    const updatedSegments = [...selectedItem.segments];
+    
+    // Update the specific segment property
+    updatedSegments[segmentIndex] = {
+      ...updatedSegments[segmentIndex],
+      [property]: value
+    };
+    
+    // Update the total seats count if needed
+    if (property === 'seatCount') {
+      const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(updatedSegments);
+      
+      // Update the element with both segments and the new metrics
+      this.layoutStore.updateElement(selectedItem.id, {
+        segments: updatedSegments,
+        totalSeats: metrics.totalSeats
+      });
+    } else {
+      // Just update the segments
+      this.layoutStore.updateElement(selectedItem.id, { segments: updatedSegments });
+    }
+  }
+
+  // Add a new segment to the end of the segmented row
+  addSegment(): void {
+    if (!this.selectionStore.selectedItem) return;
+    const segmentedRow = this.selectionStore.selectedItem as SeatingRowProperties;
+    
+    if (!segmentedRow.segments || segmentedRow.segments.length === 0) return;
+    
+    // Get the last segment
+    const lastSegment = segmentedRow.segments[segmentedRow.segments.length - 1];
+    
+    // Calculate the end position of the last segment
+    const lastSegmentEnd = this.segmentedSeatingRowService.calculateSegmentEndPosition(lastSegment);
+    
+    // Create a new segment starting from the end of the last segment
+    const newSegment = this.segmentedSeatingRowService.createSegment(
+      segmentedRow.id,
+      segmentedRow.segments.length,
+      lastSegmentEnd.x,
+      lastSegmentEnd.y,
+      lastSegmentEnd.x + 100, // Add some distance in x direction
+      lastSegmentEnd.y + 50,  // Add some distance in y direction
+      segmentedRow.seatSpacing || 35
+    );
+    
+    // Add the new segment to the array
+    const updatedSegments = [...segmentedRow.segments, newSegment];
+    
+    // Update metrics
+    const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(updatedSegments);
+    
+    // Update the element
+    this.layoutStore.updateElement(segmentedRow.id, {
+      segments: updatedSegments,
+      totalSegments: metrics.totalSegments,
+      totalSeats: metrics.totalSeats
+    });
+  }
+  
+  // Remove a segment
+  removeSegment(segmentIndex: number): void {
+    if (!this.selectionStore.selectedItem) return;
+    const segmentedRow = this.selectionStore.selectedItem as SeatingRowProperties;
+    
+    if (!segmentedRow.segments || segmentedRow.segments.length <= 1) {
+      // Don't allow removing the only segment
+      return;
+    }
+    
+    // Remove the segment and update indices
+    const updatedSegments = segmentedRow.segments.filter((_, index) => index !== segmentIndex)
+      .map((segment, newIndex) => ({
+        ...segment,
+        segmentIndex: newIndex
+      }));
+    
+    // Update metrics
+    const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(updatedSegments);
+    
+    // Update the element
+    this.layoutStore.updateElement(segmentedRow.id, {
+      segments: updatedSegments,
+      totalSegments: metrics.totalSegments,
+      totalSeats: metrics.totalSeats
+    });
+  }
+  
+  // Convert segmented row to regular seating row
+  convertToRegular(): void {
+    if (!this.selectionStore.selectedItem) return;
+    const segmentedRow = this.selectionStore.selectedItem as SeatingRowProperties;
+    
+    // Use the service to convert to regular row
+    const regularRow = this.segmentedSeatingRowService.convertToRegular(segmentedRow);
+    
+    // Update element with the converted properties
+    this.layoutStore.updateElement(segmentedRow.id, {
+      ...regularRow,
+      type: 'seatingRow' // Change the type
+    });
   }
 
   // Round Table Methods
@@ -319,10 +478,9 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   }
 
   deleteElement(): void {
-    const selectedItem = this.selectionStore.getSelectedItem();
-    if (selectedItem) {
-      const command = new DeleteObjectCommand(selectedItem);
-      this.historyStore.executeCommand(command);
+    if (this.selectionStore.selectedItem) {
+      const cmd = new DeleteObjectCommand(this.selectionStore.selectedItem);
+      this.historyStore.executeCommand(cmd);
     }
   }
   
@@ -331,9 +489,15 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   }
 
   get totalChairsRect(): number {
-    return this.rectangleTableProperties.upChairs + 
-           this.rectangleTableProperties.downChairs + 
-           this.rectangleTableProperties.leftChairs + 
-           this.rectangleTableProperties.rightChairs;
+    return this.rectangleTableProperties.upChairs + this.rectangleTableProperties.downChairs + 
+           this.rectangleTableProperties.leftChairs + this.rectangleTableProperties.rightChairs;
+  }
+
+  // Helper method to safely handle input event
+  handleInputChange(segmentIndex: number, property: string, event: Event): void {
+    const inputElement = event.target as HTMLInputElement;
+    if (inputElement && inputElement.value) {
+      this.updateSegmentProperty(segmentIndex, property, inputElement.value);
+    }
   }
 } 

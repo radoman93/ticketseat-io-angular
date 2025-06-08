@@ -35,4 +35,19 @@
       <line x1="2" y1="12" x2="22" y2="12" stroke-width="1" opacity="0.3" />
     </svg>
   </button>
+  
+  <button 
+    class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
+    [class.bg-blue-100]="isToolActive(ToolType.SegmentedSeatingRow)"
+    (click)="toggleTool(ToolType.SegmentedSeatingRow)"
+    title="Segmented Seating Row">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <circle cx="5" cy="7" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="7" r="1.5" fill="currentColor" />
+      <circle cx="13" cy="10" r="1.5" fill="currentColor" />
+      <circle cx="17" cy="13" r="1.5" fill="currentColor" />
+      <circle cx="19" cy="17" r="1.5" fill="currentColor" />
+      <path d="M5 7 L13 10 L19 17" stroke-width="1.5" fill="none" />
+    </svg>
+  </button>
 </div>

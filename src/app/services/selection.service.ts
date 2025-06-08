@@ -43,6 +43,18 @@ export interface RectangleTableProperties extends Selectable {
   chairs?: ChairProperties[];
 }
 
+export interface SegmentProperties {
+  id: string;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  seatCount: number;
+  seatSpacing: number;
+  rotation: number;
+  segmentIndex: number;
+}
+
 export interface SeatingRowProperties extends Selectable {
   x: number;
   y: number;
@@ -56,6 +68,11 @@ export interface SeatingRowProperties extends Selectable {
   rowLabelVisible?: boolean;
   labelPosition?: 'left' | 'center' | 'right';
   chairs?: ChairProperties[];
+  isSegmented?: boolean;
+  segments?: SegmentProperties[];
+  totalSegments?: number;
+  totalSeats?: number;
+  isPreview?: boolean;
 }
 
 @Injectable({

@@ -12,8 +12,8 @@
         <!-- Rectangular selection indicator that includes table and chairs -->
         <div *ngIf="selectionStore.isItemSelected(table.id)" 
              class="selection-indicator table-selection"
-             [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
-             [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
+             [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : table.type === 'segmentedSeatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
+             [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : table.type === 'segmentedSeatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
              [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
              [style.left]="table.x + 'px'"
              [style.top]="table.y + 'px'">
@@ -79,6 +79,15 @@
           [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
           [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
         </app-seating-row>
+        
+        <!-- Segmented Seating Row -->
+        <app-segmented-seating-row
+          *ngIf="table.type === 'segmentedSeatingRow'"
+          [seatingRowData]="$any(table)"
+          [isSelected]="selectionStore.isItemSelected(table.id)"
+          [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
+          [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
+        </app-segmented-seating-row>
       </div>
       
       <!-- Preview tables (semi-transparent with dashed border) -->
@@ -106,23 +115,19 @@
         class="opacity-70 preview-table">
       </app-rectangle-table>
       
-      <app-seating-row 
-        *ngIf="previewTable && toolStore.activeTool === ToolType.SeatingRow"
-        [x]="previewTable.x" 
-        [y]="previewTable.y" 
-        [endX]="$any(previewTable).endX"
-        [endY]="$any(previewTable).endY"
-        [seatCount]="$any(previewTable).seatCount"
-        [seatSpacing]="$any(previewTable).seatSpacing"
-        [name]="previewTable.name"
-        [rotation]="$any(previewTable).rotation || 0"
+      <!-- Use Segmented Seating Row for both SeatingRow and SegmentedSeatingRow tools -->
+      <app-segmented-seating-row
+        *ngIf="previewTable && (toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
+        [seatingRowData]="$any(previewTable)"
         [isPreview]="true"
+        [previewSegment]="previewSegment"
+        [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1"
         class="opacity-70 preview-table">
-      </app-seating-row>
+      </app-segmented-seating-row>
     </div>
 
     <!-- Show cursor as crosshair when in add mode -->
-    <div *ngIf="toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow" 
+    <div *ngIf="toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow" 
          class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
 
     <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-10">
@@ -142,6 +147,9 @@
           </div>
           <div *ngIf="dragStore.isDragging" class="bg-green-500 text-white px-2 py-1 rounded text-xs shadow">
             Dragging: {{ dragStore.draggedItem?.['name'] }}
+          </div>
+          <div *ngIf="isCreatingSegmentedRow" class="bg-green-500 text-white px-2 py-1 rounded text-xs shadow">
+            Creating Segmented Row: {{ segmentedRowSegments.length }} segment(s)
           </div>
         </div>
       </div>

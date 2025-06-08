@@ -4,6 +4,7 @@ import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableComponent } from '../round-table/round-table.component';
 import { RectangleTableComponent } from '../rectangle-table/rectangle-table.component';
 import { SeatingRowComponent } from '../seating-row/seating-row.component';
+import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
 import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
@@ -15,13 +16,22 @@ import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
+import { SegmentProperties } from '../../services/selection.service';
+import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
 
 @Component({
   selector: 'app-grid',
-  imports: [MobxAngularModule, RoundTableComponent, RectangleTableComponent, SeatingRowComponent, CommonModule],
+  imports: [
+    MobxAngularModule, 
+    RoundTableComponent, 
+    RectangleTableComponent, 
+    SeatingRowComponent, 
+    SegmentedSeatingRowComponent, 
+    CommonModule
+  ],
   standalone: true,
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.css'
@@ -38,10 +48,10 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Make enum available in template
   ToolType = ToolType;
   
-  // Table preview for showing at cursor position in add mode
+  // Preview table for add mode
   previewTable: TablePosition | null = null;
   
-  // MobX reaction disposers
+  // MobX reaction disposer for tool changes
   private toolChangeDisposer: IReactionDisposer | null = null;
 
   // Rotation state
@@ -51,16 +61,21 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   initialMouseAngleForRotation: number = 0;
   originalItemRotationValue: number = 0;
 
-  // Seating row drag-to-create state
-  isCreatingSeatingRow: boolean = false;
-  seatingRowStartX: number = 0;
-  seatingRowStartY: number = 0;
-  seatingRowCurrentX: number = 0;
-  seatingRowCurrentY: number = 0;
+  // Segmented seating row state (used for both regular and segmented rows)
+  isCreatingSegmentedRow: boolean = false;
+  isCreatingRegularRow: boolean = false; // Add separate state for regular row click-mode
+  segmentedRowId: string = '';
+  activeSegmentStartX: number = 0;
+  activeSegmentStartY: number = 0;
+  activeSegmentEndX: number = 0;
+  activeSegmentEndY: number = 0;
+  segmentedRowSegments: SegmentProperties[] = [];
+  previewSegment: SegmentProperties | null = null;
 
-  constructor(private historyStore: HistoryStore) {
-    // Nothing to inject
-  }
+  constructor(
+    private historyStore: HistoryStore,
+    private segmentedSeatingRowService: SegmentedSeatingRowService
+  ) {}
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
@@ -99,23 +114,63 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           rotation: 0
         };
       } else if (activeTool === ToolType.SeatingRow) {
-        // Initialize preview seating row when entering add mode
+        // Initialize preview seating row using segmented approach (1 segment max)
+        this.segmentedRowId = `seatingrow-${Date.now()}`;
+        this.segmentedRowSegments = [];
+        this.isCreatingSegmentedRow = false;
+        this.previewSegment = null;
         this.previewTable = {
-          id: `seatingrow-preview-${Date.now()}`,
+          id: this.segmentedRowId,
           type: 'seatingRow',
           x: 0,
           y: 0,
-          endX: 35, // Start with just one seat width
+          endX: 35,
           endY: 0,
-          seatCount: 1,
+          seatCount: 0,
           seatSpacing: 35,
           name: `Row ${this.layoutStore.elements.length + 1}`,
           rotation: 0,
           chairLabelVisible: true,
-          rowLabelVisible: true
+          rowLabelVisible: true,
+          segments: [],
+          totalSegments: 0,
+          totalSeats: 0
+        };
+        
+        // Reset seating row creation state
+        this.isCreatingSegmentedRow = false;
+        this.isCreatingRegularRow = false;
+        this.activeSegmentStartX = 0;
+        this.activeSegmentStartY = 0;
+        this.activeSegmentEndX = 0;
+        this.activeSegmentEndY = 0;
+      } else if (activeTool === ToolType.SegmentedSeatingRow) {
+        // Initialize segmented seating row state
+        this.segmentedRowId = `segmented-row-${Date.now()}`;
+        this.segmentedRowSegments = [];
+        this.isCreatingSegmentedRow = false;
+        this.previewSegment = null;
+        this.previewTable = {
+          id: this.segmentedRowId,
+          type: 'segmentedSeatingRow',
+          x: 0,
+          y: 0,
+          endX: 35,
+          endY: 0,
+          seatCount: 0,
+          seatSpacing: 35,
+          name: `Segmented Row ${this.layoutStore.elements.length + 1}`,
+          rotation: 0,
+          chairLabelVisible: true,
+          rowLabelVisible: true,
+          isSegmented: true,
+          segments: [],
+          totalSegments: 0,
+          totalSeats: 0
         };
       } else {
         this.previewTable = null;
+        this.previewSegment = null;
       }
     });
     
@@ -227,224 +282,389 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const activeTool = this.toolStore.activeTool;
       
       if (activeTool === ToolType.SeatingRow && this.previewTable) {
-        // Start drag-to-create seating row mode
+        // Regular row tool: click-to-start drawing mode
         const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
         const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
         
-        this.isCreatingSeatingRow = true;
-        this.seatingRowStartX = x;
-        this.seatingRowStartY = y;
-        this.seatingRowCurrentX = x;
-        this.seatingRowCurrentY = y;
+        if (!this.isCreatingRegularRow) {
+          // First click: start drawing the row
+          this.isCreatingRegularRow = true;
+          this.segmentedRowId = `seatingrow-${Date.now()}`;
+          this.segmentedRowSegments = [];
+          this.activeSegmentStartX = x;
+          this.activeSegmentStartY = y;
+          this.activeSegmentEndX = x;
+          this.activeSegmentEndY = y;
+          
+          // Create preview segment for regular row
+          this.previewSegment = this.segmentedSeatingRowService.createSegment(
+            this.segmentedRowId,
+            0,
+            x,
+            y,
+            x,
+            y,
+            35 // Default seat spacing
+          );
+          
+          console.log('Starting regular row drawing mode at', x, y);
+        } else {
+          // Second click: finish the row
+          this.finalizeRegularRow();
+        }
         
-        // Update preview table to start point, centered at mouse
-        this.previewTable.x = x;
-        this.previewTable.y = y;
-        this.previewTable.endX = x;
-        this.previewTable.endY = y;
-        (this.previewTable as SeatingRowProperties).seatCount = 1;
+        event.preventDefault();
+      } else if (activeTool === ToolType.SegmentedSeatingRow) {
+        // Start or continue creating a segmented seating row
+        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        
+        if (!this.isCreatingSegmentedRow) {
+          // Starting a new segmented row
+          this.isCreatingSegmentedRow = true;
+          this.activeSegmentStartX = x;
+          this.activeSegmentStartY = y;
+          this.activeSegmentEndX = x;
+          this.activeSegmentEndY = y;
+          
+          // Create preview segment
+          this.previewSegment = this.segmentedSeatingRowService.createSegment(
+            this.segmentedRowId,
+            0,
+            x,
+            y,
+            x,
+            y,
+            35 // Default seat spacing
+          );
+          
+          console.log('Starting new segmented row with first segment at', x, y);
+        } else {
+          // Continue with a new segment in the existing row
+          // The previous segment end becomes this segment's start
+          if (this.segmentedRowSegments.length > 0) {
+            const lastSegment = this.segmentedRowSegments[this.segmentedRowSegments.length - 1];
+            const nextStart = this.segmentedSeatingRowService.calculateNextSegmentStartPosition(lastSegment);
+            
+            this.activeSegmentStartX = nextStart.x;
+            this.activeSegmentStartY = nextStart.y;
+            this.activeSegmentEndX = x;
+            this.activeSegmentEndY = y;
+            
+            // Create preview segment for the next segment
+            this.previewSegment = this.segmentedSeatingRowService.createSegment(
+              this.segmentedRowId,
+              this.segmentedRowSegments.length,
+              this.activeSegmentStartX,
+              this.activeSegmentStartY,
+              x,
+              y,
+              35 // Default seat spacing
+            );
+            
+            console.log('Starting new segment in existing row from', 
+                      this.activeSegmentStartX, this.activeSegmentStartY, 
+                      'to', x, y);
+          } else {
+            console.error('Expected segments array not to be empty');
+          }
+        }
         
         event.preventDefault();
       } else if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
         // We're in add mode for round/rectangle tables, add a new table
         const newTable: TablePosition = {
           ...this.previewTable,
-          id: `table-${Date.now()}`
+          id: `table-${Date.now()}`,
+          x: (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100),
+          y: (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100)
         };
-        const command = new AddObjectCommand(newTable);
-        this.historyStore.executeCommand(command);
-        this.toolStore.setActiveTool(ToolType.None);
+
+        // Add to layout and history
+        const addCmd = new AddObjectCommand(newTable);
+        this.historyStore.executeCommand(addCmd);
       }
-      // Note: Dragging is handled by the table element's click event
-      // and rotation is handled by its own mousedown handler (startRotate)
     }
   }
 
   @HostListener('mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
+    // Update grid store mouse coordinates for any listeners
     this.store.setMousePosition(event.clientX, event.clientY);
 
-    if (this.isCreatingSeatingRow && this.previewTable) {
-      // Handle seating row drag-to-create with free rotation
-      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
-      
-      this.seatingRowCurrentX = x;
-      this.seatingRowCurrentY = y;
-      
-      // Calculate distance and angle from start to current position
-      const dx = x - this.seatingRowStartX;
-      const dy = y - this.seatingRowStartY;
-      const totalDistance = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-      
-      const seatSpacing = (this.previewTable as SeatingRowProperties).seatSpacing || 35;
-      const seatCount = Math.max(1, Math.floor(totalDistance / seatSpacing) + 1);
-      
-      // Calculate the end position based on the actual number of seats and direction
-      const actualDistance = (seatCount - 1) * seatSpacing;
-      const normalizedDx = dx / totalDistance || 0;
-      const normalizedDy = dy / totalDistance || 0;
-      
-      // Update preview table - keep start position fixed, calculate end based on actual seats
-      this.previewTable.x = this.seatingRowStartX;
-      this.previewTable.y = this.seatingRowStartY;
-      this.previewTable.endX = this.seatingRowStartX + (normalizedDx * actualDistance);
-      this.previewTable.endY = this.seatingRowStartY + (normalizedDy * actualDistance);
-      (this.previewTable as SeatingRowProperties).seatCount = seatCount;
-      (this.previewTable as SeatingRowProperties).rotation = angle;
-      
-    } else if (this.isRotating && this.rotatingItem) {
-      const currentMouseX = event.clientX;
-      const currentMouseY = event.clientY;
-
-      // Calculate angle between item center and current mouse position
-      const deltaX = currentMouseX - this.rotationItemCenter.x;
-      const deltaY = currentMouseY - this.rotationItemCenter.y;
-      let currentAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-      
-      // Calculate the change in angle from the initial mouse angle
-      let angleDiff = currentAngle - this.initialMouseAngleForRotation;
-
-      // New rotation is original rotation + difference
-      let newRotation = this.originalItemRotationValue + angleDiff;
-
-      // Normalize rotation to be between 0 and 360
-      newRotation = (newRotation % 360 + 360) % 360;
-
-      // Optional: Snap to increments (e.g., 15 degrees)
-      // newRotation = Math.round(newRotation / 15) * 15;
-
-      this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
-
-    } else if (this.store.isPanning) {
-      // Handle canvas panning
+    if (this.store.isPanning) {
+      // Handle panning
       this.store.pan(event.clientX, event.clientY);
       this.drawGrid();
-    } else if (this.dragStore.isDragging) {
-      // Handle element dragging
-      this.dragStore.updateDragPosition(event.clientX, event.clientY);
-    } else if (this.dragStore.potentialDragItem && event.buttons === 1) {
-      // Check if we should start dragging (mouse has moved while button is pressed)
-      const dx = event.clientX - this.dragStore.startMouseX;
-      const dy = event.clientY - this.dragStore.startMouseY;
-      const moveDistance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (moveDistance > 2) {
-        this.selectionStore.selectItem(this.dragStore.potentialDragItem);
-        this.dragStore.startDragging(
-          this.dragStore.potentialDragItem,
-          this.dragStore.startMouseX,
-          this.dragStore.startMouseY
-        );
-      }
-    } else if ((this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow) && this.previewTable && !this.isCreatingSeatingRow) {
-      // Handle preview table positioning in add mode (only if not creating seating row)
+    } else if (this.isRotating && this.rotatingItem) {
+      // Handle rotation of selected item
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
       
-      if (this.toolStore.activeTool === ToolType.SeatingRow) {
-        // For seating row, center the first chair at mouse position
+      // Calculate angle between center and current mouse position
+      const dx = x - this.rotationItemCenter.x;
+      const dy = y - this.rotationItemCenter.y;
+      const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+      
+      // Calculate angle difference and apply to original rotation
+      let newRotation = this.originalItemRotationValue + (currentAngle - this.initialMouseAngleForRotation);
+      
+      // Snap to 15-degree increments if Shift key is pressed
+      if (event.shiftKey) {
+        newRotation = Math.round(newRotation / 15) * 15;
+      }
+      
+      // Update rotation in store
+      this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
+    } else if (this.dragStore.isDragging && this.dragStore.draggedItem) {
+      // Handle dragging an existing item
+      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      
+      // Update position in store using updateDragPosition
+      this.dragStore.updateDragPosition(event.clientX, event.clientY);
+    } else if (this.previewTable) {
+      // Update position of preview object when in add mode
+      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      
+      // Always update preview position for non-creating mode
+      if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow) {
         this.previewTable.x = x;
         this.previewTable.y = y;
-        this.previewTable.endX = x;
-        this.previewTable.endY = y;
-      } else {
-        this.previewTable.x = x;
-        this.previewTable.y = y;
+      }
+      
+      if (this.isCreatingRegularRow && this.previewSegment) {
+        // Update the end point of the regular row being created
+        this.activeSegmentEndX = x;
+        this.activeSegmentEndY = y;
+        
+        // Update the preview segment with the new end position
+        const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
+          this.previewSegment,
+          x,
+          y
+        );
+        
+        // Apply updates to preview segment
+        this.previewSegment = {
+          ...this.previewSegment,
+          ...updatedSegment
+        };
+        
+        console.log('Updated regular row preview segment:', this.previewSegment);
+      } else if (this.isCreatingSegmentedRow && this.previewSegment) {
+        // Update the end point of the current segment being created
+        this.activeSegmentEndX = x;
+        this.activeSegmentEndY = y;
+        
+        // Update the preview segment with the new end position
+        const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
+          this.previewSegment,
+          x,
+          y
+        );
+        
+        // Apply updates to preview segment
+        this.previewSegment = {
+          ...this.previewSegment,
+          ...updatedSegment
+        };
+        
+        console.log('Updated preview segment:', this.previewSegment);
       }
     }
   }
 
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
-    if (this.isCreatingSeatingRow) {
-      this.isCreatingSeatingRow = false; // Turn off creation mode first
-      
-      const dx = this.seatingRowCurrentX - this.seatingRowStartX;
-      const dy = this.seatingRowCurrentY - this.seatingRowStartY;
-      const length = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx) * (180 / Math.PI); // Angle in degrees
-      
-      // Only add if the line is long enough to be meaningful
-      if (length > 10) { 
-        const newSeatingRow: SeatingRowProperties = {
-          id: `seatingrow-${Date.now()}`,
-          type: 'seatingRow',
-          x: this.seatingRowStartX,
-          y: this.seatingRowStartY,
-          endX: this.seatingRowCurrentX,
-          endY: this.seatingRowCurrentY,
-          seatCount: Math.max(1, Math.floor(length / 35)), // Example calculation
-          seatSpacing: 35,
-          name: `Row ${this.layoutStore.elements.length + 1}`,
-          rotation: angle,
-          chairLabelVisible: true,
-          rowLabelVisible: true
-        };
-        const command = new AddObjectCommand(newSeatingRow);
-        this.historyStore.executeCommand(command);
-      }
-
-      this.toolStore.setActiveTool(ToolType.None);
-    }
-    
-    // Finalize drag
-    if (this.dragStore.isDragging) {
-      this.dragStore.endDragging(this.historyStore);
-    }
-    
-    // Finalize rotation
-    if (this.isRotating) {
-      this.isRotating = false;
-      this.rotatingItem = null;
-      event.stopPropagation(); // Prevent other mouseup actions like deselecting
-    }
     if (event.button === 1) {
+      // End panning on middle mouse release
       this.store.stopPanning();
-    } else if (event.button === 0 && this.dragStore.isDragging) {
-      this.dragStore.endDragging(this.historyStore);
+    } else if (event.button === 0) {
+      // End rotation if in rotation mode
+      if (this.isRotating) {
+        this.isRotating = false;
+        this.rotatingItem = null;
+      }
+      // End dragging if in drag mode
+      else if (this.dragStore.isDragging) {
+        this.dragStore.endDragging(this.historyStore);
+      }
+      // Complete segment of a segmented seating row OR regular seating row
+      else if (this.isCreatingSegmentedRow && this.previewSegment) {
+        // Add the current segment to our segments array
+        this.segmentedRowSegments.push(this.previewSegment);
+        
+        // Check if this is a regular row (SeatingRow tool) - only allow 1 segment
+        const isRegularRow = this.toolStore.activeTool === ToolType.SeatingRow;
+        
+        if (isRegularRow) {
+          // For regular rows, complete immediately after first segment
+          this.finalizeSegmentedSeatingRowAsRegular();
+        } else {
+          // For segmented rows, continue with multi-segment logic
+          // Update the segmented row in the preview
+          if (this.previewTable && this.previewTable.type === 'segmentedSeatingRow') {
+            // Calculate metrics for the segmented row
+            const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(this.segmentedRowSegments);
+            
+            // Update the preview table with the segments and metrics
+            this.previewTable = {
+              ...this.previewTable,
+              segments: [...this.segmentedRowSegments],
+              totalSegments: metrics.totalSegments,
+              totalSeats: metrics.totalSeats
+            };
+            
+            console.log('Added segment. Total segments:', metrics.totalSegments, 
+                      'Total seats:', metrics.totalSeats);
+            console.log('Current segments:', this.segmentedRowSegments);
+            
+            // Prepare for next segment
+            if (this.segmentedRowSegments.length > 0) {
+              const lastSegment = this.segmentedRowSegments[this.segmentedRowSegments.length - 1];
+              const nextStart = this.segmentedSeatingRowService.calculateNextSegmentStartPosition(lastSegment);
+              
+              this.activeSegmentStartX = nextStart.x;
+              this.activeSegmentStartY = nextStart.y;
+              
+              // Calculate direction from the last segment
+              const dx = lastSegment.endX - lastSegment.startX;
+              const dy = lastSegment.endY - lastSegment.startY;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              
+              // Use the exact chair spacing from the previous segment for consistency
+              const seatSpacing = lastSegment.seatSpacing;
+              
+              // Position the initial endpoint exactly one chair spacing away in the same direction
+              // This creates a consistent visual appearance for the preview
+              const dirX = distance > 0 ? dx / distance : 0;
+              const dirY = distance > 0 ? dy / distance : 0;
+              
+              const previewEndX = nextStart.x + (dirX * seatSpacing);
+              const previewEndY = nextStart.y + (dirY * seatSpacing);
+              
+              this.previewSegment = this.segmentedSeatingRowService.createSegment(
+                this.segmentedRowId,
+                this.segmentedRowSegments.length,
+                nextStart.x,
+                nextStart.y,
+                previewEndX,
+                previewEndY,
+                seatSpacing
+              );
+            }
+          }
+        }
+      }
     }
-    this.dragStore.potentialDragItem = null;
   }
 
-  @HostListener('mouseleave')
-  onMouseLeave(): void {
-    // Cancel seating row creation if mouse leaves
-    if (this.isCreatingSeatingRow) {
-      this.isCreatingSeatingRow = false;
-      this.seatingRowStartX = 0;
-      this.seatingRowStartY = 0;
-      this.seatingRowCurrentX = 0;
-      this.seatingRowCurrentY = 0;
+  // Handle double-click to complete segmented seating row
+  @HostListener('dblclick', ['$event'])
+  onDoubleClick(event: MouseEvent): void {
+    if (this.isCreatingSegmentedRow && this.segmentedRowSegments.length > 0) {
+      this.finalizeSegmentedSeatingRow();
+    }
+  }
+  
+  // Handle ESC key to cancel or complete operations
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: KeyboardEvent): void {
+    if (this.isCreatingSegmentedRow) {
+      if (this.segmentedRowSegments.length > 0) {
+        // Complete the segmented row if we have segments
+        this.finalizeSegmentedSeatingRow();
+      } else {
+        // Cancel segmented row creation if no segments yet
+        this.cancelSegmentedSeatingRow();
+      }
+    } else if (this.isCreatingRegularRow) {
+      // Cancel regular row creation
+      this.cancelRegularRow();
+    }
+  }
+  
+  // Finalize and add the segmented seating row to the layout
+  private finalizeSegmentedSeatingRow(): void {
+    if (this.segmentedRowSegments.length === 0) {
+      console.log('No segments to finalize');
+      return;
     }
     
-    if (this.isRotating) {
-      this.isRotating = false;
-      this.rotatingItem = null;
-    }
-    if (this.store.isPanning) {
-      this.store.stopPanning();
-    }
-    if (this.dragStore.isDragging) {
-      this.dragStore.endDragging(this.historyStore);
-    }
-    this.dragStore.potentialDragItem = null;
+    console.log('Finalizing segmented seating row with', this.segmentedRowSegments.length, 'segments');
+    
+    // Calculate metrics for the final row
+    const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(this.segmentedRowSegments);
+    
+    // Create the final segmented seating row
+    const newSegmentedRow = {
+      id: this.segmentedRowId,
+      type: 'segmentedSeatingRow',
+      x: this.segmentedRowSegments[0].startX,
+      y: this.segmentedRowSegments[0].startY,
+      endX: this.segmentedRowSegments[0].endX,
+      endY: this.segmentedRowSegments[0].endY,
+      seatCount: metrics.totalSeats,
+      seatSpacing: 35,
+      name: `Segmented Row ${this.layoutStore.elements.length + 1}`,
+      rotation: 0,
+      chairLabelVisible: true,
+      rowLabelVisible: true,
+      isSegmented: true,
+      segments: [...this.segmentedRowSegments],
+      totalSegments: metrics.totalSegments,
+      totalSeats: metrics.totalSeats
+    };
+    
+    // Add to layout and history
+    const addCmd = new AddObjectCommand(newSegmentedRow);
+    this.historyStore.executeCommand(addCmd);
+    
+    // Reset state
+    this.resetSegmentedSeatingRowState();
   }
-
-  @HostListener('wheel', ['$event'])
-  onMouseWheel(event: WheelEvent): void {
-    event.preventDefault();
-    const zoomChange = event.deltaY > 0 ? -5 : 5;
-    this.store.adjustZoom(zoomChange);
+  
+  // Cancel segmented seating row creation
+  private cancelSegmentedSeatingRow(): void {
+    console.log('Canceling segmented seating row creation');
+    this.resetSegmentedSeatingRowState();
   }
-
-  zoomIn(): void {
-    this.store.zoomIn();
-  }
-
-  zoomOut(): void {
-    this.store.zoomOut();
+  
+  // Reset segmented seating row state
+  private resetSegmentedSeatingRowState(): void {
+    this.isCreatingSegmentedRow = false;
+    this.isCreatingRegularRow = false;
+    this.activeSegmentStartX = 0;
+    this.activeSegmentStartY = 0;
+    this.activeSegmentEndX = 0;
+    this.activeSegmentEndY = 0;
+    this.segmentedRowSegments = [];
+    this.previewSegment = null;
+    this.segmentedRowId = `segmented-row-${Date.now()}`;
+    
+    // Reset preview table
+    if (this.toolStore.activeTool === ToolType.SegmentedSeatingRow) {
+      this.previewTable = {
+        id: this.segmentedRowId,
+        type: 'segmentedSeatingRow',
+        x: 0,
+        y: 0,
+        endX: 35,
+        endY: 0,
+        seatCount: 0,
+        seatSpacing: 35,
+        name: `Segmented Row ${this.layoutStore.elements.length + 1}`,
+        rotation: 0,
+        chairLabelVisible: true,
+        rowLabelVisible: true,
+        isSegmented: true,
+        segments: [],
+        totalSegments: 0,
+        totalSeats: 0
+      };
+    }
   }
 
   // Handle table selection and start dragging
@@ -527,12 +747,18 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     
     // Escape key to cancel operations
     if (event.key === 'Escape') {
-      if (this.isCreatingSeatingRow) {
-        this.isCreatingSeatingRow = false;
-        this.seatingRowStartX = 0;
-        this.seatingRowStartY = 0;
-        this.seatingRowCurrentX = 0;
-        this.seatingRowCurrentY = 0;
+      if (this.isCreatingSegmentedRow) {
+        this.isCreatingSegmentedRow = false;
+        this.activeSegmentStartX = 0;
+        this.activeSegmentStartY = 0;
+        this.activeSegmentEndX = 0;
+        this.activeSegmentEndY = 0;
+      } else if (this.isCreatingRegularRow) {
+        this.isCreatingRegularRow = false;
+        this.activeSegmentStartX = 0;
+        this.activeSegmentStartY = 0;
+        this.activeSegmentEndX = 0;
+        this.activeSegmentEndY = 0;
       }
       if (this.toolStore.activeTool !== ToolType.None) {
         this.toolStore.setActiveTool(ToolType.None);
@@ -571,5 +797,47 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     
     // Store the original rotation value
     this.originalItemRotationValue = item.rotation || 0;
+  }
+
+  // Handle zoom in button
+  zoomIn(): void {
+    this.store.adjustZoom(5);
+  }
+  
+  // Handle zoom out button
+  zoomOut(): void {
+    this.store.adjustZoom(-5);
+  }
+
+  // Handle regular seating row completion
+  private finalizeRegularRow(): void {
+    console.log('Finalizing regular seating row');
+    
+    if (this.previewSegment) {
+      // Add the current segment to our segments array
+      this.segmentedRowSegments.push(this.previewSegment);
+      
+      // Complete the regular row immediately
+      this.finalizeSegmentedSeatingRow();
+      
+      // Reset regular row state
+      this.isCreatingRegularRow = false;
+      this.previewSegment = null;
+      this.segmentedRowSegments = [];
+    }
+  }
+
+  // Handle regular seating row completion
+  private finalizeSegmentedSeatingRowAsRegular(): void {
+    console.log('Finalizing regular seating row');
+    this.finalizeSegmentedSeatingRow();
+  }
+
+  // Handle regular row creation cancellation
+  private cancelRegularRow(): void {
+    console.log('Canceling regular seating row creation');
+    this.isCreatingRegularRow = false;
+    this.previewSegment = null;
+    this.segmentedRowSegments = [];
   }
 } 
