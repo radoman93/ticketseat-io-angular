@@ -34,8 +34,9 @@ export class LayoutStore {
   updateElement = action('updateElement', (id: string, updates: Partial<TableElement>) => {
     const index = this.elements.findIndex(el => el.id === id);
     if (index !== -1) {
-      // Update properties of the existing object instead of creating a new one
-      Object.assign(this.elements[index], updates);
+      // To ensure change detection is triggered in Angular components,
+      // replace the element with a new object.
+      this.elements[index] = { ...this.elements[index], ...updates };
       return this.elements[index];
     }
     return null;

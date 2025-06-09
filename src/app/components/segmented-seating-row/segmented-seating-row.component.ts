@@ -24,12 +24,10 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   
   store = rootStore;
   
-  // Memoized data for segments to improve performance
-  segmentData: any[] = [];
-  previewSegmentData: any | null = null;
-  
   constructor() {
     makeAutoObservable(this, {
+      segmentData: computed,
+      previewSegmentData: computed,
       completedSegments: computed
     });
   }
@@ -43,39 +41,30 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
         this.generateChairsForAllSegments();
       }
     }
-    this.updateSegmentData();
-    this.updatePreviewSegmentData();
   }
   
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['seatingRowData']) {
-      this.updateSegmentData();
-    }
-    if (changes['previewSegment']) {
-      this.updatePreviewSegmentData();
-    }
+    // We no longer need to manually update on changes, MobX will handle it.
   }
 
-  updateSegmentData() {
+  get segmentData() {
     if (!this.seatingRowData || !this.seatingRowData.segments) {
-      this.segmentData = [];
-      return;
+      return [];
     }
     
-    this.segmentData = this.seatingRowData.segments.map((segment, index) => ({
+    return this.seatingRowData.segments.map((segment, index) => ({
       styles: this.getSegmentStyles(segment),
       width: this.getSegmentWidth(segment),
       chairs: this.getSegmentChairStyles(segment, index)
     }));
   }
 
-  updatePreviewSegmentData() {
+  get previewSegmentData() {
     if (!this.previewSegment) {
-      this.previewSegmentData = null;
-      return;
+      return null;
     }
     
-    this.previewSegmentData = {
+    return {
       styles: this.getPreviewSegmentStyles(),
       width: this.getPreviewSegmentWidth(),
       chairs: this.getPreviewSegmentChairStyles()
@@ -133,7 +122,8 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
         label: chair ? chair.label : this.calculateGlobalChairLabel(segmentIndex, i),
         isSelected: chair ? chair.isSelected : false,
         chair: chair,
-        index: i
+        index: i,
+        isPreviewChair: false
       });
     }
     return chairsArray;
@@ -317,6 +307,82 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       left: `${firstSegment.startX - 60}px`,
       top: `${firstSegment.startY - 15}px`,
       position: 'absolute'
+    };
+  }
+
+  // Calculate the bounding box for the segmented seating row
+  getBoundingBox(): { minX: number, minY: number, maxX: number, maxY: number, centerX: number, centerY: number } {
+    if (!this.seatingRowData?.segments || this.seatingRowData.segments.length === 0) {
+      return { minX: 0, minY: 0, maxX: 0, maxY: 0, centerX: 0, centerY: 0 };
+    }
+
+    const points: {x: number, y: number}[] = [];
+    this.seatingRowData.segments.forEach(segment => {
+      points.push({ x: segment.startX, y: segment.startY });
+      points.push({ x: segment.endX, y: segment.endY });
+    });
+
+    let currentMinX = Infinity, currentMinY = Infinity, currentMaxX = -Infinity, currentMaxY = -Infinity;
+    points.forEach(p => {
+      currentMinX = Math.min(currentMinX, p.x);
+      currentMinY = Math.min(currentMinY, p.y);
+      currentMaxX = Math.max(currentMaxX, p.x);
+      currentMaxY = Math.max(currentMaxY, p.y);
+    });
+
+    const centerX = (currentMinX + currentMaxX) / 2;
+    const centerY = (currentMinY + currentMaxY) / 2;
+    const rotation = this.seatingRowData.rotation || 0;
+    const angle = -rotation * (Math.PI / 180);
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+
+    const unrotatedPoints = points.map(p => {
+      const dx = p.x - centerX;
+      const dy = p.y - centerY;
+      return {
+        x: dx * cosA - dy * sinA + centerX,
+        y: dx * sinA + dy * cosA + centerY,
+      };
+    });
+
+    let unrotatedMinX = Infinity, unrotatedMinY = Infinity, unrotatedMaxX = -Infinity, unrotatedMaxY = -Infinity;
+    unrotatedPoints.forEach(p => {
+      unrotatedMinX = Math.min(unrotatedMinX, p.x);
+      unrotatedMinY = Math.min(unrotatedMinY, p.y);
+      unrotatedMaxX = Math.max(unrotatedMaxX, p.x);
+      unrotatedMaxY = Math.max(unrotatedMaxY, p.y);
+    });
+    
+    const padding = 25;
+    unrotatedMinX -= padding;
+    unrotatedMinY -= padding;
+    unrotatedMaxX += padding;
+    unrotatedMaxY += padding;
+
+    return { 
+      minX: unrotatedMinX, 
+      minY: unrotatedMinY, 
+      maxX: unrotatedMaxX, 
+      maxY: unrotatedMaxY,
+      centerX: centerX,
+      centerY: centerY
+    };
+  }
+
+  // Get selection indicator styles
+  getSelectionStyles(): any {
+    const box = this.getBoundingBox();
+    const width = box.maxX - box.minX;
+    const height = box.maxY - box.minY;
+
+    return {
+      left: `${box.centerX}px`,
+      top: `${box.centerY}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      transform: `translate(-50%, -50%) rotate(${this.seatingRowData.rotation || 0}deg)`,
+      transformOrigin: 'center center'
     };
   }
 } 

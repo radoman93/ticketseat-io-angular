@@ -7,7 +7,7 @@ import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
+import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
@@ -16,7 +16,6 @@ import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
-import { SegmentProperties } from '../../services/selection.service';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 
 // Use union type for table positions  
@@ -57,6 +56,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Rotation state
   isRotating: boolean = false;
   rotatingItem: TablePosition | null = null;
+  originalRotatingItem: TablePosition | null = null;
   rotationItemCenter: { x: number, y: number } = { x: 0, y: 0 };
   initialMouseAngleForRotation: number = 0;
   originalItemRotationValue: number = 0;
@@ -418,7 +418,57 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       }
       
       // Update rotation in store
-      this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
+      if (this.rotatingItem?.type === 'segmentedSeatingRow' && this.originalRotatingItem?.segments) {
+        // For segmented rows, we need to rotate each segment around the center point
+        const segmentedRow = this.layoutStore.elements.find(el => el.id === this.rotatingItem?.id);
+        if (segmentedRow && segmentedRow.segments) {
+          // Calculate rotation difference from the original rotation
+          const rotationDiff = newRotation - this.originalItemRotationValue;
+          const angleInRadians = rotationDiff * (Math.PI / 180);
+
+          // Get original segments to avoid cumulative rotation errors
+          const originalSegments = this.originalRotatingItem.segments;
+          
+          // Rotate each segment's start and end points around the center
+          const updatedSegments = originalSegments.map((segment: SegmentProperties) => {
+            // Rotate start point
+            const startDx = segment.startX - this.rotationItemCenter.x;
+            const startDy = segment.startY - this.rotationItemCenter.y;
+            const newStartX = this.rotationItemCenter.x + startDx * Math.cos(angleInRadians) - startDy * Math.sin(angleInRadians);
+            const newStartY = this.rotationItemCenter.y + startDx * Math.sin(angleInRadians) + startDy * Math.cos(angleInRadians);
+            
+            // Rotate end point
+            const endDx = segment.endX - this.rotationItemCenter.x;
+            const endDy = segment.endY - this.rotationItemCenter.y;
+            const newEndX = this.rotationItemCenter.x + endDx * Math.cos(angleInRadians) - endDy * Math.sin(angleInRadians);
+            const newEndY = this.rotationItemCenter.y + endDx * Math.sin(angleInRadians) + endDy * Math.cos(angleInRadians);
+
+            // Calculate new segment rotation
+            const originalSegmentRotation = Math.atan2(segment.endY - segment.startY, segment.endX - segment.startX) * (180 / Math.PI);
+            const newSegmentRotation = originalSegmentRotation + rotationDiff;
+            
+            return {
+              ...segment,
+              startX: newStartX,
+              startY: newStartY,
+              endX: newEndX,
+              endY: newEndY,
+              rotation: newSegmentRotation
+            };
+          });
+          
+          // Update the segmented row with new segment positions and rotation
+          if(this.rotatingItem) {
+            this.layoutStore.updateElement(this.rotatingItem.id, {
+              rotation: newRotation,
+              segments: updatedSegments
+            });
+          }
+        }
+      } else if (this.rotatingItem) {
+        // For other elements, just update the rotation
+        this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
+      }
     } else if (this.dragStore.isDragging) {
       // Handle dragging an existing item
       this.dragStore.updateDragPosition(event.clientX, event.clientY);
@@ -494,6 +544,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       if (this.isRotating) {
         this.isRotating = false;
         this.rotatingItem = null;
+        this.originalRotatingItem = null;
       }
       // End dragging if in drag mode
       else if (this.dragStore.isDragging) {
@@ -780,37 +831,53 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
   }
 
-  // Start rotation mode for an item
+  // Start rotating an item
   startRotate(item: TablePosition, event: MouseEvent): void {
     event.stopPropagation();
-    event.preventDefault();
-
+    
     this.isRotating = true;
     this.rotatingItem = item;
-
-    // Calculate the center point of the item for rotation
-    if (item.type === 'roundTable') {
-      this.rotationItemCenter = { x: item.x, y: item.y };
-    } else if (item.type === 'rectangleTable') {
-      this.rotationItemCenter = { x: item.x, y: item.y };
-    } else if (item.type === 'seatingRow') {
-      // For seating rows, use the start point (x, y) as rotation center
-      // This matches the transformOrigin: '0 0' set in the component
-      this.rotationItemCenter = { x: item.x, y: item.y };
-    }
-
-    // Convert to screen coordinates
-    const screenX = this.rotationItemCenter.x * (this.store.zoomLevel / 100) + this.store.panOffset.x;
-    const screenY = this.rotationItemCenter.y * (this.store.zoomLevel / 100) + this.store.panOffset.y;
-    this.rotationItemCenter = { x: screenX, y: screenY };
-
-    // Calculate initial angle between center and mouse
-    const deltaX = event.clientX - this.rotationItemCenter.x;
-    const deltaY = event.clientY - this.rotationItemCenter.y;
-    this.initialMouseAngleForRotation = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-    
-    // Store the original rotation value
+    this.originalRotatingItem = JSON.parse(JSON.stringify(item)); // Deep copy
     this.originalItemRotationValue = item.rotation || 0;
+    
+    // Store original position for rotation reference
+    this.activeSegmentStartX = item.x;
+    this.activeSegmentStartY = item.y;
+
+    // Calculate center point based on item type
+    if (item.type === 'segmentedSeatingRow') {
+      // Get the segmented row component reference
+      const segmentedRow = this.layoutStore.elements.find(el => el.id === item.id);
+      if (segmentedRow && segmentedRow.segments) {
+        // Calculate center from all segments
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const segments: SegmentProperties[] = segmentedRow.segments;
+        segments.forEach((segment: SegmentProperties) => {
+          minX = Math.min(minX, segment.startX, segment.endX);
+          minY = Math.min(minY, segment.startY, segment.endY);
+          maxX = Math.max(maxX, segment.startX, segment.endX);
+          maxY = Math.max(maxY, segment.startY, segment.endY);
+        });
+        
+        this.rotationItemCenter = {
+          x: (minX + maxX) / 2,
+          y: (minY + maxY) / 2
+        };
+      }
+    } else {
+      // For other items, use their center point
+      this.rotationItemCenter = {
+        x: item.x,
+        y: item.y
+      };
+    }
+    
+    // Calculate initial angle between center and mouse position
+    const mouseX = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+    const mouseY = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+    const dx = mouseX - this.rotationItemCenter.x;
+    const dy = mouseY - this.rotationItemCenter.y;
+    this.initialMouseAngleForRotation = Math.atan2(dy, dx) * (180 / Math.PI);
   }
 
   // Handle zoom in button

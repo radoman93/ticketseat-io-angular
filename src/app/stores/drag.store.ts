@@ -1,5 +1,5 @@
 import { makeAutoObservable, action } from 'mobx';
-import { Selectable } from '../services/selection.service';
+import { Selectable, SegmentProperties } from '../services/selection.service';
 import { layoutStore } from './layout.store';
 import { selectionStore } from './selection.store';
 import { gridStore } from './grid.store';
@@ -115,9 +115,39 @@ export class DragStore {
     const newX = this.startElementX + canvasDx;
     const newY = this.startElementY + canvasDy;
     
-    // Directly update the object in memory for visual feedback
-    // This requires the layoutStore.elements to be a deep observable
-    Object.assign(this.draggedItem, { x: newX, y: newY });
+    // Handle segmented seating rows differently
+    if (this.draggedItem.type === 'segmentedSeatingRow') {
+      const deltaX = newX - this.draggedItem['x'];
+      const deltaY = newY - this.draggedItem['y'];
+      
+      // Update all segment positions
+      if (this.draggedItem['segments']) {
+        const segments: SegmentProperties[] = this.draggedItem['segments'];
+        const updatedSegments = segments.map((segment: SegmentProperties) => ({
+          ...segment,
+          startX: segment.startX + deltaX,
+          startY: segment.startY + deltaY,
+          endX: segment.endX + deltaX,
+          endY: segment.endY + deltaY
+        }));
+        
+        const update = { 
+          x: newX, 
+          y: newY,
+          segments: updatedSegments
+        };
+
+        // Update the dragged item with new segment positions
+        Object.assign(this.draggedItem, update);
+        // Also update layoutStore to trigger re-render
+        layoutStore.updateElement(this.draggedItem.id, update);
+      }
+    } else {
+      // For other elements, just update x and y
+      const update = { x: newX, y: newY };
+      Object.assign(this.draggedItem, update);
+      layoutStore.updateElement(this.draggedItem.id, update);
+    }
   });
 
   /**

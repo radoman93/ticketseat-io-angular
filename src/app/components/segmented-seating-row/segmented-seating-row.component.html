@@ -1,11 +1,15 @@
 <div class="absolute" *mobxAutorun>
+  <!-- Selection indicator content -->
+  <ng-content></ng-content>
+
   <!-- Completed Segments -->
   <div *ngFor="let data of segmentData; let segmentIndex = index"
        class="absolute"
        [ngStyle]="data.styles">
     
     <!-- Segment line (visual indicator) -->
-    <div class="absolute h-0.5 bg-green-400 opacity-50"
+    <div class="absolute h-0.5"
+         [ngClass]="{'bg-green-400 opacity-50': !isSelected, 'bg-blue-400 opacity-70': isSelected}"
          [style.width.px]="data.width"
          [style.left.px]="0"
          [style.top.px]="-1">

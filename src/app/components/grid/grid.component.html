@@ -10,10 +10,10 @@
            [class.draggable]="toolStore.activeTool !== ToolType.RoundTable"
            [class.dragging]="dragStore.isDragging && dragStore.draggedItem?.id === table.id">
         <!-- Rectangular selection indicator that includes table and chairs -->
-        <div *ngIf="selectionStore.isItemSelected(table.id)" 
+        <div *ngIf="selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow'" 
              class="selection-indicator table-selection"
-             [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : table.type === 'segmentedSeatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
-             [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : table.type === 'segmentedSeatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
+             [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
+             [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
              [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
              [style.left]="table.x + 'px'"
              [style.top]="table.y + 'px'">
@@ -86,7 +86,21 @@
           [seatingRowData]="$any(table)"
           [isSelected]="selectionStore.isItemSelected(table.id)"
           [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
-          [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
+          [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true"
+          #segmentedRow>
+          <!-- Selection indicator for segmented seating row -->
+          <div *ngIf="selectionStore.isItemSelected(table.id)" 
+               class="selection-indicator table-selection"
+               [ngStyle]="segmentedRow.getSelectionStyles()">
+            <div class="rotation-line"></div>
+            <!-- Rotation Handle -->
+            <div class="rotation-handle"
+                 (mousedown)="startRotate($any(table), $event)">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-white">
+                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path>
+              </svg>
+            </div>
+          </div>
         </app-segmented-seating-row>
       </div>
       
