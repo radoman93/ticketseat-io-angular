@@ -8,11 +8,13 @@ import { MobxAngularModule } from 'mobx-angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ToolType } from '../../../services/tool.service';
+import { ExportDialogComponent } from '../../export-dialog/export-dialog.component';
+import { ImportDialogComponent } from '../../import-dialog/import-dialog.component';
 
 @Component({
   selector: 'app-top-toolbar',
   standalone: true,
-  imports: [MobxAngularModule, FormsModule, CommonModule],
+  imports: [MobxAngularModule, FormsModule, CommonModule, ExportDialogComponent, ImportDialogComponent],
   templateUrl: './top-toolbar.component.html',
   styleUrl: './top-toolbar.component.css'
 })
@@ -28,13 +30,17 @@ export class TopToolbarComponent implements OnInit {
   ToolType = ToolType;
   
   // Available grid size options
-  gridSizes = [20, 30, 50, 75, 100];
+  gridSizes = [10, 20, 30, 40, 50, 75, 100];
   
   // Mobile menu state
   isMobileMenuOpen = false;
   
   // Screen size tracking
   isSmallScreen = false;
+  
+  // Dialog states
+  showExportDialog = false;
+  showImportDialog = false;
   
   constructor(historyStore: HistoryStore) {
     this.historyStore = historyStore;
@@ -50,9 +56,9 @@ export class TopToolbarComponent implements OnInit {
   }
   
   // Method to update grid size
-  updateGridSize(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.store.setGridSize(Number(select.value));
+  updateGridSize(event: any) {
+    const newSize = parseInt(event.target.value, 10);
+    this.store.setGridSize(newSize);
   }
   
   // Listen for window resize events
@@ -78,5 +84,15 @@ export class TopToolbarComponent implements OnInit {
     if (this.isMobileMenuOpen && !isMenuClick && !isHamburgerClick) {
       this.isMobileMenuOpen = false;
     }
+  }
+
+  openExportDialog(): void {
+    this.showExportDialog = true;
+    this.isMobileMenuOpen = false; // Close mobile menu if open
+  }
+
+  openImportDialog(): void {
+    this.showImportDialog = true;
+    this.isMobileMenuOpen = false; // Close mobile menu if open
   }
 }

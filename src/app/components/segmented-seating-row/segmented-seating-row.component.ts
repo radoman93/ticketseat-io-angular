@@ -5,6 +5,7 @@ import { SeatingRowProperties, SegmentProperties } from '../../services/selectio
 import { makeAutoObservable, computed } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
+import { rotationStore } from '../../stores/rotation.store';
 
 @Component({
   selector: 'app-segmented-seating-row',
@@ -23,6 +24,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   @Input() maxSegments: number = -1; // -1 = unlimited, 1 = regular row, >1 = limited segments
   
   store = rootStore;
+  rotationStore = rotationStore;
   
   constructor() {
     makeAutoObservable(this, {
@@ -322,49 +324,51 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       points.push({ x: segment.endX, y: segment.endY });
     });
 
-    let currentMinX = Infinity, currentMinY = Infinity, currentMaxX = -Infinity, currentMaxY = -Infinity;
-    points.forEach(p => {
-      currentMinX = Math.min(currentMinX, p.x);
-      currentMinY = Math.min(currentMinY, p.y);
-      currentMaxX = Math.max(currentMaxX, p.x);
-      currentMaxY = Math.max(currentMaxY, p.y);
-    });
+    let centerX: number;
+    let centerY: number;
 
-    const centerX = (currentMinX + currentMaxX) / 2;
-    const centerY = (currentMinY + currentMaxY) / 2;
+    if (this.rotationStore.isRotating && this.rotationStore.pivot) {
+      centerX = this.rotationStore.pivot.x;
+      centerY = this.rotationStore.pivot.y;
+    } else {
+      let currentMinX = Infinity, currentMinY = Infinity, currentMaxX = -Infinity, currentMaxY = -Infinity;
+      points.forEach(p => {
+        currentMinX = Math.min(currentMinX, p.x);
+        currentMinY = Math.min(currentMinY, p.y);
+        currentMaxX = Math.max(currentMaxX, p.x);
+        currentMaxY = Math.max(currentMaxY, p.y);
+      });
+      centerX = (currentMinX + currentMaxX) / 2;
+      centerY = (currentMinY + currentMaxY) / 2;
+    }
+
     const rotation = this.seatingRowData.rotation || 0;
     const angle = -rotation * (Math.PI / 180);
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
 
-    const unrotatedPoints = points.map(p => {
+    let unrotatedMinX = Infinity, unrotatedMinY = Infinity, unrotatedMaxX = -Infinity, unrotatedMaxY = -Infinity;
+    points.forEach(p => {
       const dx = p.x - centerX;
       const dy = p.y - centerY;
-      return {
-        x: dx * cosA - dy * sinA + centerX,
-        y: dx * sinA + dy * cosA + centerY,
-      };
-    });
-
-    let unrotatedMinX = Infinity, unrotatedMinY = Infinity, unrotatedMaxX = -Infinity, unrotatedMaxY = -Infinity;
-    unrotatedPoints.forEach(p => {
-      unrotatedMinX = Math.min(unrotatedMinX, p.x);
-      unrotatedMinY = Math.min(unrotatedMinY, p.y);
-      unrotatedMaxX = Math.max(unrotatedMaxX, p.x);
-      unrotatedMaxY = Math.max(unrotatedMaxY, p.y);
+      const unrotatedX = dx * cosA - dy * sinA;
+      const unrotatedY = dx * sinA + dy * cosA;
+      
+      unrotatedMinX = Math.min(unrotatedMinX, unrotatedX);
+      unrotatedMinY = Math.min(unrotatedMinY, unrotatedY);
+      unrotatedMaxX = Math.max(unrotatedMaxX, unrotatedX);
+      unrotatedMaxY = Math.max(unrotatedMaxY, unrotatedY);
     });
     
     const padding = 25;
-    unrotatedMinX -= padding;
-    unrotatedMinY -= padding;
-    unrotatedMaxX += padding;
-    unrotatedMaxY += padding;
+    const width = unrotatedMaxX - unrotatedMinX + (padding * 2);
+    const height = unrotatedMaxY - unrotatedMinY + (padding * 2);
 
     return { 
-      minX: unrotatedMinX, 
-      minY: unrotatedMinY, 
-      maxX: unrotatedMaxX, 
-      maxY: unrotatedMaxY,
+      minX: unrotatedMinX - padding,
+      minY: unrotatedMinY - padding,
+      maxX: unrotatedMaxX + padding,
+      maxY: unrotatedMaxY + padding,
       centerX: centerX,
       centerY: centerY
     };

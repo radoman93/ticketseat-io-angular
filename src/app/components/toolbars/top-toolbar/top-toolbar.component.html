@@ -46,6 +46,18 @@
                 Redo
             </button>
         </div>
+        
+        <!-- Export/Import buttons -->
+        <div class="flex items-center gap-2">
+            <button (click)="openExportDialog()"
+                    class="btn btn-xs btn-outline">
+                Export
+            </button>
+            <button (click)="openImportDialog()"
+                    class="btn btn-xs btn-outline">
+                Import
+            </button>
+        </div>
     </div>
     
     <!-- Action buttons - visible on desktop -->
@@ -104,6 +116,28 @@
                     Redo
                 </button>
             </div>
+            <div class="flex gap-2 mt-2">
+                <button (click)="openExportDialog()"
+                        class="btn btn-sm btn-outline w-1/2">
+                    Export
+                </button>
+                <button (click)="openImportDialog()"
+                        class="btn btn-sm btn-outline w-1/2">
+                    Import
+                </button>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Export Dialog -->
+<app-export-dialog 
+    [isOpen]="showExportDialog"
+    (close)="showExportDialog = false">
+</app-export-dialog>
+
+<!-- Import Dialog -->
+<app-import-dialog 
+    [isOpen]="showImportDialog"
+    (close)="showImportDialog = false">
+</app-import-dialog>

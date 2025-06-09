@@ -17,6 +17,8 @@ import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
+import { RotateObjectCommand } from '../../commands/rotate-object.command';
+import { rotationStore } from '../../stores/rotation.store';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
@@ -546,9 +548,26 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     } else if (event.button === 0) {
       // End rotation if in rotation mode
       if (this.isRotating) {
+        if (this.rotatingItem && this.originalRotatingItem) {
+          const oldState = {
+            rotation: this.originalRotatingItem.rotation || 0,
+            segments: this.originalRotatingItem.segments
+          };
+          const newState = {
+            rotation: this.rotatingItem.rotation || 0,
+            segments: this.layoutStore.getElementById(this.rotatingItem.id)?.segments
+          };
+          
+          // Only create a command if the rotation actually changed
+          if (oldState.rotation !== newState.rotation) {
+            const command = new RotateObjectCommand(this.rotatingItem.id, oldState, newState);
+            this.historyStore.executeCommand(command);
+          }
+        }
         this.isRotating = false;
         this.rotatingItem = null;
         this.originalRotatingItem = null;
+        rotationStore.endRotation();
       }
       // End dragging if in drag mode
       else if (this.dragStore.isDragging) {
@@ -867,6 +886,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           x: (minX + maxX) / 2,
           y: (minY + maxY) / 2
         };
+        rotationStore.startRotation(this.rotationItemCenter);
       }
     } else {
       // For other items, use their center point
