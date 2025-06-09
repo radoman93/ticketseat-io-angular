@@ -589,55 +589,6 @@
       </div>
     </div>
 
-    <!-- Segments Section -->
-    <div class="px-4 py-3 border-b border-gray-100">
-      <div class="flex items-center mb-3 justify-between">
-        <label class="text-gray-700 font-medium">Segments</label>
-        <button class="btn btn-xs btn-primary" (click)="addSegment()">
-          Add Segment
-        </button>
-      </div>
-      
-      <!-- Segments List -->
-      <div *ngIf="segmentsList.length > 0" class="mt-2 mb-4 flex flex-col gap-2">
-        <div *ngFor="let segment of segmentsList; let i = index" class="border border-gray-200 rounded p-2 bg-gray-50">
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-xs font-semibold">Segment {{ i + 1 }}</span>
-            <button 
-              *ngIf="segmentsList.length > 1"
-              class="btn btn-xs btn-error btn-circle" 
-              (click)="removeSegment(i)">
-              X
-            </button>
-          </div>
-          
-          <!-- Seat Count for Segment -->
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-xs text-gray-600">Seats:</label>
-            <input 
-              type="number" 
-              class="input input-bordered input-xs w-14 text-center"
-              [ngModel]="segment.seatCount" 
-              (change)="handleInputChange(i, 'seatCount', $event)"
-              min="1" 
-              max="20">
-          </div>
-          
-          <!-- Rotation for Segment (read-only) -->
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-xs text-gray-600">Rotation:</label>
-            <div class="text-xs">{{ segment.rotation | number:'1.0-0' }}°</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Convert to Regular Button -->
-      <button 
-        class="btn btn-sm btn-outline w-full mt-2"
-        (click)="convertToRegular()">
-        Convert to Regular Row
-      </button>
-    </div>
 
     <!-- Row Labeling Section -->
     <div class="px-4 py-3 border-b border-gray-100">

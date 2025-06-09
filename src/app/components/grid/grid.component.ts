@@ -460,7 +460,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           ...updatedSegment
         };
         
-        console.log('Updated regular row preview segment:', this.previewSegment);
+        // console.log('Updated regular row preview segment:', this.previewSegment);
       } else if (this.isCreatingSegmentedRow && this.previewSegment) {
         // Update the end point of the current segment being created
         this.activeSegmentEndX = x;
