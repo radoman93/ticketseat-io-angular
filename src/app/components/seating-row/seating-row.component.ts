@@ -218,73 +218,54 @@ export class SeatingRowComponent implements OnInit {
   }
 
   onChairClick(event: Event, chair: any): void {
-    console.log('🪑 SEATING ROW CHAIR CLICK DETECTED!', event, chair);
     event.stopPropagation();
-    
-    if (chair.chair) {
-      console.log('✅ Seating row chair found, selecting:', chair.chair);
-      
-      // Calculate click position for panel positioning
-      const mouseEvent = event as MouseEvent;
-      const clickX = mouseEvent.clientX;
-      const clickY = mouseEvent.clientY;
-      
-      this.selectChair(chair.chair, clickX, clickY);
-    } else {
-      console.log('❌ No seating row chair found. Chair:', chair.chair);
-    }
+    if (this.isEffectivePreview || !chair || !chair.chair) return;
+
+    console.log('Chair clicked:', chair);
+    this.selectChair(chair.chair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
   }
 
   onChairMouseDown(event: Event, chair: any): void {
-    console.log('🖱️ Seating row chair mousedown:', chair.label);
-    event.stopPropagation();
-    
-    if (chair.chair) {
-      console.log('✅ Seating row chair found on mousedown, selecting:', chair.chair);
-      
-      // Calculate click position for panel positioning
-      const mouseEvent = event as MouseEvent;
-      const clickX = mouseEvent.clientX;
-      const clickY = mouseEvent.clientY;
-      
-      this.selectChair(chair.chair, clickX, clickY);
-    }
+    if (this.isEffectivePreview || !chair || !chair.chair) return;
+
+    console.log('Chair mousedown:', chair);
+    this.selectChair(chair.chair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
   }
 
   onChairHover(chair: any): void {
-    // Optional: Add hover effects here
+    if (this.isEffectivePreview || !chair) return;
+    // Can add hover effects here if needed
   }
 
   getChairClasses(chair: any): string {
-    // Use the getter for consistent preview state
-    if (this.isEffectivePreview || chair.isPreview) {
-      return 'w-5 h-5 bg-blue-100 border-2 border-blue-400 opacity-80 rounded-full';
+    if (!chair) return '';
+
+    const baseClasses = 'w-5 h-5';
+    const hoverClasses = 'hover:bg-blue-400';
+
+    if (this.isEffectivePreview) {
+      return `${baseClasses} bg-blue-300`;
     }
     
     if (chair.isSelected) {
-      return 'w-6 h-6 bg-blue-500 border-2 border-blue-600 shadow-lg rounded-full';
+        return `${baseClasses} bg-blue-500 border-2 border-blue-600 shadow-lg scale-110`;
     }
-    
-    return 'w-5 h-5 bg-white border-2 border-blue-400 hover:bg-blue-50 rounded-full';
+
+    return `${baseClasses} bg-blue-200 ${hoverClasses}`;
   }
 
   private selectChair(chair: Chair, clickX?: number, clickY?: number): void {
     if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
-      this.store.chairStore.deselectChair();
+        this.store.chairStore.deselectChair();
     }
-    
-    // Set panel position if click coordinates provided
-    if (clickX !== undefined && clickY !== undefined) {
-      // Add offset to position panel next to the chair, not over it
-      const offsetX = clickX + 20;
-      const offsetY = clickY - 100; // Position above the click
-      this.store.chairStore.setPanelPosition(offsetX, offsetY);
-    }
-    
+
     if (chair.isSelected) {
       this.store.chairStore.deselectChair();
     } else {
       this.store.chairStore.selectChair(chair.id);
+      if (clickX !== undefined && clickY !== undefined) {
+        this.store.chairStore.setPanelPosition(clickX + 10, clickY - 10);
+      }
     }
   }
 

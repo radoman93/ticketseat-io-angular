@@ -72,34 +72,25 @@ export class DragStore {
   /**
    * Start dragging an element
    */
-  startDragging = action('startDragging', (
-    item: Selectable, 
-    mouseX: number, 
-    mouseY: number
-  ) => {
+  startDragging = action('startDragging', () => {
     // Only allow dragging if item exists and has position properties
-    if (!item || !('x' in item) || !('y' in item)) {
+    if (!this.potentialDragItem || !('x' in this.potentialDragItem) || !('y' in this.potentialDragItem)) {
       console.warn('Cannot drag item without position properties');
       return;
     }
 
-    console.log('Starting to drag item:', item.id);
+    // console.log('Starting to drag item:', this.potentialDragItem.id);
     
     // Clear previous dragged item reference
     this.draggedItem = null;
     
     // Store the initial state
     this.isDragging = true;
-    this.draggedItem = item;
-    
-    // Store start positions
-    this.startMouseX = mouseX;
-    this.startMouseY = mouseY;
-    this.startElementX = item['x'];
-    this.startElementY = item['y'];
-    
+    this.draggedItem = this.potentialDragItem;
+    this.potentialDragItem = null;
+        
     // Ensure item is selected
-    selectionStore.selectItem(item);
+    selectionStore.selectItem(this.draggedItem);
   });
 
   /**
@@ -135,7 +126,7 @@ export class DragStore {
   endDragging = action('endDragging', (historyStore: HistoryStore) => {
     if (!this.isDragging || !this.draggedItem) return;
     
-    console.log('Finished dragging item:', this.draggedItem?.id);
+    // console.log('Finished dragging item:', this.draggedItem?.id);
     
     const oldPosition = { x: this.startElementX, y: this.startElementY };
     const newPosition = { x: this.draggedItem['x'], y: this.draggedItem['y'] };
@@ -148,6 +139,7 @@ export class DragStore {
     
     // Reset dragging state but keep the item selected
     this.isDragging = false;
+    this.potentialDragItem = null;
     
     // Set the justEndedDragging flag
     this.justEndedDragging = true;

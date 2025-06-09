@@ -383,6 +383,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         // Add to layout and history
         const addCmd = new AddObjectCommand(newTable);
         this.historyStore.executeCommand(addCmd);
+
+        // Deselect tool after placing
+        this.toolStore.setActiveTool(ToolType.None);
       }
     }
   }
@@ -416,13 +419,18 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       
       // Update rotation in store
       this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
-    } else if (this.dragStore.isDragging && this.dragStore.draggedItem) {
+    } else if (this.dragStore.isDragging) {
       // Handle dragging an existing item
-      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
-      
-      // Update position in store using updateDragPosition
       this.dragStore.updateDragPosition(event.clientX, event.clientY);
+    } else if (this.dragStore.potentialDragItem) {
+      // If we have a potential drag item, check if we should start dragging
+      const dx = event.clientX - this.dragStore.startMouseX;
+      const dy = event.clientY - this.dragStore.startMouseY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance > 5) { // Start dragging if mouse moved more than 5px
+        this.dragStore.startDragging();
+      }
     } else if (this.previewTable) {
       // Update position of preview object when in add mode
       const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
@@ -490,6 +498,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       // End dragging if in drag mode
       else if (this.dragStore.isDragging) {
         this.dragStore.endDragging(this.historyStore);
+      } else if (this.dragStore.potentialDragItem) {
+        // If we were potentially dragging but didn't move enough, clear it
+        this.dragStore.potentialDragItem = null;
       }
       // Complete segment of a segmented seating row OR regular seating row
       else if (this.isCreatingSegmentedRow && this.previewSegment) {
@@ -624,6 +635,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     
     // Reset state
     this.resetSegmentedSeatingRowState();
+
+    // Deselect tool after finalizing
+    this.toolStore.setActiveTool(ToolType.None);
   }
   
   // Cancel segmented seating row creation

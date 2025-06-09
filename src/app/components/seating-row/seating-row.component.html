@@ -25,9 +25,9 @@
          [style.transform]="chair.transform">
       <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
            [class]="getChairClasses(chair)"
-           (click)="!isEffectivePreview && onChairClick($event, chair)"
-           (mousedown)="!isEffectivePreview && onChairMouseDown($event, chair)"
-           (mouseenter)="!isEffectivePreview && onChairHover(chair)"
+           (click)="onChairClick($event, chair)"
+           (mousedown)="onChairMouseDown($event, chair)"
+           (mouseenter)="onChairHover(chair)"
            [title]="'Seat ' + chair.label + ' (ID: ' + chair.id + ') - Row seat ' + (chair.index + 1)">
         <span *ngIf="chairLabelVisible" 
               [class]="chair.isSelected ? 'text-xs text-white font-bold' : (isEffectivePreview ? 'text-xs text-blue-600 font-medium' : 'text-xs text-blue-700')">
