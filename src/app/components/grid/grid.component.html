@@ -1,4 +1,4 @@
-<div class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun (click)="handleCanvasClick()">
+<div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun (click)="handleCanvasClick()">
     <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
 
     <!-- Display all tables with position adjusted for pan offset and zoom -->
@@ -144,27 +144,18 @@
     <div *ngIf="toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow" 
          class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
 
-    <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-10">
-        <div class="bg-white/90 px-2 py-1 rounded text-xs shadow">
-          X: {{ store.getUnscaledCoordinate(store.mouseX - store.panOffset.x) }}, Y: {{ store.getUnscaledCoordinate(store.mouseY - store.panOffset.y) }}
-        </div>
-        <div class="flex items-center bg-white/90 px-2 py-1 rounded shadow">
-          <button (click)="zoomIn()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">+</button>
-          <span class="mx-2 text-xs w-12 text-center">{{ store.zoomLevel }}%</span>
-          <button (click)="zoomOut()" class="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded cursor-pointer text-base transition-all duration-200 hover:bg-gray-100">-</button>
-        </div>
-        
-        <!-- Status indicators -->
-        <div class="flex flex-col gap-1">
-          <div class="bg-blue-500 text-white px-2 py-1 rounded text-xs shadow">
-            Using MobX
-          </div>
-          <div *ngIf="dragStore.isDragging" class="bg-green-500 text-white px-2 py-1 rounded text-xs shadow">
-            Dragging: {{ dragStore.draggedItem?.['name'] }}
-          </div>
-          <div *ngIf="isCreatingSegmentedRow" class="bg-green-500 text-white px-2 py-1 rounded text-xs shadow">
-            Creating Segmented Row: {{ segmentedRowSegments.length }} segment(s)
-          </div>
-        </div>
+    <!-- Zoom and coordinate controls -->
+    <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2">
+      <!-- Coordinate display -->
+      <div class="bg-white rounded-md p-2 text-xs shadow-lg" *mobxAutorun>
+        X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
       </div>
+      
+      <!-- Zoom controls -->
+      <div class="flex items-center bg-white rounded-md shadow-lg">
+        <button (click)="zoomOut()" class="btn btn-sm btn-ghost">-</button>
+        <span class="text-xs px-2">{{ store.zoomLevel.toFixed(0) }}%</span>
+        <button (click)="zoomIn()" class="btn btn-sm btn-ghost">+</button>
+      </div>
+    </div>
 </div>

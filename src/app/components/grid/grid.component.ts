@@ -78,6 +78,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   ) {}
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('gridContainer') gridContainerRef!: ElementRef<HTMLDivElement>;
   private ctx!: CanvasRenderingContext2D;
 
   ngOnInit(): void {
@@ -195,9 +196,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   //The idea is to make large canvas and have it contained within grid-container
   private setCanvasSize() {
-    const canvas = this.canvasRef.nativeElement;
-    canvas.width = this.store.canvasWidth;
-    canvas.height = this.store.canvasHeight;
+    if (this.canvasRef && this.gridContainerRef) {
+      const canvas = this.canvasRef.nativeElement;
+      const container = this.gridContainerRef.nativeElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
   }
 
   private drawGrid(): void {

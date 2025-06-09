@@ -7,8 +7,6 @@ export class GridStore {
   gridSize = 50;
   zoomLevel = 100;
   panOffset = { x: 0, y: 0 };
-  canvasWidth = 3000;
-  canvasHeight = 2000;
   isPanning = false;
   panStart = { x: 0, y: 0 };
   showGrid = true;
@@ -34,6 +32,14 @@ export class GridStore {
       unregisterRedrawCallback: false,
       triggerRedraw: false
     });
+  }
+
+  // Computed value for mouse position
+  get mousePosition() {
+    return {
+      x: this.getUnscaledCoordinate(this.mouseX - this.panOffset.x),
+      y: this.getUnscaledCoordinate(this.mouseY - this.panOffset.y)
+    };
   }
 
   // Actions
