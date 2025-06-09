@@ -2,8 +2,43 @@
     <!-- Logo - always visible -->
     <div class="text-lg font-bold text-yellow-600">TicketSeats</div>
     
+    <!-- Mode Toggle - prominently placed -->
+    <div class="flex items-center gap-4" *mobxAutorun>
+        <div class="bg-gray-100 rounded-lg p-1 flex items-center">
+            <button 
+                class="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200"
+                [class.bg-white]="viewerStore.isEditorMode"
+                [class.text-gray-900]="viewerStore.isEditorMode"
+                [class.shadow-sm]="viewerStore.isEditorMode"
+                [class.text-gray-600]="!viewerStore.isEditorMode"
+                (click)="viewerStore.setMode('editor')">
+                Editor
+            </button>
+            <button 
+                class="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200"
+                [class.bg-white]="viewerStore.isViewerMode"
+                [class.text-gray-900]="viewerStore.isViewerMode"
+                [class.shadow-sm]="viewerStore.isViewerMode"
+                [class.text-gray-600]="!viewerStore.isViewerMode"
+                (click)="viewerStore.setMode('viewer')">
+                Viewer
+            </button>
+        </div>
+        
+        <!-- Mode Indicator Badge -->
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full" 
+                 [class.bg-blue-500]="viewerStore.isEditorMode"
+                 [class.bg-green-500]="viewerStore.isViewerMode">
+            </div>
+            <span class="text-sm text-gray-600">
+                {{ viewerStore.isEditorMode ? 'Editing Layout' : 'Viewing & Reserving' }}
+            </span>
+        </div>
+    </div>
+    
     <!-- Desktop menu - only visible on medium and larger screens -->
-    <div class="hidden md:flex flex-1 justify-center items-center gap-5"> 
+    <div class="hidden md:flex flex-1 justify-center items-center gap-5" *ngIf="viewerStore.isEditorMode"> 
         <div class="flex items-center text-xs gap-2">
             <span>Grid Size:</span>
             <select class="select select-ghost w-30 focus:outline-none focus:border-none focus:ring-0 active:outline-none active:border-none hover:border-none" 
@@ -60,9 +95,24 @@
         </div>
     </div>
     
+    <!-- Viewer Mode Summary - shown when in viewer mode -->
+    <div class="hidden md:flex flex-1 justify-center items-center" *mobxAutorun>
+        <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-2 flex items-center gap-4" *ngIf="viewerStore.isViewerMode">
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-green-700 font-medium">Selected Seats:</span>
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-bold">
+                    {{ viewerStore.selectedSeatsCount }}
+                </span>
+            </div>
+            <div class="text-sm text-green-600">
+                Click seats to select for reservation
+            </div>
+        </div>
+    </div>
+    
     <!-- Action buttons - visible on desktop -->
     <div class="hidden md:block">
-        <button class="btn btn-sm btn-warning">Save</button>
+        <button class="btn btn-sm btn-warning" *ngIf="viewerStore.isEditorMode">Save</button>
     </div>
     
     <!-- Hamburger menu button - only visible on small screens -->

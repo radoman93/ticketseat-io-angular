@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
 import { makeAutoObservable, computed } from 'mobx';
-import { rootStore } from '../../stores/root.store';
+import { rootStore, rotationStore } from '../../stores';
 import { Chair } from '../../models/chair.model';
-import { rotationStore } from '../../stores/rotation.store';
+import viewerStore from '../../stores/viewer.store';
 
 @Component({
   selector: 'app-segmented-seating-row',
@@ -25,6 +25,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   
   store = rootStore;
   rotationStore = rotationStore;
+  viewerStore = viewerStore;
   
   constructor() {
     makeAutoObservable(this, {
@@ -271,6 +272,69 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       console.log('[SegmentedSeatingRowComponent] Available chairs:', Array.from(this.store.chairStore.chairs.keys()));
     }
   }
+
+  getChairClasses(chairData: any): string {
+    if (!chairData) return 'w-5 h-5 bg-gray-200 border border-gray-400';
+    
+    const baseClasses = 'w-5 h-5 transition-all duration-200';
+    
+    if (chairData.isPreviewChair) {
+      return `${baseClasses} bg-blue-300 border border-blue-400`;
+    }
+    
+    if (!chairData.chair) return `${baseClasses} bg-gray-200 border border-gray-400`;
+    
+    // In viewer mode, show reservation status
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
+      
+      if (reservationStatus === 'reserved') {
+        return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
+      } else if (reservationStatus === 'selected-for-reservation') {
+        return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
+      } else {
+        return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
+      }
+    }
+    
+    // In editor mode, show selection status
+    if (chairData.isSelected) {
+      return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
+    }
+    
+    return `${baseClasses} bg-blue-200 border border-blue-300 hover:bg-blue-300 hover:scale-105 cursor-pointer`;
+  }
+
+  getSeatTitle(chairData: any): string {
+    if (!chairData.chair) return `Seat ${chairData.label}`;
+    
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
+      if (reservationStatus === 'reserved') {
+        return `Seat ${chairData.label} - Reserved by ${chairData.chair.reservedBy || 'Unknown'}`;
+      } else if (reservationStatus === 'selected-for-reservation') {
+        return `Seat ${chairData.label} - Selected for reservation (Price: $${chairData.chair.price})`;
+      } else {
+        return `Seat ${chairData.label} - Available (Price: $${chairData.chair.price})`;
+      }
+    }
+    
+    return `Chair ${chairData.label} (ID: ${chairData.id})`;
+  }
+
+  getSeatLabelClasses(chairData: any): string {
+    if (!chairData.chair) return 'text-xs text-gray-700';
+    
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
+      if (reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
+        return 'text-xs text-white font-bold drop-shadow-sm';
+      }
+      return 'text-xs text-gray-700';
+    }
+    
+    return chairData.isSelected ? 'text-xs text-white font-bold drop-shadow-sm' : 'text-xs text-gray-700';
+  }
   
   onChairMouseDown(event: Event, chairData: any): void {
     if (this.isPreview) return;
@@ -282,6 +346,26 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   }
 
   private selectChair(chair: Chair, clickX?: number, clickY?: number): void {
+    // Handle viewer mode seat selection for reservations
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
+      
+      // Don't allow selection of already reserved seats - add visual feedback
+      if (reservationStatus === 'reserved') {
+        this.viewerStore.showReservedSeatFeedback();
+        return;
+      }
+      
+      // Toggle seat selection for reservation
+      if (this.viewerStore.isSeatSelectedForReservation(chair.id)) {
+        this.viewerStore.deselectSeatForReservation(chair.id);
+      } else {
+        this.viewerStore.selectSeatForReservation(chair.id);
+      }
+      return;
+    }
+    
+    // Handle editor mode selection
     if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
       this.store.chairStore.deselectChair();
     }

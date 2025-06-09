@@ -7,6 +7,8 @@ import { ChairStore, chairStore } from './chair.store';
 import { LayoutMetricsStore, layoutMetricsStore } from './derived/layout-metrics.store';
 import { TransactionManager, transactionManager } from './transaction.manager';
 import { PersistenceManager, persistenceManager } from './persistence.manager';
+import { ViewerStore } from './viewer.store';
+import viewerStore from './viewer.store';
 
 /**
  * RootStore combines all the individual stores and provides
@@ -19,6 +21,7 @@ export class RootStore {
   toolStore: ToolStore;
   gridStore: GridStore;
   chairStore: ChairStore;
+  viewerStore: ViewerStore;
   
   // Derived stores
   layoutMetricsStore: LayoutMetricsStore;
@@ -34,6 +37,7 @@ export class RootStore {
     this.toolStore = toolStore;
     this.gridStore = gridStore;
     this.chairStore = chairStore;
+    this.viewerStore = viewerStore;
     
     // Derived stores
     this.layoutMetricsStore = layoutMetricsStore;

@@ -5,6 +5,7 @@ import { RectangleTableProperties } from '../../services/selection.service';
 import { makeAutoObservable, observable, computed } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
+import viewerStore from '../../stores/viewer.store';
 
 @Component({
   selector: 'app-rectangle-table',
@@ -31,6 +32,7 @@ export class RectangleTableComponent implements OnInit {
   @Input() chairLabelVisible: boolean = true;
   
   store = rootStore;
+  viewerStore = viewerStore;
   
   @HostBinding('class') @Input() class: string = '';
   
@@ -259,6 +261,11 @@ export class RectangleTableComponent implements OnInit {
     console.log('🖱️ Rectangle chair mousedown:', chair.label);
     event.stopPropagation();
     
+    // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return; // Don't handle mousedown in viewer mode
+    }
+    
     if (chair.chair) {
       console.log('✅ Rectangle chair found on mousedown, selecting:', chair.chair);
       
@@ -275,7 +282,84 @@ export class RectangleTableComponent implements OnInit {
     // Optional: Add hover effects here
   }
 
+  getSeatClasses(chair: any): string {
+    if (!chair.chair) return 'w-5 h-5 bg-gray-200 border border-gray-400';
+    
+    const baseClasses = 'w-5 h-5 transition-all duration-200';
+    
+    // In viewer mode, show reservation status
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
+      
+      if (reservationStatus === 'reserved') {
+        return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
+      } else if (reservationStatus === 'selected-for-reservation') {
+        return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
+      } else {
+        return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
+      }
+    }
+    
+    // In editor mode, show selection status
+    if (chair.isSelected) {
+      return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
+    }
+    
+    return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:scale-105 cursor-pointer`;
+  }
+
+  getSeatTitle(chair: any): string {
+    if (!chair.chair) return `Seat ${chair.label}`;
+    
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
+      if (reservationStatus === 'reserved') {
+        return `Seat ${chair.label} - Reserved by ${chair.chair.reservedBy || 'Unknown'}`;
+      } else if (reservationStatus === 'selected-for-reservation') {
+        return `Seat ${chair.label} - Selected for reservation (Price: $${chair.chair.price})`;
+      } else {
+        return `Seat ${chair.label} - Available (Price: $${chair.chair.price})`;
+      }
+    }
+    
+    return `Chair ${chair.label} (ID: ${chair.id})`;
+  }
+
+  getSeatLabelClasses(chair: any): string {
+    if (!chair.chair) return 'text-xs text-gray-700';
+    
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
+      if (reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
+        return 'text-xs text-white font-bold drop-shadow-sm';
+      }
+      return 'text-xs text-gray-700';
+    }
+    
+    return chair.isSelected ? 'text-xs text-white font-bold drop-shadow-sm' : 'text-xs text-gray-700';
+  }
+
   private selectChair(chair: Chair, clickX?: number, clickY?: number): void {
+    // Handle viewer mode seat selection for reservations
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
+      
+      // Don't allow selection of already reserved seats - add visual feedback
+      if (reservationStatus === 'reserved') {
+        this.viewerStore.showReservedSeatFeedback();
+        return;
+      }
+      
+      // Toggle seat selection for reservation
+      if (this.viewerStore.isSeatSelectedForReservation(chair.id)) {
+        this.viewerStore.deselectSeatForReservation(chair.id);
+      } else {
+        this.viewerStore.selectSeatForReservation(chair.id);
+      }
+      return;
+    }
+    
+    // Handle editor mode selection
     if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
       this.store.chairStore.deselectChair();
     }

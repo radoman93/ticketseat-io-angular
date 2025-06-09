@@ -4,6 +4,7 @@ import { toolStore } from '../../../stores/tool.store';
 import { layoutStore } from '../../../stores/layout.store';
 import { selectionStore } from '../../../stores/selection.store';
 import { HistoryStore } from '../../../stores/history.store';
+import viewerStore from '../../../stores/viewer.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -24,6 +25,7 @@ export class TopToolbarComponent implements OnInit {
   toolStore = toolStore;
   layoutStore = layoutStore;
   selectionStore = selectionStore;
+  viewerStore = viewerStore;
   historyStore: HistoryStore;
   
   // Make the ToolType enum available in the template
@@ -53,6 +55,11 @@ export class TopToolbarComponent implements OnInit {
   // Toggle mobile menu
   toggleMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  // Toggle between editor and viewer mode
+  toggleMode() {
+    this.viewerStore.toggleMode();
   }
   
   // Method to update grid size

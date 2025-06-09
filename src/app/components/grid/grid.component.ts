@@ -18,7 +18,8 @@ import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import { RotateObjectCommand } from '../../commands/rotate-object.command';
-import { rotationStore } from '../../stores/rotation.store';
+import rotationStore from '../../stores/rotation.store';
+import viewerStore from '../../stores/viewer.store';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
@@ -45,6 +46,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   selectionStore = selectionStore;
   layoutStore = layoutStore;
   dragStore = dragStore;
+  viewerStore = viewerStore;
   
   // Make enum available in template
   ToolType = ToolType;
@@ -278,6 +280,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
     if (this.isRotating) return; // Already handling rotation, ignore other mousedown events
+
+    // Disable all table manipulation and creation in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
 
     if (event.button === 1) {
       // Middle mouse button for panning
@@ -775,6 +782,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       return;
     }
     
+    // Disable all table manipulation in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
+    
     // Deselect any selected chairs when selecting a table
     this.rootStore.chairStore.deselectChair();
     
@@ -827,6 +839,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Handle keyboard events
   @HostListener('window:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
+    // Disable keyboard shortcuts in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
+    
     // Delete key to remove selected table
     if (event.key === 'Delete' && this.selectionStore.hasSelection) {
       this.deleteSelectedTable();
@@ -857,6 +874,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Start rotating an item
   startRotate(item: TablePosition, event: MouseEvent): void {
     event.stopPropagation();
+    
+    // Disable rotation in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
     
     this.isRotating = true;
     this.rotatingItem = item;

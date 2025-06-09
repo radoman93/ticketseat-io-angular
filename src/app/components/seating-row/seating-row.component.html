@@ -20,7 +20,7 @@
   
   <!-- Seating Row Chairs -->
   <div class="absolute w-full h-full left-0 top-0">
-    <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5" 
+    <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5" 
          *ngFor="let chair of chairStyles; let i = index" 
          [style.transform]="chair.transform">
       <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
@@ -28,14 +28,21 @@
            (click)="onChairClick($event, chair)"
            (mousedown)="onChairMouseDown($event, chair)"
            (mouseenter)="onChairHover(chair)"
-           [title]="'Seat ' + chair.label + ' (ID: ' + chair.id + ') - Row seat ' + (chair.index + 1)">
+           [title]="getSeatTitle(chair)">
         <span *ngIf="chairLabelVisible" 
-              [class]="chair.isSelected ? 'text-xs text-white font-bold' : (isEffectivePreview ? 'text-xs text-blue-600 font-medium' : 'text-xs text-blue-700')">
+              [class]="getSeatLabelClasses(chair)">
           {{ chair.label }}
         </span>
-        <!-- Selection glow effect -->
-        <div *ngIf="chair.isSelected && !isEffectivePreview" 
-             class="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping"></div>
+        <!-- Selection glow effect for editor mode -->
+        <div *ngIf="chair.isSelected && !isEffectivePreview && viewerStore.isEditorMode" 
+             class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
+        <div *ngIf="chair.isSelected && !isEffectivePreview && viewerStore.isEditorMode" 
+             class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
+        <!-- Selection glow effect for viewer mode -->
+        <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
+             class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
+        <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
+             class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
       </div>
       
       <!-- Preview info display - positioned next to the last chair -->

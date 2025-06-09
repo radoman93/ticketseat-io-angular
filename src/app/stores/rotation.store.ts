@@ -22,4 +22,5 @@ class RotationStore {
   }
 }
 
-export const rotationStore = new RotationStore(); 
+const rotationStore = new RotationStore();
+export default rotationStore; 

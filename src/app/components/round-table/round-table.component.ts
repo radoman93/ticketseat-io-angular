@@ -5,6 +5,7 @@ import { RoundTableProperties, ChairProperties } from '../../services/selection.
 import { makeAutoObservable, observable, computed } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
+import viewerStore from '../../stores/viewer.store';
 
 @Component({
   selector: 'app-round-table',
@@ -28,6 +29,7 @@ export class RoundTableComponent implements OnInit {
   @Input() chairLabelVisible: boolean = true;
   
   store = rootStore;
+  viewerStore = viewerStore;
   
   @HostBinding('class') @Input() class: string = '';
   
@@ -170,6 +172,11 @@ export class RoundTableComponent implements OnInit {
     console.log('🖱️ Chair mousedown:', seat.label);
     event.stopPropagation();
     
+    // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return; // Don't handle mousedown in viewer mode
+    }
+    
     if (!seat.isOpenSpace && seat.chair) {
       console.log('✅ Chair found on mousedown, selecting:', seat.chair);
       
@@ -186,7 +193,84 @@ export class RoundTableComponent implements OnInit {
     console.log('👆 Chair hover:', seat.label);
   }
 
+  getSeatClasses(seat: any): string {
+    if (!seat.chair) return 'w-5 h-5 bg-gray-200 border border-gray-400';
+    
+    const baseClasses = 'w-5 h-5 transition-all duration-200';
+    
+    // In viewer mode, show reservation status
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
+      
+      if (reservationStatus === 'reserved') {
+        return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
+      } else if (reservationStatus === 'selected-for-reservation') {
+        return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
+      } else {
+        return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
+      }
+    }
+    
+    // In editor mode, show selection status
+    if (seat.isSelected) {
+      return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
+    }
+    
+    return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:scale-105 cursor-pointer`;
+  }
+
+  getSeatTitle(seat: any): string {
+    if (!seat.chair) return `Seat ${seat.label}`;
+    
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
+      if (reservationStatus === 'reserved') {
+        return `Seat ${seat.label} - Reserved by ${seat.chair.reservedBy || 'Unknown'}`;
+      } else if (reservationStatus === 'selected-for-reservation') {
+        return `Seat ${seat.label} - Selected for reservation`;
+      } else {
+        return `Seat ${seat.label} - Available (Price: $${seat.chair.price})`;
+      }
+    }
+    
+    return `Chair ${seat.label} (ID: ${seat.id})`;
+  }
+
+  getSeatLabelClasses(seat: any): string {
+    if (!seat.chair) return 'text-xs text-gray-700';
+    
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
+      if (reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
+        return 'text-xs text-white font-bold';
+      }
+      return 'text-xs text-gray-700';
+    }
+    
+    return seat.isSelected ? 'text-xs text-white font-bold' : 'text-xs text-gray-700';
+  }
+
   private selectChair(chair: Chair, clickX?: number, clickY?: number): void {
+    // Handle viewer mode seat selection for reservations
+    if (this.viewerStore.isViewerMode) {
+      const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
+      
+      // Don't allow selection of already reserved seats
+      if (reservationStatus === 'reserved') {
+        this.viewerStore.showReservedSeatFeedback();
+        return;
+      }
+      
+      // Toggle seat selection for reservation
+      if (this.viewerStore.isSeatSelectedForReservation(chair.id)) {
+        this.viewerStore.deselectSeatForReservation(chair.id);
+      } else {
+        this.viewerStore.selectSeatForReservation(chair.id);
+      }
+      return;
+    }
+    
+    // Handle editor mode selection
     if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
       this.store.chairStore.deselectChair();
     }

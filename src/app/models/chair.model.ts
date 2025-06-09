@@ -8,4 +8,6 @@ export interface Chair {
     distance: number;      // Distance from table center
   };
   isSelected?: boolean;    // Selection state
+  reservationStatus?: 'free' | 'reserved' | 'selected-for-reservation';  // Reservation status for viewer mode
+  reservedBy?: string;     // Who reserved the seat (customer name/ID)
 } 
