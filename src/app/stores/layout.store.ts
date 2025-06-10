@@ -1,8 +1,8 @@
 import { makeAutoObservable, action } from 'mobx';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, LineProperties } from '../services/selection.service';
 
 // Union type for all table types
-export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
+export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineProperties;
 
 export class LayoutStore {
   elements: TableElement[] = [];
@@ -31,12 +31,12 @@ export class LayoutStore {
     return newElement;
   });
   
-  updateElement = action('updateElement', (id: string, updates: Partial<TableElement>) => {
+  updateElement = action('updateElement', (id: string, updates: Partial<any>) => {
     const index = this.elements.findIndex(el => el.id === id);
     if (index !== -1) {
       // To ensure change detection is triggered in Angular components,
       // replace the element with a new object.
-      this.elements[index] = { ...this.elements[index], ...updates };
+      this.elements[index] = { ...this.elements[index], ...updates } as TableElement;
       return this.elements[index];
     }
     return null;

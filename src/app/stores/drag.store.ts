@@ -20,6 +20,9 @@ export class DragStore {
   startElementX = 0;
   startElementY = 0;
   
+  // Store original points for lines (for cancel functionality)
+  originalPoints: {x: number, y: number}[] = [];
+  
   // Track potential drag
   potentialDragItem: Selectable | null = null;
   
@@ -53,29 +56,65 @@ export class DragStore {
     mouseX: number, 
     mouseY: number
   ) => {
-    // Only prepare if item exists and has position properties
-    if (!item || !('x' in item) || !('y' in item)) {
-      console.warn('Cannot prepare drag for item without position properties');
-      return;
+    // Handle different item types
+    if (item.type === 'line') {
+      // For lines, check if they have points
+      if (!item['points'] || !Array.isArray(item['points']) || item['points'].length === 0) {
+        console.warn('Cannot prepare drag for line without points');
+        return;
+      }
+      
+      // Calculate center point of the line for dragging reference
+      const points = item['points'];
+      const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+      const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+      
+      // Store original points for cancel functionality
+      this.originalPoints = points.map(point => ({ x: point.x, y: point.y }));
+      
+      // Store the potential drag item
+      this.potentialDragItem = item;
+      
+      // Store initial positions (using calculated center for lines)
+      this.startMouseX = mouseX;
+      this.startMouseY = mouseY;
+      this.startElementX = centerX;
+      this.startElementY = centerY;
+    } else {
+      // For other items, check for x and y properties
+      if (!item || !('x' in item) || !('y' in item)) {
+        console.warn('Cannot prepare drag for item without position properties');
+        return;
+      }
+      
+      // Store the potential drag item
+      this.potentialDragItem = item;
+      
+      // Store initial positions
+      this.startMouseX = mouseX;
+      this.startMouseY = mouseY;
+      this.startElementX = item['x'];
+      this.startElementY = item['y'];
     }
-    
-    // Store the potential drag item
-    this.potentialDragItem = item;
-    
-    // Store initial positions
-    this.startMouseX = mouseX;
-    this.startMouseY = mouseY;
-    this.startElementX = item['x'];
-    this.startElementY = item['y'];
   });
 
   /**
    * Start dragging an element
    */
   startDragging = action('startDragging', () => {
-    // Only allow dragging if item exists and has position properties
-    if (!this.potentialDragItem || !('x' in this.potentialDragItem) || !('y' in this.potentialDragItem)) {
-      console.warn('Cannot drag item without position properties');
+    // Only allow dragging if item exists and has appropriate properties
+    if (!this.potentialDragItem) {
+      console.warn('Cannot drag: no potential drag item');
+      return;
+    }
+    
+    // Check if it's a line (has points) or regular item (has x/y)
+    const isLine = this.potentialDragItem.type === 'line';
+    const hasPoints = isLine && this.potentialDragItem['points'] && Array.isArray(this.potentialDragItem['points']);
+    const hasPosition = !isLine && 'x' in this.potentialDragItem && 'y' in this.potentialDragItem;
+    
+    if (!hasPoints && !hasPosition) {
+      console.warn('Cannot drag item without position properties or points');
       return;
     }
 
@@ -111,12 +150,38 @@ export class DragStore {
     const canvasDx = dx / zoomFactor;
     const canvasDy = dy / zoomFactor;
     
-    // Calculate new position
-    const newX = this.startElementX + canvasDx;
-    const newY = this.startElementY + canvasDy;
-    
-    // Handle segmented seating rows differently
-    if (this.draggedItem.type === 'segmentedSeatingRow') {
+    // Handle different item types
+    if (this.draggedItem.type === 'line') {
+      // For lines, move all points by the same delta
+      const currentPoints = this.draggedItem['points'];
+      if (currentPoints && Array.isArray(currentPoints)) {
+        // Calculate the current center to determine how much we need to move
+        const currentCenterX = currentPoints.reduce((sum, point) => sum + point.x, 0) / currentPoints.length;
+        const currentCenterY = currentPoints.reduce((sum, point) => sum + point.y, 0) / currentPoints.length;
+        
+        // Calculate target center
+        const targetCenterX = this.startElementX + canvasDx;
+        const targetCenterY = this.startElementY + canvasDy;
+        
+        // Calculate the delta needed to reach target center
+        const pointsDx = targetCenterX - currentCenterX;
+        const pointsDy = targetCenterY - currentCenterY;
+        
+        // Move all points by this delta
+        const updatedPoints = currentPoints.map(point => ({
+          x: point.x + pointsDx,
+          y: point.y + pointsDy
+        }));
+        
+        const update = { points: updatedPoints };
+        Object.assign(this.draggedItem, update);
+        layoutStore.updateElement(this.draggedItem.id, update);
+      }
+    } else if (this.draggedItem.type === 'segmentedSeatingRow') {
+      // Calculate new position
+      const newX = this.startElementX + canvasDx;
+      const newY = this.startElementY + canvasDy;
+      
       const deltaX = newX - this.draggedItem['x'];
       const deltaY = newY - this.draggedItem['y'];
       
@@ -144,6 +209,9 @@ export class DragStore {
       }
     } else {
       // For other elements, just update x and y
+      const newX = this.startElementX + canvasDx;
+      const newY = this.startElementY + canvasDy;
+      
       const update = { x: newX, y: newY };
       Object.assign(this.draggedItem, update);
       layoutStore.updateElement(this.draggedItem.id, update);
@@ -158,8 +226,31 @@ export class DragStore {
     
     // console.log('Finished dragging item:', this.draggedItem?.id);
     
-    const oldPosition = { x: this.startElementX, y: this.startElementY };
-    const newPosition = { x: this.draggedItem['x'], y: this.draggedItem['y'] };
+    let oldPosition: { x: number, y: number };
+    let newPosition: { x: number, y: number };
+    
+    if (this.draggedItem.type === 'line') {
+      // For lines, use the center points for history tracking
+      const currentPoints = this.draggedItem['points'];
+      if (currentPoints && Array.isArray(currentPoints)) {
+        const newCenterX = currentPoints.reduce((sum, point) => sum + point.x, 0) / currentPoints.length;
+        const newCenterY = currentPoints.reduce((sum, point) => sum + point.y, 0) / currentPoints.length;
+        
+        oldPosition = { x: this.startElementX, y: this.startElementY };
+        newPosition = { x: newCenterX, y: newCenterY };
+      } else {
+        // If no points, skip history command
+        this.isDragging = false;
+        this.potentialDragItem = null;
+        this.justEndedDragging = true;
+        setTimeout(() => this.resetJustEndedDragging(), 100);
+        return;
+      }
+    } else {
+      // For regular items with x/y properties
+      oldPosition = { x: this.startElementX, y: this.startElementY };
+      newPosition = { x: this.draggedItem['x'], y: this.draggedItem['y'] };
+    }
 
     // Only create a command if the position actually changed
     if (oldPosition.x !== newPosition.x || oldPosition.y !== newPosition.y) {
@@ -170,6 +261,7 @@ export class DragStore {
     // Reset dragging state but keep the item selected
     this.isDragging = false;
     this.potentialDragItem = null;
+    this.originalPoints = [];
     
     // Set the justEndedDragging flag
     this.justEndedDragging = true;
@@ -190,16 +282,27 @@ export class DragStore {
   cancelDragging = action('cancelDragging', () => {
     if (!this.isDragging || !this.draggedItem) return;
     
-    // Revert to original position
-    layoutStore.updateElement(this.draggedItem.id, {
-      x: this.startElementX,
-      y: this.startElementY
-    });
+    // Revert to original position based on item type
+    if (this.draggedItem.type === 'line') {
+      // For lines, revert to original points
+      if (this.originalPoints.length > 0) {
+        layoutStore.updateElement(this.draggedItem.id, {
+          points: this.originalPoints
+        });
+      }
+    } else {
+      // For other items, revert to original x/y
+      layoutStore.updateElement(this.draggedItem.id, {
+        x: this.startElementX,
+        y: this.startElementY
+      });
+    }
     
     // Reset state completely when canceled
     this.isDragging = false;
     this.draggedItem = null;
     this.potentialDragItem = null;
+    this.originalPoints = [];
   });
 }
 

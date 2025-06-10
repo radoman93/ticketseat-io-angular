@@ -50,4 +50,14 @@
       <path d="M5 7 L13 10 L19 17" stroke-width="1.5" fill="none" />
     </svg>
   </button>
+  
+  <button 
+    class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
+    [class.bg-blue-100]="isToolActive(ToolType.Line)"
+    (click)="toggleTool(ToolType.Line)"
+    title="Line">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path d="M4 20 L20 4" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
 </div>

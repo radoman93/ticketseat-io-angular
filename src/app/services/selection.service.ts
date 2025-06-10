@@ -55,6 +55,14 @@ export interface SegmentProperties {
   segmentIndex: number;
 }
 
+export interface LineProperties extends Selectable {
+  type: 'line';
+  points: {x: number, y: number}[];
+  thickness?: number;
+  color?: string;
+  name?: string;
+}
+
 export interface SeatingRowProperties extends Selectable {
   x: number;
   y: number;

@@ -5,9 +5,10 @@ import { RoundTableComponent } from '../round-table/round-table.component';
 import { RectangleTableComponent } from '../rectangle-table/rectangle-table.component';
 import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
+import { LineComponent } from '../line/line.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
+import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties, LineProperties } from '../../services/selection.service';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
@@ -17,12 +18,13 @@ import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
+import { LineService } from '../../services/line.service';
 import { RotateObjectCommand } from '../../commands/rotate-object.command';
 import rotationStore from '../../stores/rotation.store';
 import viewerStore from '../../stores/viewer.store';
 
 // Use union type for table positions  
-type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
+type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineProperties;
 
 @Component({
   selector: 'app-grid',
@@ -32,6 +34,7 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
     RectangleTableComponent, 
     SeatingRowComponent, 
     SegmentedSeatingRowComponent, 
+    LineComponent,
     CommonModule
   ],
   standalone: true,
@@ -76,9 +79,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   segmentedRowSegments: SegmentProperties[] = [];
   previewSegment: SegmentProperties | null = null;
 
+  // Line drawing state
+  isCreatingLine: boolean = false;
+  previewLine: LineProperties | null = null;
+
   constructor(
     private historyStore: HistoryStore,
-    private segmentedSeatingRowService: SegmentedSeatingRowService
+    private segmentedSeatingRowService: SegmentedSeatingRowService,
+    private lineService: LineService
   ) {}
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -173,9 +181,16 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           totalSegments: 0,
           totalSeats: 0
         };
+      } else if (activeTool === ToolType.Line) {
+        this.previewTable = null;
+        this.previewSegment = null;
+        this.previewLine = null;
+        this.isCreatingLine = false;
       } else {
         this.previewTable = null;
         this.previewSegment = null;
+        this.previewLine = null;
+        this.isCreatingLine = false;
       }
     });
     
@@ -399,6 +414,25 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
         // Deselect tool after placing
         this.toolStore.setActiveTool(ToolType.None);
+      } else if (activeTool === ToolType.Line) {
+        // Line tool: click to add points, double-click to finish
+        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        
+        if (!this.isCreatingLine) {
+          // First click: start creating a line with two points (start point and current mouse position)
+          this.isCreatingLine = true;
+          this.previewLine = this.lineService.createLine(x, y);
+          // Add a second point immediately so we can see the line
+          this.previewLine = this.lineService.addPoint(this.previewLine, x, y);
+          console.log('Starting line creation at', x, y);
+        } else if (this.previewLine) {
+          // Subsequent clicks: add points to the line
+          this.previewLine = this.lineService.addPoint(this.previewLine, x, y);
+          console.log('Added point to line at', x, y);
+        }
+        
+        event.preventDefault();
       }
     }
   }
@@ -544,6 +578,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         
         console.log('Updated preview segment:', this.previewSegment);
       }
+    } else if (this.isCreatingLine && this.previewLine) {
+      // Update the last point of the line being created for live preview
+      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      
+      this.previewLine = this.lineService.updateLastPoint(this.previewLine, x, y);
     }
   }
 
@@ -658,6 +698,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   onDoubleClick(event: MouseEvent): void {
     if (this.isCreatingSegmentedRow && this.segmentedRowSegments.length > 0) {
       this.finalizeSegmentedSeatingRow();
+    } else if (this.isCreatingLine && this.previewLine && this.previewLine.points.length >= 2) {
+      this.finalizeLine();
     }
   }
   
@@ -675,6 +717,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     } else if (this.isCreatingRegularRow) {
       // Cancel regular row creation
       this.cancelRegularRow();
+    } else if (this.isCreatingLine) {
+      // Cancel line creation
+      this.cancelLine();
     }
   }
   
@@ -966,5 +1011,82 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.isCreatingRegularRow = false;
     this.previewSegment = null;
     this.segmentedRowSegments = [];
+  }
+
+  // Handle line completion
+  private finalizeLine(): void {
+    console.log('Finalizing line');
+    
+    if (this.previewLine && this.previewLine.points.length >= 2) {
+      // Create the final line object
+      const newLine: LineProperties = {
+        ...this.previewLine,
+        id: `line-${Date.now()}`,
+        name: `Line ${this.layoutStore.elements.length + 1}`
+      };
+      
+      // Add to layout and history
+      const addCmd = new AddObjectCommand(newLine);
+      this.historyStore.executeCommand(addCmd);
+      
+      console.log('Line added to layout:', newLine);
+    }
+    
+    // Reset line creation state
+    this.isCreatingLine = false;
+    this.previewLine = null;
+    
+    // Deselect tool after finalizing
+    this.toolStore.setActiveTool(ToolType.None);
+  }
+
+  // Handle line cancellation
+  private cancelLine(): void {
+    console.log('Canceling line creation');
+    this.isCreatingLine = false;
+    this.previewLine = null;
+  }
+
+  // Handle line selection
+  selectLine(line: LineProperties, event?: MouseEvent): void {
+    console.log('SelectLine called with', line);
+    
+    // Prevent starting a drag if we're in line creation mode
+    if (this.toolStore.activeTool === ToolType.Line) {
+      return;
+    }
+    
+    // Disable all line manipulation in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
+    
+    // Deselect any selected chairs when selecting a line
+    this.rootStore.chairStore.deselectChair();
+    
+    // Set line as selected
+    this.selectionStore.selectItem(line);
+    
+    // Get the mouse event if available for drag preparation
+    if (event && event.clientX && event.clientY) {
+      // Only prepare for dragging by setting the potential drag item
+      this.dragStore.prepareForDragging(
+        line, 
+        event.clientX, 
+        event.clientY
+      );
+    }
+  }
+
+  // Handle line rotation start
+  startLineRotate(event: { line: LineProperties, event: MouseEvent }): void {
+    event.event.stopPropagation();
+    
+    // Disable rotation in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
+    
+    this.startRotate(event.line, event.event);
   }
 } 

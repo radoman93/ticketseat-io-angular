@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties, LineProperties } from '../../services/selection.service';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { MobxAngularModule } from 'mobx-angular';
@@ -50,6 +50,12 @@ interface SegmentedSeatingRowPropertiesForm {
   labelPosition: 'left' | 'center' | 'right';
   totalSegments: number;
   totalSeats: number;
+}
+
+interface LinePropertiesForm {
+  thickness: number;
+  color: string;
+  name: string;
 }
 
 @Component({
@@ -103,6 +109,12 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     labelPosition: 'left',
     totalSegments: 0,
     totalSeats: 0
+  };
+  
+  lineProperties: LinePropertiesForm = {
+    thickness: 2,
+    color: '#000000',
+    name: '1'
   };
   
   // Store segments for the selected segmented row
@@ -168,6 +180,13 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
         
         // Store segments for display in the UI
         this.segmentsList = segmentedRow.segments || [];
+      } else if (selectedItem?.type === 'line') {
+        const line = selectedItem as LineProperties;
+        this.lineProperties = {
+          thickness: line.thickness || 2,
+          color: line.color || '#000000',
+          name: line.name || '1'
+        };
       }
     });
   }
@@ -495,9 +514,24 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
 
   // Helper method to safely handle input event
   handleInputChange(segmentIndex: number, property: string, event: Event): void {
-    const inputElement = event.target as HTMLInputElement;
-    if (inputElement && inputElement.value) {
-      this.updateSegmentProperty(segmentIndex, property, inputElement.value);
+    const target = event.target as HTMLInputElement;
+    let value: any = target.value;
+    
+    // Convert to number if needed
+    if (target.type === 'number') {
+      value = parseFloat(value);
     }
+    
+    this.updateSegmentProperty(segmentIndex, property, value);
+  }
+
+  incrementLineThickness(): void {
+    this.lineProperties.thickness = Math.min(20, this.lineProperties.thickness + 1);
+    this.updateProperty('thickness', this.lineProperties.thickness);
+  }
+
+  decrementLineThickness(): void {
+    this.lineProperties.thickness = Math.max(1, this.lineProperties.thickness - 1);
+    this.updateProperty('thickness', this.lineProperties.thickness);
   }
 } 

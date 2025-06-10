@@ -672,4 +672,112 @@
       </button>
     </div>
   </div>
+
+  <!-- Line Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'line'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Line
+    </div>
+
+    <!-- Line Settings Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Line Settings</label>
+      </div>
+      
+      <!-- Thickness -->
+      <div class="flex items-center justify-between mb-3">
+        <label class="text-sm text-gray-600">Thickness:</label>
+        <div class="join">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="decrementLineThickness()">-</button>
+          <input 
+            type="number" 
+            class="join-item input input-bordered input-xs w-14 text-center"
+            [(ngModel)]="lineProperties.thickness" 
+            (change)="updateProperty('thickness', lineProperties.thickness)"
+            min="1" 
+            max="20"
+            step="1">
+          <button 
+            class="join-item btn btn-xs" 
+            (click)="incrementLineThickness()">+</button>
+        </div>
+      </div>
+      
+      <!-- Color -->
+      <div class="flex items-center justify-between mb-3">
+        <label class="text-sm text-gray-600">Color:</label>
+        <div class="flex items-center gap-2">
+          <input 
+            type="color" 
+            class="w-10 h-8 rounded border border-gray-300 cursor-pointer"
+            [(ngModel)]="lineProperties.color" 
+            (change)="updateProperty('color', lineProperties.color)">
+          <input 
+            type="text" 
+            class="input input-bordered input-xs w-20 text-center text-xs"
+            [(ngModel)]="lineProperties.color" 
+            (change)="updateProperty('color', lineProperties.color)"
+            placeholder="#000000">
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Labeling Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Line Labeling</label>
+      </div>
+      
+      <!-- ID (non-editable) -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Id</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
+          [value]="selectedItem?.id || ''" 
+          disabled>
+      </div>
+      
+      <!-- Displayed Label -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Display Label</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-sm w-36 max-w-xs" 
+          [(ngModel)]="lineProperties.name" 
+          (input)="updateProperty('name', lineProperties.name)">
+      </div>
+    </div>
+
+    <!-- Line Info Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Line Info</label>
+      </div>
+      
+      <!-- Number of Points -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Points:</label>
+        <div class="text-sm font-medium">
+          {{ $any(selectedItem)?.points?.length || 0 }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Button -->
+    <div class="px-4 py-2 mt-auto">
+      <button 
+        class="btn btn-error btn-sm w-full"
+        (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  </div>
 </div> 

@@ -7,7 +7,8 @@ export enum ToolType {
   RoundTable = 'roundTable',
   RectangleTable = 'rectangleTable',
   SeatingRow = 'seatingRow',
-  SegmentedSeatingRow = 'segmentedSeatingRow'
+  SegmentedSeatingRow = 'segmentedSeatingRow',
+  Line = 'line'
 }
 
 @Injectable({
