@@ -1,9 +1,9 @@
 import { makeAutoObservable, computed, reaction } from 'mobx';
 import { layoutStore } from '../layout.store';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, LineProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, LineProperties, PolygonProperties } from '../../services/selection.service';
 
-// Union type for table elements
-type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineProperties;
+// Union type for table elements - import from layout store to keep consistency
+import type { TableElement } from '../layout.store';
 
 /**
  * Interface for metrics about the current layout
@@ -143,12 +143,24 @@ export class LayoutMetricsStore {
         maxY = Math.max(maxY, Math.max(seatingRow.y, seatingRow.endY) + 20);
       } else if (element.type === 'line') {
         const line = element as LineProperties;
-        line.points.forEach(point => {
-          minX = Math.min(minX, point.x);
-          minY = Math.min(minY, point.y);
-          maxX = Math.max(maxX, point.x);
-          maxY = Math.max(maxY, point.y);
-        });
+        if (line.points && line.points.length > 0) {
+          line.points.forEach(point => {
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+          });
+        }
+      } else if (element.type === 'polygon') {
+        const polygon = element as PolygonProperties;
+        if (polygon.points && polygon.points.length > 0) {
+          polygon.points.forEach(point => {
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+          });
+        }
       } else if (element.type === 'rectangle' || element.type === 'standingArea') {
         minX = Math.min(minX, element.x);
         minY = Math.min(minY, element.y);
@@ -386,12 +398,30 @@ export class LayoutMetricsStore {
           } else if (element.type === 'line') {
             // For lines, calculate bounding box diagonal / 2
             const line = element as LineProperties;
-            if (line.points.length < 2) return 0;
+            if (!line.points || line.points.length < 2) return 0;
             
             let minX = line.points[0].x, maxX = line.points[0].x;
             let minY = line.points[0].y, maxY = line.points[0].y;
             
             line.points.forEach(point => {
+              minX = Math.min(minX, point.x);
+              maxX = Math.max(maxX, point.x);
+              minY = Math.min(minY, point.y);
+              maxY = Math.max(maxY, point.y);
+            });
+            
+            const width = maxX - minX;
+            const height = maxY - minY;
+            return Math.sqrt(width * width + height * height) / 2;
+          } else if (element.type === 'polygon') {
+            // For polygons, calculate bounding box diagonal / 2
+            const polygon = element as PolygonProperties;
+            if (!polygon.points || polygon.points.length < 2) return 0;
+            
+            let minX = polygon.points[0].x, maxX = polygon.points[0].x;
+            let minY = polygon.points[0].y, maxY = polygon.points[0].y;
+            
+            polygon.points.forEach(point => {
               minX = Math.min(minX, point.x);
               maxX = Math.max(maxX, point.x);
               minY = Math.min(minY, point.y);

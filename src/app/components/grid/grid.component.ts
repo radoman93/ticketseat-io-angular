@@ -8,7 +8,7 @@ import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented
 import { LineComponent } from '../line/line.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties, LineProperties } from '../../services/selection.service';
+import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties, LineProperties, PolygonProperties } from '../../services/selection.service';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
@@ -20,11 +20,13 @@ import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import { LineService } from '../../services/line.service';
 import { RotateObjectCommand } from '../../commands/rotate-object.command';
-import rotationStore from '../../stores/rotation.store';
+import { rotationStore } from '../../stores';
 import viewerStore from '../../stores/viewer.store';
+import { PolygonComponent } from '../polygon/polygon.component';
+import { PolygonService } from '../../services/polygon.service';
 
 // Use union type for table positions  
-type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineProperties;
+type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineProperties | PolygonProperties;
 
 @Component({
   selector: 'app-grid',
@@ -35,6 +37,7 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
     SeatingRowComponent, 
     SegmentedSeatingRowComponent, 
     LineComponent,
+    PolygonComponent,
     CommonModule
   ],
   standalone: true,
@@ -83,10 +86,15 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   isCreatingLine: boolean = false;
   previewLine: LineProperties | null = null;
 
+  // Polygon drawing state
+  isCreatingPolygon: boolean = false;
+  previewPolygon: PolygonProperties | null = null;
+
   constructor(
     private historyStore: HistoryStore,
     private segmentedSeatingRowService: SegmentedSeatingRowService,
-    private lineService: LineService
+    private lineService: LineService,
+    private polygonService: PolygonService
   ) {}
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -97,6 +105,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     // Use MobX autorun to react to tool changes
     this.toolChangeDisposer = autorun(() => {
       const activeTool = this.toolStore.activeTool;
+      const previousTool = this.toolStore.previousTool;
+      
+      // Check if we're switching away from the Polygon tool
+      if (previousTool === ToolType.Polygon && activeTool !== ToolType.Polygon) {
+        // Auto-complete the polygon if it exists and has at least 3 points
+        this.autoCompletePolygon();
+      }
+
       if (activeTool === ToolType.RoundTable) {
         // Initialize preview round table when entering add mode
         this.previewTable = {
@@ -186,6 +202,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         this.previewSegment = null;
         this.previewLine = null;
         this.isCreatingLine = false;
+      } else if (activeTool === ToolType.Polygon) {
+        this.previewTable = null;
+        this.previewSegment = null;
+        this.previewLine = null;
+        this.previewPolygon = null;
+        this.isCreatingPolygon = false;
       } else {
         this.previewTable = null;
         this.previewSegment = null;
@@ -433,6 +455,30 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         }
         
         event.preventDefault();
+      } else if (activeTool === ToolType.Polygon) {
+        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        
+        if (!this.isCreatingPolygon) {
+          // First click: start creating a polygon
+          this.isCreatingPolygon = true;
+          this.previewPolygon = this.polygonService.createPolygon(x, y);
+          console.log('Starting polygon creation at', x, y, 'polygon:', this.previewPolygon);
+        } else if (this.previewPolygon) {
+          // Subsequent clicks: add points to the polygon
+          const originalPolygon = this.previewPolygon;
+          this.previewPolygon = this.polygonService.addPoint(this.previewPolygon, x, y);
+          
+          // Check if the polygon was just closed
+          if (!originalPolygon.closed && this.previewPolygon.closed) {
+            console.log('Polygon was closed via snapping, finalizing...');
+            this.finalizePolygon();
+          } else {
+            console.log('Added point to polygon at', x, y, 'total points:', this.previewPolygon.points.length);
+          }
+        }
+        
+        event.preventDefault();
       }
     }
   }
@@ -584,6 +630,26 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
       
       this.previewLine = this.lineService.updateLastPoint(this.previewLine, x, y);
+    } else if (this.isCreatingPolygon && this.previewPolygon) {
+      // Update the last point of the polygon being created for live preview
+      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      
+      // If the polygon only has one point, add a second point for the preview
+      if (this.previewPolygon.points.length === 1) {
+        this.previewPolygon.points.push({x, y});
+      } else {
+        // Update the last point position for preview
+        const wasClosedBefore = this.previewPolygon.closed;
+        this.previewPolygon = this.polygonService.updateLastPoint(this.previewPolygon, x, y);
+        
+        // Check if the polygon was just closed by the mouse movement
+        if (!wasClosedBefore && this.previewPolygon.closed && this.previewPolygon.points.length >= 3) {
+          console.log('Polygon was closed via mouse movement, finalizing...');
+          // Add a small delay to allow the visual feedback of closing before finalizing
+          setTimeout(() => this.finalizePolygon(), 200);
+        }
+      }
     }
   }
 
@@ -700,6 +766,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.finalizeSegmentedSeatingRow();
     } else if (this.isCreatingLine && this.previewLine && this.previewLine.points.length >= 2) {
       this.finalizeLine();
+    } else if (this.isCreatingPolygon && this.previewPolygon && this.previewPolygon.points.length >= 3) {
+      this.finalizePolygon();
     }
   }
   
@@ -720,6 +788,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     } else if (this.isCreatingLine) {
       // Cancel line creation
       this.cancelLine();
+    } else if (this.isCreatingPolygon) {
+      // Auto-complete the polygon if it has enough points, otherwise cancel
+      if (this.previewPolygon && this.previewPolygon.points.length >= 3) {
+        this.finalizePolygon();
+      } else {
+        // Cancel polygon creation
+        this.cancelPolygon();
+      }
     }
   }
   
@@ -909,6 +985,17 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         this.activeSegmentStartY = 0;
         this.activeSegmentEndX = 0;
         this.activeSegmentEndY = 0;
+      } else if (this.isCreatingLine) {
+        this.isCreatingLine = false;
+        this.previewLine = null;
+      } else if (this.isCreatingPolygon) {
+        // Auto-complete the polygon if it has enough points, otherwise cancel
+        if (this.previewPolygon && this.previewPolygon.points.length >= 3) {
+          this.finalizePolygon();
+        } else {
+          this.isCreatingPolygon = false;
+          this.previewPolygon = null;
+        }
       }
       if (this.toolStore.activeTool !== ToolType.None) {
         this.toolStore.setActiveTool(ToolType.None);
@@ -1088,5 +1175,78 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
     
     this.startRotate(event.line, event.event);
+  }
+
+  // Handle polygon completion
+  private finalizePolygon(): void {
+    if (!this.previewPolygon || this.previewPolygon.points.length < 3) {
+      console.log('Not enough points to create polygon');
+      return;
+    }
+
+    console.log('Finalizing polygon with', this.previewPolygon.points.length, 'points');
+
+    // Create the final polygon
+    const newPolygon = {
+      ...this.previewPolygon,
+      id: `polygon-${Date.now()}`
+    };
+
+    // Add to layout and history
+    const addCmd = new AddObjectCommand(newPolygon);
+    this.historyStore.executeCommand(addCmd);
+
+    // Reset state
+    this.isCreatingPolygon = false;
+    this.previewPolygon = null;
+
+    // Deselect tool after finalizing
+    this.toolStore.setActiveTool(ToolType.None);
+  }
+
+  // Handle polygon cancellation
+  private cancelPolygon(): void {
+    console.log('Canceling polygon creation');
+    this.isCreatingPolygon = false;
+    this.previewPolygon = null;
+  }
+
+  // Handle polygon selection
+  selectPolygon(polygon: PolygonProperties, event?: MouseEvent): void {
+    console.log('SelectPolygon called with', polygon);
+    
+    // Prevent starting a drag if we're in polygon creation mode
+    if (this.toolStore.activeTool === ToolType.Polygon) {
+      return;
+    }
+    
+    // Disable all polygon manipulation in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
+    
+    // Deselect any selected chairs when selecting a polygon
+    this.rootStore.chairStore.deselectChair();
+    
+    // Set polygon as selected
+    this.selectionStore.selectItem(polygon);
+    
+    // Get the mouse event if available for drag preparation
+    if (event && event.clientX && event.clientY) {
+      // Only prepare for dragging by setting the potential drag item
+      this.dragStore.prepareForDragging(
+        polygon, 
+        event.clientX, 
+        event.clientY
+      );
+    }
+  }
+
+  // Handle polygon auto-completion
+  private autoCompletePolygon(): void {
+    if (this.isCreatingPolygon && this.previewPolygon && this.previewPolygon.points.length >= 3) {
+      console.log('Auto-completing polygon');
+      this.finalizePolygon();
+    }
   }
 } 

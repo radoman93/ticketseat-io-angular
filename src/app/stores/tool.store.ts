@@ -3,6 +3,7 @@ import { ToolType } from '../services/tool.service';
 
 export class ToolStore {
   activeTool: ToolType = ToolType.None;
+  previousTool: ToolType = ToolType.None;
   
   constructor() {
     makeAutoObservable(this, {
@@ -13,7 +14,10 @@ export class ToolStore {
   
   setActiveTool = action('setActiveTool', (tool: ToolType) => {
     console.log('MobX Tool Store: setActiveTool', tool);
-    this.activeTool = tool;
+    if (this.activeTool !== tool) {
+      this.previousTool = this.activeTool;
+      this.activeTool = tool;
+    }
   });
   
   getActiveTool(): ToolType {
