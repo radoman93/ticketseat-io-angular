@@ -2,15 +2,16 @@
  * Public API Surface of ticketseat-io-angular
  */
 
-// Main component export
+// Main component exports
 export * from './app/components/event-editor/event-editor.component';
+export * from './app/components/event-viewer/event-viewer.component';
 
 // Export the design data interface for proper typing
-export { LayoutExportData } from './app/services/layout-export-import.service';
+export type { LayoutExportData } from './app/services/layout-export-import.service';
 
 // Export MobX stores for advanced usage
 export { layoutStore } from './app/stores/layout.store';
-export { viewerStore } from './app/stores/viewer.store';
+export { default as viewerStore } from './app/stores/viewer.store';
 export { selectionStore } from './app/stores/selection.store';
 export { gridStore } from './app/stores/grid.store';
 export { toolStore } from './app/stores/tool.store';
@@ -48,8 +49,12 @@ export * from './app/stores/index';
 // Models exports (if any)
 export * from './app/models';
 
-// Services exports
-export * from './app/services';
+// Specific service exports (avoiding problematic index imports)
+export * from './app/services/layout-export-import.service';
+export * from './app/services/layout-validator.service';
 
-// Commands exports
-export * from './app/commands'; 
+// Specific command exports (avoiding problematic index imports)
+export * from './app/commands/add-object.command';
+export * from './app/commands/delete-object.command';
+export * from './app/commands/move-object.command';
+export * from './app/commands/rotate-object.command'; 

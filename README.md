@@ -10,8 +10,28 @@ A powerful, feature-rich event layout editor for Angular applications. Create, e
 - 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
 - 💾 **Import/Export**: Save and load layouts in JSON format
 - 🔄 **Design Input**: Load existing designs programmatically
+- 👨‍💼 **Separate Editor & Viewer**: Dedicated components for admin and user experiences
 - 🎨 **Customizable**: Extensive theming and styling options
 - 📊 **MobX State Management**: Reactive state management for optimal performance
+
+## Components
+
+This library provides two main components:
+
+### 🔧 EventEditorComponent (Admin Dashboard)
+- Full layout editing capabilities
+- Drag-and-drop table placement
+- Properties panel for configuration
+- Export/import functionality
+- Grid and guides controls
+- Undo/redo operations
+
+### 👥 EventViewerComponent (End Users)
+- Read-only layout viewing
+- Seat selection for reservations
+- Reservation management panel
+- Customer information collection
+- Clean, user-friendly interface
 
 ## Installation
 
@@ -96,14 +116,16 @@ module.exports = {
 
 ## Quick Start
 
-### Basic Usage
+### Admin Dashboard - Layout Editor
+
+Use this component in admin interfaces where users need to create and edit layouts:
 
 ```typescript
 import { Component } from '@angular/core';
 import { EventEditorComponent } from 'ticketseat-io-angular';
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-admin',
   standalone: true,
   imports: [EventEditorComponent],
   template: `
@@ -112,22 +134,23 @@ import { EventEditorComponent } from 'ticketseat-io-angular';
     </div>
   `
 })
-export class AppComponent {}
+export class AdminDashboardComponent {}
 ```
 
-### Loading an Existing Design
+### End User - Seat Selection & Reservation
 
-You can load an existing layout by passing a design object or JSON string to the component:
+Use this component for end users to view layouts and make reservations:
 
 ```typescript
 import { Component } from '@angular/core';
-import { EventEditorComponent, LayoutExportData } from 'ticketseat-io-angular';
+import { EventViewerComponent } from 'ticketseat-io-angular';
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-booking',
   standalone: true,
-  imports: [EventEditorComponent],
+  imports: [EventViewerComponent],
   template: `
+    <div class="h-screen w-screen">
     <app-event-editor [design]="myLayout"></app-event-editor>
   `
 })
@@ -374,3 +397,68 @@ We welcome contributions! Please see our contributing guidelines for more detail
 ## License
 
 MIT License - see LICENSE file for details.
+
+## EventViewerComponent
+
+The `EventViewerComponent` provides a read-only layout viewing experience optimized for end users making seat reservations.
+
+### Usage
+
+```typescript
+// Basic usage
+<app-event-viewer [design]="layoutData"></app-event-viewer>
+
+// With pre-reserved seats
+<app-event-viewer 
+  [design]="layoutData"
+  [reservedIds]="['table-1-chair-2', 'seating-row-1-chair-5']">
+</app-event-viewer>
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `design` | `LayoutExportData \| string \| null` | Layout data to display (JSON object or JSON string) |
+| `reservedIds` | `string[] \| null` | Array of seat IDs that are already reserved externally |
+
+### Features
+
+- **Read-only Layout Display**: Shows venue layouts without editing capabilities
+- **Seat Selection**: Users can select available seats for reservation
+- **Pre-Reserved Seats**: Seats with IDs in `reservedIds` are marked as unavailable (red) and cannot be selected
+- **Reservation Interface**: Clean UI for seat selection and customer information
+- **Real-time Updates**: Immediate visual feedback for seat selection
+- **Green Theme**: User-friendly green color scheme
+- **Mobile Responsive**: Touch-friendly for mobile devices
+
+### Seat States
+
+The viewer displays seats in different visual states:
+
+- **Available**: Gray seats that can be selected (hover effects)
+- **Selected for Reservation**: Green seats selected by current user
+- **Pre-Reserved (External)**: Dark red seats with `cursor-not-allowed` - cannot be selected
+- **Reserved (Internal)**: Red seats reserved through the current session
+
+### Example with Role-Based Loading
+
+```typescript
+export class BookingComponent {
+  layoutData: LayoutExportData;
+  preReservedSeats: string[] = [];
+
+  async ngOnInit() {
+    // Load layout and reserved seats from your backend
+    this.layoutData = await this.venueService.getLayout(this.eventId);
+    this.preReservedSeats = await this.bookingService.getReservedSeats(this.eventId);
+  }
+}
+```
+
+```html
+<app-event-viewer 
+  [design]="layoutData"
+  [reservedIds]="preReservedSeats">
+</app-event-viewer>
+```

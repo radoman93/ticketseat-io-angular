@@ -288,7 +288,9 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
       
-      if (reservationStatus === 'reserved') {
+      if (reservationStatus === 'pre-reserved') {
+        return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
+      } else if (reservationStatus === 'reserved') {
         return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
       } else if (reservationStatus === 'selected-for-reservation') {
         return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
@@ -310,7 +312,9 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
-      if (reservationStatus === 'reserved') {
+      if (reservationStatus === 'pre-reserved') {
+        return `Seat ${chairData.label} - Already Reserved (External)`;
+      } else if (reservationStatus === 'reserved') {
         return `Seat ${chairData.label} - Reserved by ${chairData.chair.reservedBy || 'Unknown'}`;
       } else if (reservationStatus === 'selected-for-reservation') {
         return `Seat ${chairData.label} - Selected for reservation (Price: $${chairData.chair.price})`;
@@ -327,7 +331,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
-      if (reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
+      if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
         return 'text-xs text-white font-bold drop-shadow-sm';
       }
       return 'text-xs text-gray-700';
@@ -350,8 +354,8 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
       
-      // Don't allow selection of already reserved seats - add visual feedback
-      if (reservationStatus === 'reserved') {
+      // Don't allow selection of pre-reserved or already reserved seats
+      if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved') {
         this.viewerStore.showReservedSeatFeedback();
         return;
       }

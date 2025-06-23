@@ -202,7 +202,9 @@ export class RoundTableComponent implements OnInit {
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
       
-      if (reservationStatus === 'reserved') {
+      if (reservationStatus === 'pre-reserved') {
+        return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
+      } else if (reservationStatus === 'reserved') {
         return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
       } else if (reservationStatus === 'selected-for-reservation') {
         return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
@@ -224,7 +226,9 @@ export class RoundTableComponent implements OnInit {
     
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
-      if (reservationStatus === 'reserved') {
+      if (reservationStatus === 'pre-reserved') {
+        return `Seat ${seat.label} - Already Reserved (External)`;
+      } else if (reservationStatus === 'reserved') {
         return `Seat ${seat.label} - Reserved by ${seat.chair.reservedBy || 'Unknown'}`;
       } else if (reservationStatus === 'selected-for-reservation') {
         return `Seat ${seat.label} - Selected for reservation`;
@@ -241,7 +245,7 @@ export class RoundTableComponent implements OnInit {
     
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
-      if (reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
+      if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
         return 'text-xs text-white font-bold';
       }
       return 'text-xs text-gray-700';
@@ -255,8 +259,8 @@ export class RoundTableComponent implements OnInit {
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
       
-      // Don't allow selection of already reserved seats
-      if (reservationStatus === 'reserved') {
+      // Don't allow selection of pre-reserved or already reserved seats
+      if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved') {
         this.viewerStore.showReservedSeatFeedback();
         return;
       }

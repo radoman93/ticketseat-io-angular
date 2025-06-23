@@ -257,7 +257,9 @@ export class SeatingRowComponent implements OnInit {
     if (this.viewerStore.isViewerMode && chair.chair) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
       
-      if (reservationStatus === 'reserved') {
+      if (reservationStatus === 'pre-reserved') {
+        return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
+      } else if (reservationStatus === 'reserved') {
         return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
       } else if (reservationStatus === 'selected-for-reservation') {
         return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
@@ -279,7 +281,9 @@ export class SeatingRowComponent implements OnInit {
     
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
-      if (reservationStatus === 'reserved') {
+      if (reservationStatus === 'pre-reserved') {
+        return `Seat ${chair.label} - Already Reserved (External)`;
+      } else if (reservationStatus === 'reserved') {
         return `Seat ${chair.label} - Reserved by ${chair.chair.reservedBy || 'Unknown'}`;
       } else if (reservationStatus === 'selected-for-reservation') {
         return `Seat ${chair.label} - Selected for reservation (Price: $${chair.chair.price})`;
@@ -296,7 +300,7 @@ export class SeatingRowComponent implements OnInit {
     
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
-      if (reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
+      if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
         return 'text-xs text-white font-bold drop-shadow-sm';
       }
       return 'text-xs text-gray-700';
@@ -310,8 +314,9 @@ export class SeatingRowComponent implements OnInit {
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
       
-      // Don't allow selection of already reserved seats
-      if (reservationStatus === 'reserved') {
+      // Don't allow selection of pre-reserved or already reserved seats
+      if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved') {
+        this.viewerStore.showReservedSeatFeedback();
         return;
       }
       

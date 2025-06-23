@@ -6,7 +6,6 @@ import { TopToolbarComponent } from '../toolbars/top-toolbar/top-toolbar.compone
 import { MobxAngularModule } from 'mobx-angular';
 import { PropertiesPanelComponent } from '../properties-panel/properties-panel.component';
 import { ChairPropertiesPanelComponent } from '../chair-properties-panel/chair-properties-panel.component';
-import { ReservationPanelComponent } from '../reservation-panel/reservation-panel.component';
 import { NotificationsComponent } from '../notifications/notifications.component';
 import viewerStore from '../../stores/viewer.store';
 import { LayoutExportImportService, LayoutExportData } from '../../services/layout-export-import.service';
@@ -22,7 +21,6 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
     MobxAngularModule, 
     PropertiesPanelComponent,
     ChairPropertiesPanelComponent,
-    ReservationPanelComponent,
     NotificationsComponent
   ],
   templateUrl: './event-editor.component.html',
@@ -34,7 +32,10 @@ export class EventEditorComponent implements OnInit, OnChanges {
 
   @Input() design?: LayoutExportData | string | null;
 
-  constructor(private layoutImportService: LayoutExportImportService) {}
+  constructor(private layoutImportService: LayoutExportImportService) {
+    // Ensure we're in editor mode when this component is used
+    this.viewerStore.setMode('editor');
+  }
 
   ngOnInit(): void {
     this.loadDesignIfProvided();
@@ -60,9 +61,9 @@ export class EventEditorComponent implements OnInit, OnChanges {
 
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
-        console.log('Design loaded successfully:', designData.meta.name);
+        console.log('Design loaded successfully in editor:', designData.meta.name);
       } catch (error) {
-        console.error('Failed to load design:', error);
+        console.error('Failed to load design in editor:', error);
       }
     }
   }

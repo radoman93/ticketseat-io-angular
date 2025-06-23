@@ -13,17 +13,20 @@ export interface Notification {
 export class ViewerStore {
   currentMode: AppMode = 'editor';
   selectedSeatsForReservation: string[] = [];
+  preReservedSeats: string[] = []; // External reserved seat IDs
   customerInfo: { name: string; email?: string; phone?: string } = { name: '' };
   notifications: Notification[] = [];
   
   constructor() {
     makeAutoObservable(this, {
       selectedSeatsForReservation: observable,
+      preReservedSeats: observable,
       setMode: action,
       toggleMode: action,
       selectSeatForReservation: action,
       deselectSeatForReservation: action,
       clearSelectedSeats: action,
+      setPreReservedSeats: action,
       reserveSelectedSeats: action,
       updateCustomerInfo: action,
       addNotification: action,
@@ -65,7 +68,25 @@ export class ViewerStore {
     this.setMode(this.currentMode === 'editor' ? 'viewer' : 'editor');
   }
 
+  setPreReservedSeats(seatIds: string[]): void {
+    this.preReservedSeats = [...seatIds];
+    // Remove any pre-reserved seats from current selection
+    this.selectedSeatsForReservation = this.selectedSeatsForReservation.filter(
+      id => !this.preReservedSeats.includes(id)
+    );
+  }
+
+  isPreReservedSeat(chairId: string): boolean {
+    return this.preReservedSeats.includes(chairId);
+  }
+
   selectSeatForReservation(chairId: string): void {
+    // Don't allow selection of pre-reserved seats
+    if (this.isPreReservedSeat(chairId)) {
+      this.showReservedSeatFeedback();
+      return;
+    }
+
     if (!this.selectedSeatsForReservation.includes(chairId)) {
       this.selectedSeatsForReservation.push(chairId);
     }
@@ -115,9 +136,16 @@ export class ViewerStore {
     return this.selectedSeatsForReservation.includes(chairId);
   }
 
-  getSeatReservationStatus(chair: Chair): 'free' | 'reserved' | 'selected-for-reservation' {
+  getSeatReservationStatus(chair: Chair): 'free' | 'reserved' | 'selected-for-reservation' | 'pre-reserved' {
+    // Check if seat is pre-reserved first (external reservation)
+    if (this.isPreReservedSeat(chair.id)) return 'pre-reserved';
+    
+    // Check internal reservation status
     if (chair.reservationStatus === 'reserved') return 'reserved';
+    
+    // Check if currently selected for reservation
     if (this.isSeatSelectedForReservation(chair.id)) return 'selected-for-reservation';
+    
     return 'free';
   }
 
