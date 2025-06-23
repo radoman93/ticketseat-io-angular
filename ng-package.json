@@ -5,9 +5,6 @@
     "entryFile": "src/public-api.ts",
     "styleIncludePaths": ["src"]
   },
-  "assets": [
-    "src/lib-styles.css"
-  ],
   "allowedNonPeerDependencies": [
     "daisyui",
     "postcss",

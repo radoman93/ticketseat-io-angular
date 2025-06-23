@@ -43,7 +43,15 @@ Modify your `angular.json` file to include the CSS in the build:
 }
 ```
 
-### Option 3: Use with Existing Tailwind Setup
+### Option 3: Direct Import in TypeScript
+
+You can also import the CSS directly in your component or main.ts:
+
+```typescript
+import '@radoman93/ticketseat-io-angular/styles.css';
+```
+
+### Option 4: Use with Existing Tailwind Setup
 
 If your project already uses Tailwind CSS, you can configure it to scan the library files:
 

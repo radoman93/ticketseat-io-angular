@@ -70,7 +70,15 @@ Add the CSS file to your `angular.json` build configuration:
 }
 ```
 
-#### Option 3: If using Tailwind CSS in your project
+#### Option 3: Direct import in TypeScript (alternative)
+
+You can also import the CSS directly in your component or main.ts:
+
+```typescript
+import '@radoman93/ticketseat-io-angular/styles.css';
+```
+
+#### Option 4: If using Tailwind CSS in your project
 
 If your project already uses Tailwind CSS and DaisyUI, you can ensure the library classes are included by adding the library path to your `tailwind.config.js`:
 
