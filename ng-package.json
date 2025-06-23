@@ -9,7 +9,6 @@
     "src/lib-styles.css"
   ],
   "allowedNonPeerDependencies": [
-    "@tailwindcss/postcss",
     "daisyui",
     "postcss",
     "tailwindcss",
