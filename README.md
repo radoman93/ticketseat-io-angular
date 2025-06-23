@@ -1,15 +1,17 @@
 # TicketSeat.io Angular Library
 
-An Angular library for ticket seat management with drag-and-drop functionality, built with MobX for state management.
+A powerful, feature-rich event layout editor for Angular applications. Create, edit, and manage seating arrangements with an intuitive drag-and-drop interface.
 
 ## Features
 
-- Drag-and-drop seat arrangement
-- Interactive grid-based event layout
-- Real-time seat reservation management
-- Customizable toolbars and properties panels
-- Built with MobX for reactive state management
-- Responsive design with Tailwind CSS and DaisyUI
+- 🪑 **Multiple Seating Elements**: Round tables, rectangle tables, and seating rows
+- 🎯 **Drag & Drop**: Intuitive element placement and arrangement
+- 🔧 **Real-time Editing**: Live property adjustments with immediate visual feedback
+- 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
+- 💾 **Import/Export**: Save and load layouts in JSON format
+- 🔄 **Design Input**: Load existing designs programmatically
+- 🎨 **Customizable**: Extensive theming and styling options
+- 📊 **MobX State Management**: Reactive state management for optimal performance
 
 ## Installation
 
@@ -92,11 +94,9 @@ module.exports = {
 }
 ```
 
-## Usage
+## Quick Start
 
-### Basic Setup
-
-1. Import the `EventEditorComponent` in your Angular component:
+### Basic Usage
 
 ```typescript
 import { Component } from '@angular/core';
@@ -106,82 +106,271 @@ import { EventEditorComponent } from 'ticketseat-io-angular';
   selector: 'app-root',
   standalone: true,
   imports: [EventEditorComponent],
-  template: '<app-event-editor></app-event-editor>'
+  template: `
+    <div class="h-screen w-screen">
+      <app-event-editor></app-event-editor>
+    </div>
+  `
+})
+export class AppComponent {}
+```
+
+### Loading an Existing Design
+
+You can load an existing layout by passing a design object or JSON string to the component:
+
+```typescript
+import { Component } from '@angular/core';
+import { EventEditorComponent, LayoutExportData } from 'ticketseat-io-angular';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [EventEditorComponent],
+  template: `
+    <app-event-editor [design]="myLayout"></app-event-editor>
+  `
 })
 export class AppComponent {
+  myLayout: LayoutExportData = {
+    "meta": {
+      "version": "1.0",
+      "name": "Wedding Reception",
+      "created": "2025-01-01T12:00:00.000Z",
+      "creator": "TicketSeats v1.0"
+    },
+    "settings": {
+      "gridSize": 50,
+      "showGrid": true,
+      "showGuides": true
+    },
+    "elements": [
+      {
+        "id": "table-1",
+        "type": "roundTable",
+        "x": 300,
+        "y": 200,
+        "radius": 60,
+        "seats": 8,
+        "name": "Head Table",
+        "rotation": 0
+      }
+    ]
+  };
 }
 ```
 
-### Using Individual Components
+### Complete Example with Multiple Elements
 
-You can also import and use individual components:
+Here's a full example you can copy and paste to test all element types:
 
 ```typescript
-import { 
-  GridComponent,
-  MainToolbarComponent,
-  TopToolbarComponent,
-  PropertiesPanelComponent 
-} from 'ticketseat-io-angular';
+import { Component } from '@angular/core';
+import { EventEditorComponent, LayoutExportData } from 'ticketseat-io-angular';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [EventEditorComponent],
+  template: `
+    <div class="h-screen w-screen">
+      <app-event-editor [design]="exampleDesign"></app-event-editor>
+    </div>
+  `
+})
+export class AppComponent {
+  exampleDesign: LayoutExportData = {
+    "meta": {
+      "version": "1.0",
+      "name": "Complete Layout Example",
+      "created": "2025-06-23T11:33:24.768Z",
+      "creator": "TicketSeats v1.0"
+    },
+    "settings": {
+      "gridSize": 50,
+      "showGrid": true,
+      "showGuides": true
+    },
+    "elements": [
+      {
+        "id": "table-1750678397159",
+        "type": "roundTable",
+        "x": 441,
+        "y": 196,
+        "radius": 50,
+        "seats": 8,
+        "openSpaces": 0,
+        "name": "Table 1",
+        "rotation": 0
+      },
+      {
+        "id": "table-1750678398457",
+        "type": "rectangleTable",
+        "x": 520,
+        "y": 504,
+        "width": 120,
+        "height": 80,
+        "upChairs": 4,
+        "downChairs": 4,
+        "leftChairs": 0,
+        "rightChairs": 0,
+        "name": "Table 2",
+        "rotation": 0
+      },
+      {
+        "id": "seatingrow-1750678399789",
+        "type": "segmentedSeatingRow",
+        "x": 816,
+        "y": 357,
+        "endX": 1030.5240721353648,
+        "endY": 126.3391613765769,
+        "seatCount": 10,
+        "seatSpacing": 35,
+        "name": "Segmented Row 3",
+        "rotation": 0,
+        "chairLabelVisible": true,
+        "rowLabelVisible": true,
+        "isSegmented": true,
+        "segments": [
+          {
+            "id": "seatingrow-1750678399789-segment-0-1750678399790",
+            "startX": 816,
+            "startY": 357,
+            "endX": 1030.5240721353648,
+            "endY": 126.3391613765769,
+            "seatCount": 10,
+            "seatSpacing": 35,
+            "rotation": -47.07591046004114,
+            "segmentIndex": 0
+          }
+        ],
+        "totalSegments": 1,
+        "totalSeats": 10
+      }
+    ]
+  };
+}
 ```
 
-### Working with Stores
+### Using JSON String
 
-The library uses MobX stores for state management:
+You can also pass a JSON string directly:
 
 ```typescript
-import { 
-  viewerStore, 
-  layoutStore, 
-  selectionStore 
-} from 'ticketseat-io-angular';
-
-// Access viewer state
-console.log(viewerStore.zoom);
-
-// Access layout data
-console.log(layoutStore.elements);
-
-// Access selection state
-console.log(selectionStore.selectedElements);
+@Component({
+  template: `<app-event-editor [design]="jsonString"></app-event-editor>`
+})
+export class AppComponent {
+  jsonString = `{
+    "meta": {
+      "version": "1.0",
+      "name": "Conference Layout"
+    },
+    "settings": {
+      "gridSize": 50,
+      "showGrid": true,
+      "showGuides": true
+    },
+    "elements": []
+  }`;
+}
 ```
 
 ## API Reference
 
-### Components
+### EventEditorComponent
 
-- `EventEditorComponent` - Main component that includes all functionality
-- `GridComponent` - Interactive grid for seat arrangement
-- `MainToolbarComponent` - Primary toolbar with main actions
-- `TopToolbarComponent` - Secondary toolbar
-- `PropertiesPanelComponent` - Properties configuration panel
-- `ChairPropertiesPanelComponent` - Chair-specific properties
-- `ReservationPanelComponent` - Reservation management
-- `NotificationsComponent` - System notifications
+#### Inputs
 
-### Stores
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `design` | `LayoutExportData \| string \| null` | `undefined` | Initial design to load. Can be a JSON object, string, or null |
 
-- `viewerStore` - Viewport and zoom management
-- `layoutStore` - Layout and element management
-- `selectionStore` - Selection state management
-- `gridStore` - Grid configuration
-- `chairStore` - Chair-specific state
-- `dragStore` - Drag and drop operations
-- `toolStore` - Active tool management
-- `rotationStore` - Element rotation
-- `historyStore` - Undo/redo functionality
+#### LayoutExportData Interface
 
-### Services
+```typescript
+interface LayoutExportData {
+  meta: {
+    version: string;
+    name: string;
+    created: string;
+    creator: string;
+    description?: string;
+  };
+  settings: {
+    gridSize: number;
+    showGrid: boolean;
+    showGuides: boolean;
+  };
+  elements: ElementType[];
+}
+```
 
-- `SelectionService` - Selection management utilities
-- `LayoutExportImportService` - Layout serialization
-- `LayoutValidatorService` - Layout validation
-- `ToolService` - Tool management
+#### Element Types
+
+- **Round Table**: Circular tables with configurable radius and seat count
+- **Rectangle Table**: Rectangular tables with chairs on specified sides
+- **Seating Row**: Linear seating arrangements
+- **Segmented Seating Row**: Multi-segment seating for complex layouts
+
+## Advanced Usage
+
+### Accessing MobX Stores
+
+```typescript
+import { 
+  layoutStore, 
+  selectionStore, 
+  viewerStore 
+} from 'ticketseat-io-angular';
+
+// Access layout data
+const elements = layoutStore.elements;
+
+// Check current selection
+const hasSelection = selectionStore.hasSelection;
+
+// Check current mode
+const isEditorMode = viewerStore.isEditorMode;
+```
+
+### Dynamic Layout Loading
+
+```typescript
+@Component({
+  template: `
+    <div>
+      <button (click)="loadLayout('wedding')">Wedding</button>
+      <button (click)="loadLayout('conference')">Conference</button>
+      <app-event-editor [design]="currentLayout"></app-event-editor>
+    </div>
+  `
+})
+export class DynamicLayoutComponent {
+  currentLayout: LayoutExportData | null = null;
+
+  async loadLayout(type: string) {
+    const response = await fetch(`/api/layouts/${type}`);
+    this.currentLayout = await response.json();
+  }
+}
+```
+
+## Examples
+
+For complete examples and advanced usage patterns, see the [USAGE_EXAMPLE.md](./USAGE_EXAMPLE.md) file.
+
+## Browser Support
+
+- Chrome (latest)
+- Firefox (latest) 
+- Safari (latest)
+- Edge (latest)
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Please see our contributing guidelines for more details.
 
 ## License
 
-MIT License
+MIT License - see LICENSE file for details.

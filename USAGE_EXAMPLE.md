@@ -22,6 +22,174 @@ export class AppComponent {
 }
 ```
 
+## Loading an Existing Design
+
+### app.component.ts with Design Input
+```typescript
+import { Component } from '@angular/core';
+import { EventEditorComponent, LayoutExportData } from 'ticketseat-io-angular';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [EventEditorComponent],
+  template: `
+    <div class="h-screen w-screen">
+      <app-event-editor [design]="myDesign"></app-event-editor>
+    </div>
+  `
+})
+export class AppComponent {
+  title = 'My Event Editor App';
+
+  // Load an existing design - can be an object or JSON string
+  myDesign: LayoutExportData = {
+    "meta": {
+      "version": "1.0",
+      "name": "Wedding Reception",
+      "created": "2025-01-01T12:00:00.000Z",
+      "creator": "TicketSeats v1.0"
+    },
+    "settings": {
+      "gridSize": 50,
+      "showGrid": true,
+      "showGuides": true
+    },
+    "elements": [
+      {
+        "id": "table-001",
+        "type": "roundTable",
+        "x": 300,
+        "y": 200,
+        "radius": 60,
+        "seats": 8,
+        "openSpaces": 0,
+        "name": "Head Table",
+        "rotation": 0
+      },
+      {
+        "id": "table-002",
+        "type": "rectangleTable",
+        "x": 500,
+        "y": 400,
+        "width": 150,
+        "height": 80,
+        "upChairs": 3,
+        "downChairs": 3,
+        "leftChairs": 0,
+        "rightChairs": 0,
+        "name": "Family Table",
+        "rotation": 0
+      }
+    ]
+  };
+}
+```
+
+## Dynamic Design Loading
+
+### component.ts with Dynamic Loading
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { EventEditorComponent, LayoutExportData } from 'ticketseat-io-angular';
+import { HttpClient } from '@angular/common/http';
+
+@Component({
+  selector: 'app-event-page',
+  standalone: true,
+  imports: [EventEditorComponent],
+  template: `
+    <div class="h-screen w-screen">
+      <div class="p-4 bg-gray-100">
+        <button 
+          *ngFor="let layout of availableLayouts" 
+          (click)="loadLayout(layout.id)"
+          class="mr-2 mb-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          {{ layout.name }}
+        </button>
+      </div>
+      <div class="flex-1">
+        <app-event-editor [design]="currentDesign"></app-event-editor>
+      </div>
+    </div>
+  `
+})
+export class EventPageComponent implements OnInit {
+  currentDesign: LayoutExportData | null = null;
+  availableLayouts = [
+    { id: 'wedding', name: 'Wedding Layout' },
+    { id: 'conference', name: 'Conference Layout' },
+    { id: 'banquet', name: 'Banquet Layout' }
+  ];
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    // Load default layout
+    this.loadLayout('wedding');
+  }
+
+  async loadLayout(layoutId: string) {
+    try {
+      // Load from your API or local storage
+      const response = await this.http.get<LayoutExportData>(`/api/layouts/${layoutId}`).toPromise();
+      this.currentDesign = response!;
+    } catch (error) {
+      console.error('Failed to load layout:', error);
+      // Fallback to empty layout
+      this.currentDesign = null;
+    }
+  }
+}
+```
+
+## Loading from JSON String
+
+### component.ts with JSON String
+```typescript
+import { Component } from '@angular/core';
+import { EventEditorComponent } from 'ticketseat-io-angular';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [EventEditorComponent],
+  template: `
+    <div class="h-screen w-screen">
+      <app-event-editor [design]="jsonDesign"></app-event-editor>
+    </div>
+  `
+})
+export class AppComponent {
+  // You can also pass a JSON string directly
+  jsonDesign = `{
+    "meta": {
+      "version": "1.0",
+      "name": "Restaurant Layout",
+      "created": "2025-01-01T12:00:00.000Z",
+      "creator": "TicketSeats v1.0"
+    },
+    "settings": {
+      "gridSize": 50,
+      "showGrid": true,
+      "showGuides": true
+    },
+    "elements": [
+      {
+        "id": "table-1",
+        "type": "roundTable",
+        "x": 200,
+        "y": 200,
+        "radius": 50,
+        "seats": 6,
+        "name": "Table 1",
+        "rotation": 0
+      }
+    ]
+  }`;
+}
+```
+
 ## Advanced Usage with Store Access
 
 ### event-page.component.ts
@@ -51,7 +219,7 @@ import { autorun, IReactionDisposer } from 'mobx';
       </header>
       
       <main class="flex-1">
-        <app-event-editor></app-event-editor>
+        <app-event-editor [design]="initialDesign"></app-event-editor>
       </main>
       
       <footer class="bg-gray-100 p-4">
@@ -84,19 +252,31 @@ export class EventPageComponent implements OnInit, OnDestroy {
   
   private disposers: IReactionDisposer[] = [];
 
+  // Initial design to load
+  initialDesign = {
+    "meta": {
+      "version": "1.0",
+      "name": "Conference Hall",
+      "created": new Date().toISOString(),
+      "creator": "TicketSeats v1.0"
+    },
+    "settings": {
+      "gridSize": 50,
+      "showGrid": true,
+      "showGuides": true
+    },
+    "elements": []
+  };
+
   ngOnInit() {
-    // React to store changes
+    // Set up reactive data bindings to MobX stores
     this.disposers.push(
-      autorun(() => {
-        this.currentZoom = Math.round(viewerStore.zoom * 100);
-      }),
-      
       autorun(() => {
         this.elementCount = layoutStore.elements.length;
       }),
       
       autorun(() => {
-        this.selectedCount = selectionStore.selectedElements.length;
+        this.selectedCount = selectionStore.hasSelection ? 1 : 0;
       })
     );
   }
@@ -107,28 +287,39 @@ export class EventPageComponent implements OnInit, OnDestroy {
   }
 
   exportLayout() {
-    const layout = layoutStore.exportLayout();
-    console.log('Exported layout:', layout);
-    
-    // You can save this to a file or send to an API
-    const blob = new Blob([JSON.stringify(layout, null, 2)], { 
+    // Access layout data from the store
+    const layoutData = {
+      meta: {
+        version: '1.0',
+        name: 'Exported Layout',
+        created: new Date().toISOString(),
+        creator: 'TicketSeats v1.0'
+      },
+      settings: {
+        gridSize: 50,
+        showGrid: true,
+        showGuides: true
+      },
+      elements: layoutStore.elements
+    };
+
+    // Download as JSON file
+    const blob = new Blob([JSON.stringify(layoutData, null, 2)], { 
       type: 'application/json' 
     });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'event-layout.json';
-    a.click();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'layout.json';
+    link.click();
     URL.revokeObjectURL(url);
   }
 
   clearLayout() {
-    if (confirm('Are you sure you want to clear the layout?')) {
-      layoutStore.clearLayout();
-    }
+    layoutStore.clearAll();
+    selectionStore.deselectItem();
   }
 }
-```
 
 ## Custom Component with Individual Imports
 
@@ -207,7 +398,6 @@ export class CustomEditorComponent {
     this.showProperties = !this.showProperties;
   }
 }
-```
 
 ## Service Usage Example
 
@@ -283,7 +473,6 @@ export class LayoutService {
     };
   }
 }
-```
 
 ## Publishing to NPM
 
