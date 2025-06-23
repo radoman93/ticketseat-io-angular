@@ -13,8 +13,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "npm run build:lib && npm run build:css && npm run copy:css",
+    "build": "npm run build:lib && npm run add:css-export && npm run build:css && npm run copy:css",
     "build:lib": "ng-packagr -p ng-package.json",
+    "add:css-export": "node add-css-export.js",
     "build:css": "npx tailwindcss -i ./src/lib-styles.css -o ./temp-styles.css --minify",
     "copy:css": "cp ./temp-styles.css ./dist/styles.css && rm ./temp-styles.css",
     "prebuild": "echo 'Building library...'",
