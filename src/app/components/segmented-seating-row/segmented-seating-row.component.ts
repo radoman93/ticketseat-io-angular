@@ -411,9 +411,9 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     let centerX: number;
     let centerY: number;
 
-    if (this.rotationStore.isRotating && this.rotationStore.pivot) {
-      centerX = this.rotationStore.pivot.x;
-      centerY = this.rotationStore.pivot.y;
+    if (this.rotationStore.isRotating && this.rotationStore.rotationCenter) {
+      centerX = this.rotationStore.rotationCenter.x;
+      centerY = this.rotationStore.rotationCenter.y;
     } else {
       let currentMinX = Infinity, currentMinY = Infinity, currentMaxX = -Infinity, currentMaxY = -Infinity;
       points.forEach(p => {

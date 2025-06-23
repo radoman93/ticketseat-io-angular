@@ -57,14 +57,14 @@ export class DragStore {
     mouseY: number
   ) => {
     // Handle different item types
-    if (item.type === 'line') {
-      // For lines, check if they have points
+    if (item.type === 'line' || item.type === 'polygon') {
+      // For lines and polygons, check if they have points
       if (!item['points'] || !Array.isArray(item['points']) || item['points'].length === 0) {
-        console.warn('Cannot prepare drag for line without points');
+        console.warn(`Cannot prepare drag for ${item.type} without points`);
         return;
       }
       
-      // Calculate center point of the line for dragging reference
+      // Calculate center point of the line/polygon for dragging reference
       const points = item['points'];
       const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
       const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
@@ -75,7 +75,7 @@ export class DragStore {
       // Store the potential drag item
       this.potentialDragItem = item;
       
-      // Store initial positions (using calculated center for lines)
+      // Store initial positions (using calculated center for lines/polygons)
       this.startMouseX = mouseX;
       this.startMouseY = mouseY;
       this.startElementX = centerX;
@@ -108,10 +108,10 @@ export class DragStore {
       return;
     }
     
-    // Check if it's a line (has points) or regular item (has x/y)
-    const isLine = this.potentialDragItem.type === 'line';
-    const hasPoints = isLine && this.potentialDragItem['points'] && Array.isArray(this.potentialDragItem['points']);
-    const hasPosition = !isLine && 'x' in this.potentialDragItem && 'y' in this.potentialDragItem;
+    // Check if it's a line/polygon (has points) or regular item (has x/y)
+    const isPointsBased = this.potentialDragItem.type === 'line' || this.potentialDragItem.type === 'polygon';
+    const hasPoints = isPointsBased && this.potentialDragItem['points'] && Array.isArray(this.potentialDragItem['points']);
+    const hasPosition = !isPointsBased && 'x' in this.potentialDragItem && 'y' in this.potentialDragItem;
     
     if (!hasPoints && !hasPosition) {
       console.warn('Cannot drag item without position properties or points');
@@ -151,8 +151,8 @@ export class DragStore {
     const canvasDy = dy / zoomFactor;
     
     // Handle different item types
-    if (this.draggedItem.type === 'line') {
-      // For lines, move all points by the same delta
+    if (this.draggedItem.type === 'line' || this.draggedItem.type === 'polygon') {
+      // For lines and polygons, move all points by the same delta
       const currentPoints = this.draggedItem['points'];
       if (currentPoints && Array.isArray(currentPoints)) {
         // Calculate the current center to determine how much we need to move
@@ -229,8 +229,8 @@ export class DragStore {
     let oldPosition: { x: number, y: number };
     let newPosition: { x: number, y: number };
     
-    if (this.draggedItem.type === 'line') {
-      // For lines, use the center points for history tracking
+    if (this.draggedItem.type === 'line' || this.draggedItem.type === 'polygon') {
+      // For lines and polygons, use the center points for history tracking
       const currentPoints = this.draggedItem['points'];
       if (currentPoints && Array.isArray(currentPoints)) {
         const newCenterX = currentPoints.reduce((sum, point) => sum + point.x, 0) / currentPoints.length;
@@ -283,8 +283,8 @@ export class DragStore {
     if (!this.isDragging || !this.draggedItem) return;
     
     // Revert to original position based on item type
-    if (this.draggedItem.type === 'line') {
-      // For lines, revert to original points
+    if (this.draggedItem.type === 'line' || this.draggedItem.type === 'polygon') {
+      // For lines and polygons, revert to original points
       if (this.originalPoints.length > 0) {
         layoutStore.updateElement(this.draggedItem.id, {
           points: this.originalPoints

@@ -117,4 +117,12 @@
 
 .rotation-handle svg {
   pointer-events: none; /* Ensure SVG doesn't block mousedown on the handle div */
+}
+
+.fixed-preview {
+  position: absolute;
+  pointer-events: none;
+  touch-action: none;
+  transform: none !important;
+  transition: none !important;
 } 

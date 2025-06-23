@@ -1,26 +1,27 @@
 import { makeAutoObservable, action } from 'mobx';
 
-class RotationStore {
+export class RotationStore {
   isRotating = false;
-  pivot: { x: number, y: number } | null = null;
+  rotationCenter: { x: number, y: number } | null = null;
 
   constructor() {
     makeAutoObservable(this, {
+      // Explicitly mark actions
       startRotation: action,
       endRotation: action
     });
   }
 
-  startRotation(pivot: { x: number, y: number }) {
+  startRotation = action('startRotation', (center: { x: number, y: number }) => {
     this.isRotating = true;
-    this.pivot = pivot;
-  }
+    this.rotationCenter = center;
+  });
 
-  endRotation() {
+  endRotation = action('endRotation', () => {
     this.isRotating = false;
-    this.pivot = null;
-  }
+    this.rotationCenter = null;
+  });
 }
 
-const rotationStore = new RotationStore();
-export default rotationStore; 
+// Create singleton instance
+export default new RotationStore(); 

@@ -112,6 +112,15 @@
           (startRotate)="startLineRotate($event)">
         </app-line>
         
+        <!-- Polygon -->
+        <app-polygon
+          *ngIf="table.type === 'polygon'"
+          [polygon]="$any(table)"
+          [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+          [isPolygonClosed]="$any(table).closed || false"
+          (select)="selectPolygon($event.polygon, $event.event)">
+        </app-polygon>
+        
         <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
         <app-round-table 
           *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
@@ -149,7 +158,7 @@
       </div>
       
       <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
-      <div *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow || toolStore.activeTool === ToolType.Line)" 
+      <div *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow || toolStore.activeTool === ToolType.Line || toolStore.activeTool === ToolType.Polygon)" 
            class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
 
       <!-- Preview line (semi-transparent) - Hidden in viewer mode -->
@@ -159,6 +168,17 @@
         [isSelected]="false"
         class="opacity-70 preview-line pointer-events-none">
       </app-line>
+
+      <!-- Preview polygon (semi-transparent) - Hidden in viewer mode -->
+      <app-polygon
+        *ngIf="!viewerStore.isViewerMode && previewPolygon && toolStore.activeTool === ToolType.Polygon"
+        [polygon]="previewPolygon"
+        [isSelected]="false"
+        [isPolygonClosed]="previewPolygon.closed || false"
+        [isPreview]="true"
+        class="opacity-70 preview-polygon pointer-events-none fixed-preview"
+        style="z-index: 100;">
+      </app-polygon>
 
       <!-- Zoom and coordinate controls -->
       <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2">

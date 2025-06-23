@@ -63,6 +63,17 @@ export interface LineProperties extends Selectable {
   name?: string;
 }
 
+export interface PolygonProperties extends Selectable {
+  type: 'polygon';
+  points: {x: number, y: number}[];
+  thickness?: number;
+  strokeColor?: string;
+  fillColor?: string;
+  name?: string;
+  label?: string;
+  closed?: boolean;
+}
+
 export interface SeatingRowProperties extends Selectable {
   x: number;
   y: number;
