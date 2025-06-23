@@ -1,0 +1,120 @@
+name: Release and Publish
+
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - 'README.md'
+      - 'STYLING_GUIDE.md'
+      - '.gitignore'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+      issues: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://npm.pkg.github.com'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build library
+      run: npm run build
+
+    - name: Determine version bump
+      id: version
+      run: |
+        # Get the last commit message
+        COMMIT_MSG=$(git log -1 --pretty=%B)
+        
+        # Determine version bump type based on commit message
+        if [[ $COMMIT_MSG =~ ^(feat|feature)(\(.+\))?!: ]] || [[ $COMMIT_MSG =~ BREAKING\ CHANGE ]]; then
+          echo "bump=major" >> $GITHUB_OUTPUT
+          echo "Version bump: MAJOR (breaking change)"
+        elif [[ $COMMIT_MSG =~ ^feat(\(.+\))?: ]]; then
+          echo "bump=minor" >> $GITHUB_OUTPUT
+          echo "Version bump: MINOR (new feature)"
+        elif [[ $COMMIT_MSG =~ ^(fix|docs|style|refactor|test|chore)(\(.+\))?: ]]; then
+          echo "bump=patch" >> $GITHUB_OUTPUT
+          echo "Version bump: PATCH (bug fix/improvement)"
+        else
+          echo "bump=patch" >> $GITHUB_OUTPUT
+          echo "Version bump: PATCH (default)"
+        fi
+
+    - name: Bump version
+      id: bump
+      run: |
+        cd dist
+        NEW_VERSION=$(npm version ${{ steps.version.outputs.bump }} --no-git-tag-version)
+        echo "new_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+        echo "New version: ${NEW_VERSION}"
+
+    - name: Update main package.json version
+      run: |
+        DIST_VERSION=$(node -p "require('./dist/package.json').version")
+        npm version $DIST_VERSION --no-git-tag-version
+
+    - name: Commit version bump
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json
+        git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}" || exit 0
+
+    - name: Create Git Tag
+      run: |
+        git tag ${{ steps.bump.outputs.new_version }}
+        git push origin ${{ steps.bump.outputs.new_version }}
+        git push origin HEAD:${{ github.ref_name }}
+
+    - name: Publish to GitHub Packages
+      run: |
+        cd dist
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.bump.outputs.new_version }}
+        release_name: Release ${{ steps.bump.outputs.new_version }}
+        body: |
+          ## Changes in ${{ steps.bump.outputs.new_version }}
+          
+          - Auto-generated release from commit: ${{ github.sha }}
+          - Package published to GitHub Packages
+          
+          ### Installation
+          
+          ```bash
+          npm install @radoman93/ticketseat-io-angular@${{ steps.bump.outputs.new_version }} --registry=https://npm.pkg.github.com
+          ```
+          
+          ### Styling Setup
+          
+          Don't forget to include the CSS file in your project:
+          
+          ```css
+          @import '@radoman93/ticketseat-io-angular/styles.css';
+          ```
+        draft: false
+        prerelease: false 

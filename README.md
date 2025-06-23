@@ -1,59 +1,179 @@
-# TicketseatIoAngular
+# TicketSeat.io Angular Library
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.12.
+An Angular library for ticket seat management with drag-and-drop functionality, built with MobX for state management.
 
-## Development server
+## Features
 
-To start a local development server, run:
+- Drag-and-drop seat arrangement
+- Interactive grid-based event layout
+- Real-time seat reservation management
+- Customizable toolbars and properties panels
+- Built with MobX for reactive state management
+- Responsive design with Tailwind CSS and DaisyUI
 
-```bash
-ng serve
-```
+## Installation
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### From GitHub Packages (Recommended)
 
 ```bash
-ng generate --help
+npm install @radoman93/ticketseat-io-angular --registry=https://npm.pkg.github.com
 ```
 
-## Building
+Or configure your `.npmrc` file to always use GitHub Packages for this scope:
 
-To build the project run:
+```
+@radoman93:registry=https://npm.pkg.github.com
+```
+
+Then install normally:
 
 ```bash
-ng build
+npm install @radoman93/ticketseat-io-angular
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+### From NPM (if published)
 
 ```bash
-ng test
+npm install ticketseat-io-angular
 ```
 
-## Running end-to-end tests
+### Peer Dependencies
 
-For end-to-end (e2e) testing, run:
+Make sure you have the following peer dependencies installed:
 
 ```bash
-ng e2e
+npm install @angular/animations @angular/common @angular/core @angular/forms @angular/platform-browser @angular/platform-browser-dynamic @angular/router mobx mobx-angular
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### Styling Setup
 
-## Additional Resources
+To ensure the library components are styled correctly, you need to include the library's CSS file. There are several ways to do this:
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+#### Option 1: Import in your global styles (Recommended)
+
+Add the following import to your `src/styles.css` or `src/styles.scss` file:
+
+```css
+@import '@radoman93/ticketseat-io-angular/styles.css';
+```
+
+#### Option 2: Include in angular.json
+
+Add the CSS file to your `angular.json` build configuration:
+
+```json
+{
+  "styles": [
+    "src/styles.css",
+    "node_modules/@radoman93/ticketseat-io-angular/styles.css"
+  ]
+}
+```
+
+#### Option 3: If using Tailwind CSS in your project
+
+If your project already uses Tailwind CSS and DaisyUI, you can ensure the library classes are included by adding the library path to your `tailwind.config.js`:
+
+```javascript
+module.exports = {
+  content: [
+    "./src/**/*.{html,ts}",
+    "./node_modules/@radoman93/ticketseat-io-angular/**/*.{html,ts,js}"
+  ],
+  // ... rest of your config
+}
+```
+
+## Usage
+
+### Basic Setup
+
+1. Import the `EventEditorComponent` in your Angular component:
+
+```typescript
+import { Component } from '@angular/core';
+import { EventEditorComponent } from 'ticketseat-io-angular';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [EventEditorComponent],
+  template: '<app-event-editor></app-event-editor>'
+})
+export class AppComponent {
+}
+```
+
+### Using Individual Components
+
+You can also import and use individual components:
+
+```typescript
+import { 
+  GridComponent,
+  MainToolbarComponent,
+  TopToolbarComponent,
+  PropertiesPanelComponent 
+} from 'ticketseat-io-angular';
+```
+
+### Working with Stores
+
+The library uses MobX stores for state management:
+
+```typescript
+import { 
+  viewerStore, 
+  layoutStore, 
+  selectionStore 
+} from 'ticketseat-io-angular';
+
+// Access viewer state
+console.log(viewerStore.zoom);
+
+// Access layout data
+console.log(layoutStore.elements);
+
+// Access selection state
+console.log(selectionStore.selectedElements);
+```
+
+## API Reference
+
+### Components
+
+- `EventEditorComponent` - Main component that includes all functionality
+- `GridComponent` - Interactive grid for seat arrangement
+- `MainToolbarComponent` - Primary toolbar with main actions
+- `TopToolbarComponent` - Secondary toolbar
+- `PropertiesPanelComponent` - Properties configuration panel
+- `ChairPropertiesPanelComponent` - Chair-specific properties
+- `ReservationPanelComponent` - Reservation management
+- `NotificationsComponent` - System notifications
+
+### Stores
+
+- `viewerStore` - Viewport and zoom management
+- `layoutStore` - Layout and element management
+- `selectionStore` - Selection state management
+- `gridStore` - Grid configuration
+- `chairStore` - Chair-specific state
+- `dragStore` - Drag and drop operations
+- `toolStore` - Active tool management
+- `rotationStore` - Element rotation
+- `historyStore` - Undo/redo functionality
+
+### Services
+
+- `SelectionService` - Selection management utilities
+- `LayoutExportImportService` - Layout serialization
+- `LayoutValidatorService` - Layout validation
+- `ToolService` - Tool management
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License

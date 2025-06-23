@@ -1,0 +1,11 @@
+<div class="flex flex-col h-screen" *mobxAutorun>
+    <app-top-toolbar></app-top-toolbar>
+    <div class="flex flex-row h-full overflow-hidden">
+        <div class="h-full" *ngIf="viewerStore.isEditorMode"><app-main-toolbar></app-main-toolbar></div>
+        <div class="flex-1 h-full overflow-hidden"><app-grid></app-grid></div>
+        <div class="h-full" *ngIf="viewerStore.isEditorMode"><app-properties-panel></app-properties-panel></div>
+        <div class="h-full" *ngIf="viewerStore.isViewerMode"><app-reservation-panel></app-reservation-panel></div>
+    </div>
+    <app-chair-properties-panel *ngIf="viewerStore.isEditorMode"></app-chair-properties-panel>
+    <app-notifications></app-notifications>
+</div>
