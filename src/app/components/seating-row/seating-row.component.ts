@@ -228,6 +228,7 @@ export class SeatingRowComponent implements OnInit {
   }
 
   onChairMouseDown(event: Event, chair: any): void {
+    event.stopPropagation();
     if (this.isEffectivePreview || !chair || !chair.chair) return;
     
     // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
@@ -334,13 +335,18 @@ export class SeatingRowComponent implements OnInit {
         this.store.chairStore.deselectChair();
     }
 
+    // Set panel position if click coordinates provided
+    if (clickX !== undefined && clickY !== undefined) {
+      // Add offset to position panel next to the chair, not over it
+      const offsetX = clickX + 20;
+      const offsetY = clickY - 100; // Position above the click
+      this.store.chairStore.setPanelPosition(offsetX, offsetY);
+    }
+
     if (chair.isSelected) {
       this.store.chairStore.deselectChair();
     } else {
       this.store.chairStore.selectChair(chair.id);
-      if (clickX !== undefined && clickY !== undefined) {
-        this.store.chairStore.setPanelPosition(clickX + 10, clickY - 10);
-      }
     }
   }
 
