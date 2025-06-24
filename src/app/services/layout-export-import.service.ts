@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { layoutStore } from '../stores/layout.store';
 import { gridStore } from '../stores/grid.store';
+import { rootStore } from '../stores/root.store';
+import { Chair } from '../models/chair.model';
 
 export interface LayoutExportData {
   meta: {
@@ -16,6 +18,7 @@ export interface LayoutExportData {
     showGuides: boolean;
   };
   elements: any[];
+  chairs: Chair[];
 }
 
 @Injectable({
@@ -29,6 +32,7 @@ export class LayoutExportImportService {
    * Export the current layout to a JSON object
    */
   exportLayout(name: string, description?: string): LayoutExportData {
+    const chairs = Array.from(rootStore.chairStore.chairs.values());
     const exportData: LayoutExportData = {
       meta: {
         version: '1.0',
@@ -42,7 +46,8 @@ export class LayoutExportImportService {
         showGrid: gridStore.showGrid,
         showGuides: gridStore.showGuides
       },
-      elements: [...layoutStore.elements]
+      elements: [...layoutStore.elements],
+      chairs: chairs
     };
 
     return exportData;
@@ -80,6 +85,7 @@ export class LayoutExportImportService {
     if (mode === 'replace') {
       // Clear existing layout
       layoutStore.clearAll();
+      rootStore.chairStore.chairs.clear();
     }
 
     // Apply settings
@@ -89,6 +95,17 @@ export class LayoutExportImportService {
     }
     if (data.settings.showGuides !== gridStore.showGuides) {
       gridStore.toggleGuides();
+    }
+
+    // Add chairs FIRST, so they exist when elements are created
+    if (data.chairs) {
+      data.chairs.forEach(chair => {
+        if (mode === 'merge') {
+          // In merge mode, we might need to handle chair ID conflicts if we merge layouts
+          // For now, we assume chairs are uniquely tied to elements that get new IDs
+        }
+        rootStore.chairStore.addChair(chair);
+      });
     }
 
     // Add elements
@@ -128,7 +145,8 @@ export class LayoutExportImportService {
       typeof data.settings.gridSize === 'number' &&
       typeof data.settings.showGrid === 'boolean' &&
       typeof data.settings.showGuides === 'boolean' &&
-      Array.isArray(data.elements)
+      Array.isArray(data.elements) &&
+      Array.isArray(data.chairs)
     );
   }
 
