@@ -2,7 +2,7 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
-import { makeAutoObservable, computed } from 'mobx';
+import { makeAutoObservable, computed, observable, action } from 'mobx';
 import { rootStore } from '../../stores';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
@@ -25,38 +25,81 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   @Input() chairLabelVisible: boolean = true;
   @Input() rowLabelVisible: boolean = true;
   
+  // Internal observable properties that sync with inputs
+  public _seatingRowData: SeatingRowProperties | null = null;
+  public _isSelected: boolean = false;
+  public _isPreview: boolean = false;
+  public _previewSegment: SegmentProperties | null = null;
+  public _maxSegments: number = -1;
+  public _chairLabelVisible: boolean = true;
+  public _rowLabelVisible: boolean = true;
+  
   store = rootStore;
   viewerStore = viewerStore;
   
   constructor() {
     makeAutoObservable(this, {
+      // Computed properties
       segmentData: computed,
       previewSegmentData: computed,
-      completedSegments: computed
+      completedSegments: computed,
+      // Internal observable properties
+      _seatingRowData: observable,
+      _isSelected: observable,
+      _isPreview: observable,
+      _previewSegment: observable,
+      _maxSegments: observable,
+      _chairLabelVisible: observable,
+      _rowLabelVisible: observable,
+      // Actions
+      // Exclude @Input properties from being observable to prevent MobX strict mode warnings
+      seatingRowData: false,
+      isSelected: false,
+      isPreview: false,
+      previewSegment: false,
+      maxSegments: false,
+      chairLabelVisible: false,
+      rowLabelVisible: false,
+      // Exclude stores as they are already observable
+      store: false,
+      viewerStore: false
     });
   }
 
   ngOnInit() {
+    this.syncInputs();
+    
     // Generate chairs for this seating row if they don't exist and this is not a preview
-    if (this.seatingRowData && this.seatingRowData.id && !this.isPreview) {
-      if (this.seatingRowData.type === 'seatingRow') {
+    if (this._seatingRowData && this._seatingRowData.id && !this._isPreview) {
+      if (this._seatingRowData.type === 'seatingRow') {
         this.generateChairsForRegularRow();
-      } else if (this.seatingRowData.type === 'segmentedSeatingRow' && this.seatingRowData.segments) {
+      } else if (this._seatingRowData.type === 'segmentedSeatingRow' && this._seatingRowData.segments) {
         this.generateChairsForAllSegments();
       }
     }
   }
   
   ngOnChanges(changes: SimpleChanges) {
-    // We no longer need to manually update on changes, MobX will handle it.
+    this.syncInputs();
+  }
+
+  @action
+  public syncInputs() {
+    this._seatingRowData = this.seatingRowData;
+    this._isSelected = this.isSelected;
+    this._isPreview = this.isPreview;
+    this._previewSegment = this.previewSegment;
+    this._maxSegments = this.maxSegments;
+    this._chairLabelVisible = this.chairLabelVisible;
+    this._rowLabelVisible = this.rowLabelVisible;
   }
 
   get segmentData() {
-    if (!this.seatingRowData || !this.seatingRowData.segments) {
+    if (!this._seatingRowData || !this._seatingRowData.segments) {
       return [];
     }
     
-    return this.seatingRowData.segments.map((segment, index) => ({
+    return this._seatingRowData.segments.map((segment, index) => ({
       styles: this.getSegmentStyles(segment),
       width: this.getSegmentWidth(segment),
       chairs: this.getSegmentChairStyles(segment, index)
@@ -64,7 +107,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   }
 
   get previewSegmentData() {
-    if (!this.previewSegment) {
+    if (!this._previewSegment) {
       return null;
     }
     
@@ -77,7 +120,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   // Get completed segments from seatingRowData
   get completedSegments(): SegmentProperties[] {
-    return this.seatingRowData?.segments || [];
+    return this._seatingRowData?.segments || [];
   }
 
   // Calculate styles for a segment (position, rotation)
@@ -104,10 +147,10 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     
     for (let i = startIndex; i < segment.seatCount; i++) {
       let chairId: string;
-      if (this.seatingRowData.type === 'seatingRow') {
-        chairId = `${this.seatingRowData.id}-chair-${i}`;
+      if (this._seatingRowData!.type === 'seatingRow') {
+        chairId = `${this._seatingRowData!.id}-chair-${i}`;
       } else {
-        chairId = `${this.seatingRowData.id}-seg${segmentIndex}-chair-${i}`;
+        chairId = `${this._seatingRowData!.id}-seg${segmentIndex}-chair-${i}`;
       }
       
       const chair = this.store.chairStore.chairs.get(chairId);
@@ -136,7 +179,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   // Calculate a global chair label across all segments
   private calculateGlobalChairLabel(currentSegmentIndex: number, chairIndexInSegment: number): string {
     // For regular rows, just use the chair index + 1
-    if (this.seatingRowData.type === 'seatingRow') {
+    if (this._seatingRowData!.type === 'seatingRow') {
       return (chairIndexInSegment + 1).toString();
     }
     
@@ -147,8 +190,8 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     for (let i = 0; i < currentSegmentIndex; i++) {
       // For segments after the first one, we count one less chair to account for the overlap
       const adjustedChairCount = i > 0 ? 
-        this.seatingRowData.segments![i].seatCount - 1 :
-        this.seatingRowData.segments![i].seatCount;
+        this._seatingRowData!.segments![i].seatCount - 1 :
+        this._seatingRowData!.segments![i].seatCount;
       
       globalIndex += adjustedChairCount;
     }
@@ -163,40 +206,40 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   // --- Preview segment methods ---
   getPreviewSegmentStyles() {
-    if (!this.previewSegment) return {};
+    if (!this._previewSegment) return {};
     return {
-      left: `${this.previewSegment.startX}px`,
-      top: `${this.previewSegment.startY}px`,
-      transform: `rotate(${this.previewSegment.rotation}deg)`,
+      left: `${this._previewSegment.startX}px`,
+      top: `${this._previewSegment.startY}px`,
+      transform: `rotate(${this._previewSegment.rotation}deg)`,
       transformOrigin: '0 0'
     };
   }
 
   getPreviewSegmentWidth(): number {
-    if (!this.previewSegment) return 0;
-    const dx = this.previewSegment.endX - this.previewSegment.startX;
-    const dy = this.previewSegment.endY - this.previewSegment.startY;
+    if (!this._previewSegment) return 0;
+    const dx = this._previewSegment.endX - this._previewSegment.startX;
+    const dy = this._previewSegment.endY - this._previewSegment.startY;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
   getPreviewSegmentChairStyles() {
-    if (!this.previewSegment) return [];
+    if (!this._previewSegment) return [];
     
     const chairsArray = [];
-    const isNewSegmentAfterExisting = this.seatingRowData?.segments && this.seatingRowData.segments.length > 0;
+    const isNewSegmentAfterExisting = this._seatingRowData?.segments && this._seatingRowData.segments.length > 0;
     const startOffset = isNewSegmentAfterExisting ? 1 : 0;
-    const chairSpacing = this.previewSegment.seatSpacing;
+    const chairSpacing = this._previewSegment.seatSpacing;
     
-    for (let i = startOffset; i < this.previewSegment.seatCount; i++) {
-      let x = (this.previewSegment.seatCount === 1) ? 0 : i * chairSpacing;
+    for (let i = startOffset; i < this._previewSegment.seatCount; i++) {
+      let x = (this._previewSegment.seatCount === 1) ? 0 : i * chairSpacing;
       
       let label = (i + 1).toString();
       if (isNewSegmentAfterExisting) {
         let totalPreviousChairs = 0;
-        for (let j = 0; j < this.seatingRowData.segments!.length; j++) {
+        for (let j = 0; j < this._seatingRowData!.segments!.length; j++) {
           totalPreviousChairs += (j > 0) 
-            ? this.seatingRowData.segments![j].seatCount - 1
-            : this.seatingRowData.segments![j].seatCount;
+            ? this._seatingRowData!.segments![j].seatCount - 1
+            : this._seatingRowData!.segments![j].seatCount;
         }
         label = (totalPreviousChairs + i).toString();
       }
@@ -213,17 +256,17 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   // Generate chairs for all committed segments
   private generateChairsForAllSegments(): void {
-    if (!this.seatingRowData?.segments) return;
+    if (!this._seatingRowData?.segments) return;
     
     let globalChairCounter = 1;
-    this.seatingRowData.segments.forEach((segment, segmentIndex) => {
+    this._seatingRowData.segments.forEach((segment, segmentIndex) => {
       for (let i = 0; i < segment.seatCount; i++) {
-        const chairId = `${this.seatingRowData.id}-seg${segmentIndex}-chair-${i}`;
+        const chairId = `${this._seatingRowData!.id}-seg${segmentIndex}-chair-${i}`;
         
         if (!this.store.chairStore.chairs.has(chairId)) {
           const chair: Chair = {
             id: chairId,
-            tableId: this.seatingRowData.id!,
+            tableId: this._seatingRowData!.id!,
             label: globalChairCounter.toString(),
             price: 0,
             position: { angle: segment.rotation, distance: 0 },
@@ -238,17 +281,17 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   // Generate chairs for regular rows (non-segmented)
   private generateChairsForRegularRow(): void {
-    if (!this.seatingRowData?.segments || this.seatingRowData.segments.length === 0) return;
+    if (!this._seatingRowData?.segments || this._seatingRowData.segments.length === 0) return;
     
-    const segment = this.seatingRowData.segments[0]; // Regular rows only have one segment
+    const segment = this._seatingRowData.segments[0]; // Regular rows only have one segment
     
     for (let i = 0; i < segment.seatCount; i++) {
-      const chairId = `${this.seatingRowData.id}-chair-${i}`;
+      const chairId = `${this._seatingRowData.id}-chair-${i}`;
       
       if (!this.store.chairStore.chairs.has(chairId)) {
         const chair: Chair = {
           id: chairId,
-          tableId: this.seatingRowData.id!,
+          tableId: this._seatingRowData.id!,
           label: (i + 1).toString(),
           price: 0,
           position: { angle: segment.rotation, distance: 0 },
@@ -261,7 +304,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   // Chair interaction methods
   onChairClick(event: Event, chairData: any, segmentIndex: number): void {
-    if (this.isPreview) return;
+    if (this._isPreview) return;
     event.stopPropagation();
     
     const actualChair = this.store.chairStore.chairs.get(chairData.id);
@@ -342,7 +385,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   }
   
   onChairMouseDown(event: Event, chairData: any): void {
-    if (this.isPreview) return;
+    if (this._isPreview) return;
     event.stopPropagation();
   }
 
@@ -389,11 +432,11 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   
   // Row label position
   getRowLabelPosition(): any {
-    if (!this.seatingRowData || !this.seatingRowData.segments || this.seatingRowData.segments.length === 0) {
+    if (!this._seatingRowData || !this._seatingRowData.segments || this._seatingRowData.segments.length === 0) {
       return { display: 'none' };
     }
     
-    const firstSegment = this.seatingRowData.segments[0];
+    const firstSegment = this._seatingRowData.segments[0];
     return {
       left: `${firstSegment.startX - 60}px`,
       top: `${firstSegment.startY - 15}px`,
@@ -403,12 +446,12 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   // Calculate the bounding box for the segmented seating row
   getBoundingBox(): { minX: number, minY: number, maxX: number, maxY: number, centerX: number, centerY: number } {
-    if (!this.seatingRowData?.segments || this.seatingRowData.segments.length === 0) {
+    if (!this._seatingRowData?.segments || this._seatingRowData.segments.length === 0) {
       return { minX: 0, minY: 0, maxX: 0, maxY: 0, centerX: 0, centerY: 0 };
     }
 
     const points: {x: number, y: number}[] = [];
-    this.seatingRowData.segments.forEach(segment => {
+    this._seatingRowData.segments.forEach(segment => {
       points.push({ x: segment.startX, y: segment.startY });
       points.push({ x: segment.endX, y: segment.endY });
     });
@@ -426,7 +469,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     centerX = (currentMinX + currentMaxX) / 2;
     centerY = (currentMinY + currentMaxY) / 2;
 
-    const rotation = this.seatingRowData.rotation || 0;
+    const rotation = this._seatingRowData.rotation || 0;
     const angle = -rotation * (Math.PI / 180);
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
@@ -469,7 +512,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       top: `${box.centerY}px`,
       width: `${width}px`,
       height: `${height}px`,
-      transform: `translate(-50%, -50%) rotate(${this.seatingRowData.rotation || 0}deg)`,
+      transform: `translate(-50%, -50%) rotate(${this._seatingRowData?.rotation || 0}deg)`,
       transformOrigin: 'center center'
     };
   }

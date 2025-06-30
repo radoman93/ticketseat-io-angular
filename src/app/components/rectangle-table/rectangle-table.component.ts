@@ -2,7 +2,7 @@ import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from 
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { RectangleTableProperties } from '../../services/selection.service';
-import { makeAutoObservable, observable, computed } from 'mobx';
+import { makeAutoObservable, observable, computed, action } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
@@ -31,6 +31,23 @@ export class RectangleTableComponent implements OnInit, OnChanges {
   @Input() tableLabelVisible: boolean = true;
   @Input() chairLabelVisible: boolean = true;
   
+  // Internal observable properties that sync with inputs
+  public _x: number = 0;
+  public _y: number = 0;
+  public _width: number = 120;
+  public _height: number = 80;
+  public _upChairs: number = 4;
+  public _downChairs: number = 4;
+  public _leftChairs: number = 0;
+  public _rightChairs: number = 0;
+  public _name: string = 'Table';
+  public _tableData: RectangleTableProperties | null = null;
+  public _isSelected: boolean = false;
+  public _isPreview: boolean = false;
+  public _rotation: number = 0;
+  public _tableLabelVisible: boolean = true;
+  public _chairLabelVisible: boolean = true;
+  
   store = rootStore;
   viewerStore = viewerStore;
   
@@ -38,29 +55,60 @@ export class RectangleTableComponent implements OnInit, OnChanges {
   
   constructor() {
     makeAutoObservable(this, {
+      // Computed properties
       tableStyles: computed,
       chairStyles: computed,
-      x: observable,
-      y: observable,
-      width: observable,
-      height: observable,
-      upChairs: observable,
-      downChairs: observable,
-      leftChairs: observable,
-      rightChairs: observable,
-      name: observable,
-      rotation: observable,
-      tableLabelVisible: observable,
-      chairLabelVisible: observable
+      totalChairs: computed,
+      // Internal observable properties
+      _x: observable,
+      _y: observable,
+      _width: observable,
+      _height: observable,
+      _upChairs: observable,
+      _downChairs: observable,
+      _leftChairs: observable,
+      _rightChairs: observable,
+      _name: observable,
+      _tableData: observable,
+      _isSelected: observable,
+      _isPreview: observable,
+      _rotation: observable,
+      _tableLabelVisible: observable,
+      _chairLabelVisible: observable,
+      // Actions
+      // Exclude @Input properties from being observable to prevent MobX strict mode warnings
+      x: false,
+      y: false,
+      width: false,
+      height: false,
+      upChairs: false,
+      downChairs: false,
+      leftChairs: false,
+      rightChairs: false,
+      name: false,
+      tableData: false,
+      isSelected: false,
+      isPreview: false,
+      rotation: false,
+      tableLabelVisible: false,
+      chairLabelVisible: false,
+      class: false,
+      // Exclude stores as they are already observable
+      store: false,
+      viewerStore: false
     });
   }
 
   ngOnInit() {
-    console.log('🔄 Rectangle table ngOnInit called. TableData:', this.tableData, 'isPreview:', this.isPreview);
+    this.syncInputs();
+    
+    console.log('🔄 Rectangle table ngOnInit called. TableData:', this._tableData, 'isPreview:', this._isPreview);
     this.generateChairsIfNeeded();
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    this.syncInputs();
+    
     // Check if properties that affect chair generation have changed
     const chairCountChanged = changes['upChairs'] || changes['downChairs'] || 
       changes['leftChairs'] || changes['rightChairs'] ||
@@ -70,6 +118,25 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       console.log('🔄 Chair-affecting properties changed, regenerating chairs');
       this.generateChairsIfNeeded(true); // Force regeneration
     }
+  }
+
+  @action
+  public syncInputs() {
+    this._x = this.x;
+    this._y = this.y;
+    this._width = this.width;
+    this._height = this.height;
+    this._upChairs = this.upChairs;
+    this._downChairs = this.downChairs;
+    this._leftChairs = this.leftChairs;
+    this._rightChairs = this.rightChairs;
+    this._name = this.name;
+    this._tableData = this.tableData;
+    this._isSelected = this.isSelected;
+    this._isPreview = this.isPreview;
+    this._rotation = this.rotation;
+    this._tableLabelVisible = this.tableLabelVisible;
+    this._chairLabelVisible = this.chairLabelVisible;
   }
 
   private hasChairCountChanged(prev: RectangleTableProperties, curr: RectangleTableProperties): boolean {
@@ -82,16 +149,16 @@ export class RectangleTableComponent implements OnInit, OnChanges {
 
   private generateChairsIfNeeded(forceRegenerate: boolean = false) {
     // Generate chairs for this rectangle table if they don't exist and this is not a preview
-    if (this.tableData && this.tableData.id && !this.isPreview) {
-      const existingChairs = this.store.chairStore.getChairsByTable(this.tableData.id);
-      console.log('📋 Existing chairs for rectangle table', this.tableData.id, ':', existingChairs);
+    if (this._tableData && this._tableData.id && !this._isPreview) {
+      const existingChairs = this.store.chairStore.getChairsByTable(this._tableData.id);
+      console.log('📋 Existing chairs for rectangle table', this._tableData.id, ':', existingChairs);
       
       const needsRegeneration = forceRegenerate || 
         existingChairs.length === 0 || 
         existingChairs.length !== this.totalChairs;
       
       if (needsRegeneration) {
-        console.log('🪑 Generating/regenerating chairs for rectangle table:', this.tableData.id);
+        console.log('🪑 Generating/regenerating chairs for rectangle table:', this._tableData.id);
         
         // Remove existing chairs first
         existingChairs.forEach(chair => {
@@ -104,56 +171,56 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       }
     } else {
       console.log('❌ Not generating chairs for rectangle table. Conditions:', {
-        hasTableData: !!this.tableData,
-        hasId: this.tableData?.id,
-        isPreview: this.isPreview
+        hasTableData: !!this._tableData,
+        hasId: this._tableData?.id,
+        isPreview: this._isPreview
       });
     }
   }
 
   get tableStyles() {
-    if (this.tableData) {
+    if (this._tableData) {
       return {
-        left: `${this.tableData.x}px`,
-        top: `${this.tableData.y}px`,
-        width: `${this.tableData.width}px`,
-        height: `${this.tableData.height}px`,
-        transform: `translate(-50%, -50%) rotate(${this.rotation || this.tableData.rotation || 0}deg)`
+        left: `${this._tableData.x}px`,
+        top: `${this._tableData.y}px`,
+        width: `${this._tableData.width}px`,
+        height: `${this._tableData.height}px`,
+        transform: `translate(-50%, -50%) rotate(${this._rotation || this._tableData.rotation || 0}deg)`
       };
     }
     
     return {
-      left: `${this.x}px`,
-      top: `${this.y}px`,
-      width: `${this.width}px`,
-      height: `${this.height}px`,
-      transform: `translate(-50%, -50%) rotate(${this.rotation}deg)`
+      left: `${this._x}px`,
+      top: `${this._y}px`,
+      width: `${this._width}px`,
+      height: `${this._height}px`,
+      transform: `translate(-50%, -50%) rotate(${this._rotation}deg)`
     };
   }
 
   get totalChairs(): number {
-    if (this.tableData) {
-      return (this.tableData.upChairs || 0) + (this.tableData.downChairs || 0) + 
-             (this.tableData.leftChairs || 0) + (this.tableData.rightChairs || 0);
+    if (this._tableData) {
+      return (this._tableData.upChairs || 0) + (this._tableData.downChairs || 0) + 
+             (this._tableData.leftChairs || 0) + (this._tableData.rightChairs || 0);
     }
-    return this.upChairs + this.downChairs + this.leftChairs + this.rightChairs;
+    return this._upChairs + this._downChairs + this._leftChairs + this._rightChairs;
   }
 
   get chairStyles() {
-    const effectiveWidth = this.tableData ? this.tableData.width : this.width;
-    const effectiveHeight = this.tableData ? this.tableData.height : this.height;
-    const effectiveUpChairs = this.tableData ? this.tableData.upChairs : this.upChairs;
-    const effectiveDownChairs = this.tableData ? this.tableData.downChairs : this.downChairs;
-    const effectiveLeftChairs = this.tableData ? this.tableData.leftChairs : this.leftChairs;
-    const effectiveRightChairs = this.tableData ? this.tableData.rightChairs : this.rightChairs;
+    const effectiveWidth = this._tableData ? this._tableData.width : this._width;
+    const effectiveHeight = this._tableData ? this._tableData.height : this._height;
+    const effectiveUpChairs = this._tableData ? this._tableData.upChairs : this._upChairs;
+    const effectiveDownChairs = this._tableData ? this._tableData.downChairs : this._downChairs;
+    const effectiveLeftChairs = this._tableData ? this._tableData.leftChairs : this._leftChairs;
+    const effectiveRightChairs = this._tableData ? this._tableData.rightChairs : this._rightChairs;
     
     const chairsArray = [];
     const chairOffset = 25; // Distance from table edge
     let chairIndex = 0;
     
     console.log('🪑 Building chair styles for rectangle table:');
-    console.log('  - tableData:', this.tableData);
-    console.log('  - isPreview:', this.isPreview);
+    console.log('  - tableData:', this._tableData);
+    console.log('  - isPreview:', this._isPreview);
     console.log('  - up/down/left/right chairs:', effectiveUpChairs, effectiveDownChairs, effectiveLeftChairs, effectiveRightChairs);
     
     // Top chairs (up)
@@ -162,8 +229,8 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       const x = -effectiveWidth / 2 + spacing * (i + 1);
       const y = -effectiveHeight / 2 - chairOffset;
       
-      const chairId = `${this.tableData ? this.tableData.id : 'preview'}-chair-${chairIndex}`;
-      const chair = this.tableData ? this.store.chairStore.chairs.get(chairId) : null;
+      const chairId = `${this._tableData ? this._tableData.id : 'preview'}-chair-${chairIndex}`;
+      const chair = this._tableData ? this.store.chairStore.chairs.get(chairId) : null;
       
       chairsArray.push({
         id: chairId,
@@ -182,8 +249,8 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       const x = -effectiveWidth / 2 + spacing * (i + 1);
       const y = effectiveHeight / 2 + chairOffset;
       
-      const chairId = `${this.tableData ? this.tableData.id : 'preview'}-chair-${chairIndex}`;
-      const chair = this.tableData ? this.store.chairStore.chairs.get(chairId) : null;
+      const chairId = `${this._tableData ? this._tableData.id : 'preview'}-chair-${chairIndex}`;
+      const chair = this._tableData ? this.store.chairStore.chairs.get(chairId) : null;
       
       chairsArray.push({
         id: chairId,
@@ -202,8 +269,8 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       const x = -effectiveWidth / 2 - chairOffset;
       const y = -effectiveHeight / 2 + spacing * (i + 1);
       
-      const chairId = `${this.tableData ? this.tableData.id : 'preview'}-chair-${chairIndex}`;
-      const chair = this.tableData ? this.store.chairStore.chairs.get(chairId) : null;
+      const chairId = `${this._tableData ? this._tableData.id : 'preview'}-chair-${chairIndex}`;
+      const chair = this._tableData ? this.store.chairStore.chairs.get(chairId) : null;
       
       chairsArray.push({
         id: chairId,
@@ -222,8 +289,8 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       const x = effectiveWidth / 2 + chairOffset;
       const y = -effectiveHeight / 2 + spacing * (i + 1);
       
-      const chairId = `${this.tableData ? this.tableData.id : 'preview'}-chair-${chairIndex}`;
-      const chair = this.tableData ? this.store.chairStore.chairs.get(chairId) : null;
+      const chairId = `${this._tableData ? this._tableData.id : 'preview'}-chair-${chairIndex}`;
+      const chair = this._tableData ? this.store.chairStore.chairs.get(chairId) : null;
       
       chairsArray.push({
         id: chairId,
@@ -241,24 +308,24 @@ export class RectangleTableComponent implements OnInit, OnChanges {
   }
 
   private generateChairsForRectangleTable(): void {
-    if (!this.tableData) return;
+    if (!this._tableData) return;
     
     const totalChairs = this.totalChairs;
     let chairIndex = 0;
     
     // Generate chairs for each side
     const sides = [
-      { count: this.tableData.upChairs, name: 'up' },
-      { count: this.tableData.downChairs, name: 'down' },
-      { count: this.tableData.leftChairs, name: 'left' },
-      { count: this.tableData.rightChairs, name: 'right' }
+      { count: this._tableData.upChairs, name: 'up' },
+      { count: this._tableData.downChairs, name: 'down' },
+      { count: this._tableData.leftChairs, name: 'left' },
+      { count: this._tableData.rightChairs, name: 'right' }
     ];
     
     sides.forEach(side => {
       for (let i = 0; i < side.count; i++) {
         const chair: Chair = {
-          id: `${this.tableData.id}-chair-${chairIndex}`,
-          tableId: this.tableData.id,
+          id: `${this._tableData!.id}-chair-${chairIndex}`,
+          tableId: this._tableData!.id,
           label: (chairIndex + 1).toString(),
           price: 25.00,
           position: {

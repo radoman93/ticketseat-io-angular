@@ -79,6 +79,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Polygon drawing state
   isCreatingPolygon: boolean = false;
   previewPolygon: PolygonProperties | null = null;
+  ignoreMouseUp: boolean = false;
 
   constructor(
     private historyStore: HistoryStore,
@@ -331,6 +332,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         if (!this.isCreatingRegularRow) {
           // First click: start drawing the row
           this.isCreatingRegularRow = true;
+          this.ignoreMouseUp = true;
           this.segmentedRowId = `seatingrow-${Date.now()}`;
           this.segmentedRowSegments = [];
           this.activeSegmentStartX = x;
@@ -573,6 +575,16 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
+    if (this.ignoreMouseUp) {
+      this.ignoreMouseUp = false;
+      return;
+    }
+
+    // Stop panning on mouse up
+    if (this.store.isPanning) {
+      this.store.stopPanning();
+    }
+
     if (this.toolStore.activeTool === ToolType.RoundTable && this.previewTable) {
       // Create a new round table at the preview position
       const newTable: RoundTableProperties = {

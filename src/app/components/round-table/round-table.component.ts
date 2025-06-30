@@ -2,7 +2,7 @@ import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from 
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableProperties, ChairProperties } from '../../services/selection.service';
-import { makeAutoObservable, observable, computed } from 'mobx';
+import { makeAutoObservable, observable, computed, action } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
@@ -28,6 +28,20 @@ export class RoundTableComponent implements OnInit, OnChanges {
   @Input() tableLabelVisible: boolean = true;
   @Input() chairLabelVisible: boolean = true;
   
+  // Internal observable properties that sync with inputs
+  public _x: number = 0;
+  public _y: number = 0;
+  public _radius: number = 50;
+  public _seats: number = 10;
+  public _openSpaces: number = 0;
+  public _name: string = 'Table';
+  public _tableData: RoundTableProperties | null = null;
+  public _isSelected: boolean = false;
+  public _isPreview: boolean = false;
+  public _rotation: number = 0;
+  public _tableLabelVisible: boolean = true;
+  public _chairLabelVisible: boolean = true;
+  
   store = rootStore;
   viewerStore = viewerStore;
   
@@ -35,36 +49,63 @@ export class RoundTableComponent implements OnInit, OnChanges {
   
   constructor() {
     makeAutoObservable(this, {
+      // Computed properties
       tableStyles: computed,
       seatStyles: computed,
-      x: observable,
-      y: observable,
-      radius: observable,
-      seats: observable,
-      openSpaces: observable,
-      name: observable,
-      rotation: observable,
-      tableLabelVisible: observable,
-      chairLabelVisible: observable
+      // Internal observable properties
+      _x: observable,
+      _y: observable,
+      _radius: observable,
+      _seats: observable,
+      _openSpaces: observable,
+      _name: observable,
+      _tableData: observable,
+      _isSelected: observable,
+      _isPreview: observable,
+      _rotation: observable,
+      _tableLabelVisible: observable,
+      _chairLabelVisible: observable,
+      // Actions
+      // Exclude @Input properties from being observable to prevent MobX strict mode warnings
+      x: false,
+      y: false,
+      radius: false,
+      seats: false,
+      openSpaces: false,
+      name: false,
+      tableData: false,
+      isSelected: false,
+      isPreview: false,
+      rotation: false,
+      tableLabelVisible: false,
+      chairLabelVisible: false,
+      class: false,
+      // Exclude stores as they are already observable
+      store: false,
+      viewerStore: false
     });
   }
 
   // Handle table click for selecting the table
   handleTableClick(event: MouseEvent): void {
     event.stopPropagation();
-    console.log('🔵 Table clicked, selecting table:', this.tableData);
+    console.log('🔵 Table clicked, selecting table:', this._tableData);
     
-    if (this.tableData && this.tableData.id) {
-      this.store.selectionStore.selectItem(this.tableData);
+    if (this._tableData && this._tableData.id) {
+      this.store.selectionStore.selectItem(this._tableData);
     }
   }
 
   ngOnInit() {
-    console.log('🔄 Round table ngOnInit called. TableData:', this.tableData, 'isPreview:', this.isPreview);
+    this.syncInputs();
+    
+    console.log('🔄 Round table ngOnInit called. TableData:', this._tableData, 'isPreview:', this._isPreview);
     this.generateChairsIfNeeded();
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    this.syncInputs();
+    
     // Check if properties that affect chair generation have changed
     const seatCountChanged = changes['seats'] || (changes['tableData'] && 
       changes['tableData'].previousValue?.seats !== changes['tableData'].currentValue?.seats);
@@ -77,18 +118,34 @@ export class RoundTableComponent implements OnInit, OnChanges {
     }
   }
 
+  @action
+  public syncInputs() {
+    this._x = this.x;
+    this._y = this.y;
+    this._radius = this.radius;
+    this._seats = this.seats;
+    this._openSpaces = this.openSpaces;
+    this._name = this.name;
+    this._tableData = this.tableData;
+    this._isSelected = this.isSelected;
+    this._isPreview = this.isPreview;
+    this._rotation = this.rotation;
+    this._tableLabelVisible = this.tableLabelVisible;
+    this._chairLabelVisible = this.chairLabelVisible;
+  }
+
   private generateChairsIfNeeded(forceRegenerate: boolean = false) {
     // Generate chairs for this table if they don't exist and this is not a preview
-    if (this.tableData && this.tableData.id && !this.isPreview) {
-      const existingChairs = this.store.chairStore.getChairsByTable(this.tableData.id);
-      console.log('📋 Existing chairs for table', this.tableData.id, ':', existingChairs);
+    if (this._tableData && this._tableData.id && !this._isPreview) {
+      const existingChairs = this.store.chairStore.getChairsByTable(this._tableData.id);
+      console.log('📋 Existing chairs for table', this._tableData.id, ':', existingChairs);
       
       const needsRegeneration = forceRegenerate || 
         existingChairs.length === 0 || 
-        existingChairs.length !== this.tableData.seats;
+        existingChairs.length !== this._tableData.seats;
       
       if (needsRegeneration) {
-        console.log('🪑 Generating/regenerating chairs for table:', this.tableData.id);
+        console.log('🪑 Generating/regenerating chairs for table:', this._tableData.id);
         
         // Remove existing chairs first
         existingChairs.forEach(chair => {
@@ -97,45 +154,45 @@ export class RoundTableComponent implements OnInit, OnChanges {
         
         // Generate new chairs
         this.store.chairStore.generateChairsForTable(
-          this.tableData.id, 
-          this.tableData.seats, 
-          this.tableData.radius
+          this._tableData.id, 
+          this._tableData.seats, 
+          this._tableData.radius
         );
         console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
     } else {
       console.log('❌ Not generating chairs. Conditions:', {
-        hasTableData: !!this.tableData,
-        hasId: this.tableData?.id,
-        isPreview: this.isPreview
+        hasTableData: !!this._tableData,
+        hasId: this._tableData?.id,
+        isPreview: this._isPreview
       });
     }
   }
 
   get tableStyles() {
-    if (this.tableData) {
+    if (this._tableData) {
       return {
-        left: `${this.tableData.x}px`,
-        top: `${this.tableData.y}px`,
-        width: `${this.tableData.radius * 2}px`,
-        height: `${this.tableData.radius * 2}px`,
-        transform: `translate(-50%, -50%) rotate(${this.rotation || this.tableData.rotation || 0}deg)`
+        left: `${this._tableData.x}px`,
+        top: `${this._tableData.y}px`,
+        width: `${this._tableData.radius * 2}px`,
+        height: `${this._tableData.radius * 2}px`,
+        transform: `translate(-50%, -50%) rotate(${this._rotation || this._tableData.rotation || 0}deg)`
       };
     }
     
     return {
-      left: `${this.x}px`,
-      top: `${this.y}px`,
-      width: `${this.radius * 2}px`,
-      height: `${this.radius * 2}px`,
-      transform: `translate(-50%, -50%) rotate(${this.rotation}deg)`
+      left: `${this._x}px`,
+      top: `${this._y}px`,
+      width: `${this._radius * 2}px`,
+      height: `${this._radius * 2}px`,
+      transform: `translate(-50%, -50%) rotate(${this._rotation}deg)`
     };
   }
 
   get seatStyles() {
-    const effectiveSeats = this.tableData ? this.tableData.seats : this.seats;
-    const effectiveOpenSpaces = this.tableData ? this.tableData.openSpaces : this.openSpaces;
-    const effectiveRadius = this.tableData ? this.tableData.radius : this.radius;
+    const effectiveSeats = this._tableData ? this._tableData.seats : this._seats;
+    const effectiveOpenSpaces = this._tableData ? this._tableData.openSpaces : this._openSpaces;
+    const effectiveRadius = this._tableData ? this._tableData.radius : this._radius;
     const totalPositions = effectiveSeats + effectiveOpenSpaces;
     
     const seatsArray = [];
@@ -147,9 +204,9 @@ export class RoundTableComponent implements OnInit, OnChanges {
     const distanceToItemCenter = effectiveRadius + 20; 
     
     console.log('🪑 Building seat styles for table:');
-    console.log('  - tableData:', this.tableData);
-    console.log('  - tableData?.id:', this.tableData?.id);
-    console.log('  - isPreview:', this.isPreview);
+    console.log('  - tableData:', this._tableData);
+    console.log('  - tableData?.id:', this._tableData?.id);
+    console.log('  - isPreview:', this._isPreview);
     console.log('  - effectiveSeats:', effectiveSeats);
     console.log('  - chairs in store:', this.store.chairStore.chairs.size);
     
@@ -163,11 +220,11 @@ export class RoundTableComponent implements OnInit, OnChanges {
       const isSeat = i < effectiveSeats;
       const isOpenSpace = i >= effectiveSeats;
       
-      const chairId = `${this.tableData ? this.tableData.id : 'preview'}-chair-${i}`;
-      const chair = this.tableData ? this.store.chairStore.chairs.get(chairId) : null;
+      const chairId = `${this._tableData ? this._tableData.id : 'preview'}-chair-${i}`;
+      const chair = this._tableData ? this.store.chairStore.chairs.get(chairId) : null;
       
       console.log(`  Seat ${i}: chairId=${chairId}, chair found=${!!chair}, isOpenSpace=${isOpenSpace}`);
-      if (this.tableData) {
+      if (this._tableData) {
         console.log(`    Looking for chair with ID: ${chairId}`);
         console.log(`    All chair IDs in store:`, Array.from(this.store.chairStore.chairs.keys()));
       }
@@ -267,7 +324,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
       } else if (reservationStatus === 'reserved') {
         return `Seat ${seat.label} - Reserved by ${seat.chair.reservedBy || 'Unknown'}`;
       } else if (reservationStatus === 'selected-for-reservation') {
-        return `Seat ${seat.label} - Selected for reservation`;
+        return `Seat ${seat.label} - Selected for reservation (Price: $${seat.chair.price})`;
       } else {
         return `Seat ${seat.label} - Available (Price: $${seat.chair.price})`;
       }
@@ -329,4 +386,4 @@ export class RoundTableComponent implements OnInit, OnChanges {
       this.store.chairStore.selectChair(chair.id);
     }
   }
-} 
+}

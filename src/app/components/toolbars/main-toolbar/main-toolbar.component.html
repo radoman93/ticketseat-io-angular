@@ -4,10 +4,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.RoundTable)"
     (click)="toggleTool(ToolType.RoundTable)"
     title="Round Table">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <circle cx="12" cy="12" r="7" stroke-width="2" />
-      <circle cx="12" cy="12" r="3" stroke-width="2" />
-    </svg>
+    <img [src]="isToolActive(ToolType.RoundTable) ? 'assets/icons/toolbar/active/round-table-tool.svg' : 'assets/icons/toolbar/inactive/round-table-tool.svg'" class="h-6 w-6" alt="Round Table" />
   </button>
   
   <button 
@@ -15,10 +12,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.RectangleTable)"
     (click)="toggleTool(ToolType.RectangleTable)"
     title="Rectangle Table">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2" />
-      <rect x="8" y="9" width="8" height="6" rx="1" stroke-width="2" />
-    </svg>
+    <img [src]="isToolActive(ToolType.RectangleTable) ? 'assets/icons/toolbar/active/rectangular-table-tool.svg' : 'assets/icons/toolbar/inactive/rectangular-table-tool.svg'" class="h-6 w-6" alt="Rectangle Table" />
   </button>
   
   <button 
@@ -26,14 +20,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.SeatingRow)"
     (click)="toggleTool(ToolType.SeatingRow)"
     title="Seating Row">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <circle cx="4" cy="12" r="2" fill="currentColor" />
-      <circle cx="8" cy="12" r="2" fill="currentColor" />
-      <circle cx="12" cy="12" r="2" fill="currentColor" />
-      <circle cx="16" cy="12" r="2" fill="currentColor" />
-      <circle cx="20" cy="12" r="2" fill="currentColor" />
-      <line x1="2" y1="12" x2="22" y2="12" stroke-width="1" opacity="0.3" />
-    </svg>
+    <img [src]="isToolActive(ToolType.SeatingRow) ? 'assets/icons/toolbar/active/row-tool.svg' : 'assets/icons/toolbar/inactive/row-tool.svg'" class="h-6 w-6" alt="Seating Row" />
   </button>
   
   <button 
@@ -41,14 +28,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.SegmentedSeatingRow)"
     (click)="toggleTool(ToolType.SegmentedSeatingRow)"
     title="Segmented Seating Row">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <circle cx="5" cy="7" r="1.5" fill="currentColor" />
-      <circle cx="9" cy="7" r="1.5" fill="currentColor" />
-      <circle cx="13" cy="10" r="1.5" fill="currentColor" />
-      <circle cx="17" cy="13" r="1.5" fill="currentColor" />
-      <circle cx="19" cy="17" r="1.5" fill="currentColor" />
-      <path d="M5 7 L13 10 L19 17" stroke-width="1.5" fill="none" />
-    </svg>
+    <img [src]="isToolActive(ToolType.SegmentedSeatingRow) ? 'assets/icons/toolbar/active/segmented-row-tool.svg' : 'assets/icons/toolbar/inactive/segmented-row-tool.svg'" class="h-6 w-6" alt="Segmented Seating Row" />
   </button>
   
   <button 
@@ -56,9 +36,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.Line)"
     (click)="toggleTool(ToolType.Line)"
     title="Line">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path d="M4 20 L20 4" stroke-width="2" stroke-linecap="round" />
-    </svg>
+    <img [src]="isToolActive(ToolType.Line) ? 'assets/icons/toolbar/active/line-tool.svg' : 'assets/icons/toolbar/inactive/line-tool.svg'" class="h-6 w-6" alt="Line" />
   </button>
 
   <button 
@@ -66,8 +44,6 @@
     [class.bg-blue-100]="isToolActive(ToolType.Polygon)"
     (click)="toggleTool(ToolType.Polygon)"
     title="Polygon">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path d="M4 12 L12 4 L20 12 L12 20 Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
+    <img [src]="isToolActive(ToolType.Polygon) ? 'assets/icons/toolbar/active/polygon-tool.svg' : 'assets/icons/toolbar/inactive/polygon-tool.svg'" class="h-6 w-6" alt="Polygon" />
   </button>
 </div>

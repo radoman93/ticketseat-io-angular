@@ -1,8 +1,8 @@
-import { Component, Input, HostBinding, OnInit } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { SeatingRowProperties } from '../../services/selection.service';
-import { makeAutoObservable, observable, computed } from 'mobx';
+import { makeAutoObservable, observable, computed, action } from 'mobx';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
@@ -14,7 +14,7 @@ import viewerStore from '../../stores/viewer.store';
   templateUrl: './seating-row.component.html',
   styleUrls: []
 })
-export class SeatingRowComponent implements OnInit {
+export class SeatingRowComponent implements OnInit, OnChanges {
   @Input() x: number = 0;
   @Input() y: number = 0;
   @Input() endX: number = 100;
@@ -29,6 +29,21 @@ export class SeatingRowComponent implements OnInit {
   @Input() chairLabelVisible: boolean = true;
   @Input() rowLabelVisible: boolean = true;
   
+  // Internal observable properties that sync with inputs
+  public _x: number = 0;
+  public _y: number = 0;
+  public _endX: number = 100;
+  public _endY: number = 0;
+  public _seatCount: number = 5;
+  public _seatSpacing: number = 35;
+  public _name: string = 'Row';
+  public _seatingRowData: SeatingRowProperties | null = null;
+  public _isSelected: boolean = false;
+  public _isPreview: boolean = false;
+  public _rotation: number = 0;
+  public _chairLabelVisible: boolean = true;
+  public _rowLabelVisible: boolean = true;
+  
   store = rootStore;
   viewerStore = viewerStore;
   
@@ -36,67 +51,117 @@ export class SeatingRowComponent implements OnInit {
   
   constructor() {
     makeAutoObservable(this, {
+      // Computed properties
       seatingRowStyles: computed,
       chairStyles: computed,
-      x: observable,
-      y: observable,
-      endX: observable,
-      endY: observable,
-      seatCount: observable,
-      seatSpacing: observable,
-      name: observable,
-      rotation: observable,
-      chairLabelVisible: observable,
-      rowLabelVisible: observable
+      rowLength: computed,
+      rowAngle: computed,
+      isEffectivePreview: computed,
+      // Internal observable properties
+      _x: observable,
+      _y: observable,
+      _endX: observable,
+      _endY: observable,
+      _seatCount: observable,
+      _seatSpacing: observable,
+      _name: observable,
+      _seatingRowData: observable,
+      _isSelected: observable,
+      _isPreview: observable,
+      _rotation: observable,
+      _chairLabelVisible: observable,
+      _rowLabelVisible: observable,
+      // Actions
+      // Exclude @Input properties from being observable to prevent MobX strict mode warnings
+      x: false,
+      y: false,
+      endX: false,
+      endY: false,
+      seatCount: false,
+      seatSpacing: false,
+      name: false,
+      seatingRowData: false,
+      isSelected: false,
+      isPreview: false,
+      rotation: false,
+      chairLabelVisible: false,
+      rowLabelVisible: false,
+      class: false,
+      // Exclude stores as they are already observable
+      store: false,
+      viewerStore: false
     });
   }
 
   ngOnInit() {
-    console.log('🔄 Seating row ngOnInit called. SeatingRowData:', this.seatingRowData, 'isPreview:', this.isPreview);
+    this.syncInputs();
+    
+    console.log('🔄 Seating row ngOnInit called. SeatingRowData:', this._seatingRowData, 'isPreview:', this._isPreview);
     
     // Generate chairs for this seating row if they don't exist and this is not a preview
-    if (this.seatingRowData && this.seatingRowData.id && !this.isPreview) {
-      const existingChairs = this.store.chairStore.getChairsByTable(this.seatingRowData.id);
-      console.log('📋 Existing chairs for seating row', this.seatingRowData.id, ':', existingChairs);
+    if (this._seatingRowData && this._seatingRowData.id && !this._isPreview) {
+      const existingChairs = this.store.chairStore.getChairsByTable(this._seatingRowData.id);
+      console.log('📋 Existing chairs for seating row', this._seatingRowData.id, ':', existingChairs);
       
       if (existingChairs.length === 0) {
-        console.log('🪑 Generating chairs for seating row:', this.seatingRowData.id);
+        console.log('🪑 Generating chairs for seating row:', this._seatingRowData.id);
         this.generateChairsForSeatingRow();
         console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
     } else {
       console.log('❌ Not generating chairs for seating row. Conditions:', {
-        hasSeatingRowData: !!this.seatingRowData,
-        hasId: this.seatingRowData?.id,
-        isPreview: this.isPreview
+        hasSeatingRowData: !!this._seatingRowData,
+        hasId: this._seatingRowData?.id,
+        isPreview: this._isPreview
       });
     }
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    this.syncInputs();
+  }
+
+  @action
+  public syncInputs() {
+    this._x = this.x;
+    this._y = this.y;
+    this._endX = this.endX;
+    this._endY = this.endY;
+    this._seatCount = this.seatCount;
+    this._seatSpacing = this.seatSpacing;
+    this._name = this.name;
+    this._seatingRowData = this.seatingRowData;
+    this._isSelected = this.isSelected;
+    this._isPreview = this.isPreview;
+    this._rotation = this.rotation;
+    this._chairLabelVisible = this.chairLabelVisible;
+    this._rowLabelVisible = this.rowLabelVisible;
+  }
+
   get seatingRowStyles() {
     // Position the seating row container at the start point
-    if (this.seatingRowData) {
+    if (this._seatingRowData) {
       return {
-        left: `${this.seatingRowData.x}px`,
-        top: `${this.seatingRowData.y}px`,
-        transform: `rotate(${this.rotation || this.seatingRowData.rotation || 0}deg)`,
+        left: `${this._seatingRowData.x}px`,
+        top: `${this._seatingRowData.y}px`,
+        transform: `rotate(${this._rotation || this._seatingRowData.rotation || 0}deg)`,
         transformOrigin: '0 0'
       };
     }
     
     return {
-      left: `${this.x}px`,
-      top: `${this.y}px`,
-      transform: `rotate(${this.rotation}deg)`,
+      left: `${this._x}px`,
+      top: `${this._y}px`,
+      transform: `rotate(${this._rotation}deg)`,
       transformOrigin: '0 0'
     };
   }
 
   get rowLength(): number {
-    const effectiveX = this.seatingRowData ? this.seatingRowData.x : this.x;
-    const effectiveY = this.seatingRowData ? this.seatingRowData.y : this.y;
-    const effectiveEndX = this.seatingRowData ? this.seatingRowData.endX : this.endX;
-    const effectiveEndY = this.seatingRowData ? this.seatingRowData.endY : this.endY;
+    const effectiveX = this._seatingRowData ? this._seatingRowData.x : this._x;
+    const effectiveY = this._seatingRowData ? this._seatingRowData.y : this._y;
+    const effectiveEndX = this._seatingRowData ? this._seatingRowData.endX : this._endX;
+    const effectiveEndY = this._seatingRowData ? this._seatingRowData.endY : this._endY;
     
     const dx = effectiveEndX - effectiveX;
     const dy = effectiveEndY - effectiveY;
@@ -104,10 +169,10 @@ export class SeatingRowComponent implements OnInit {
   }
 
   get rowAngle(): number {
-    const effectiveX = this.seatingRowData ? this.seatingRowData.x : this.x;
-    const effectiveY = this.seatingRowData ? this.seatingRowData.y : this.y;
-    const effectiveEndX = this.seatingRowData ? this.seatingRowData.endX : this.endX;
-    const effectiveEndY = this.seatingRowData ? this.seatingRowData.endY : this.endY;
+    const effectiveX = this._seatingRowData ? this._seatingRowData.x : this._x;
+    const effectiveY = this._seatingRowData ? this._seatingRowData.y : this._y;
+    const effectiveEndX = this._seatingRowData ? this._seatingRowData.endX : this._endX;
+    const effectiveEndY = this._seatingRowData ? this._seatingRowData.endY : this._endY;
     
     const dx = effectiveEndX - effectiveX;
     const dy = effectiveEndY - effectiveY;
@@ -115,13 +180,13 @@ export class SeatingRowComponent implements OnInit {
   }
 
   get chairStyles() {
-    const effectiveSeatCount = this.seatingRowData ? this.seatingRowData.seatCount : this.seatCount;
-    const effectiveSeatSpacing = this.seatingRowData ? this.seatingRowData.seatSpacing : this.seatSpacing;
+    const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
+    const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
     
     const chairsArray = [];
     
     console.log('🪑 Building chair styles for seating row:');
-    console.log('  - seatingRowData:', this.seatingRowData);
+    console.log('  - seatingRowData:', this._seatingRowData);
     console.log('  - isPreview:', this.isEffectivePreview);
     console.log('  - seatCount:', effectiveSeatCount);
     console.log('  - seatSpacing:', effectiveSeatSpacing);
@@ -143,8 +208,8 @@ export class SeatingRowComponent implements OnInit {
       
       const y = 0; // All seats are on the same line (rotation handled by container)
       
-      const chairId = `${this.seatingRowData ? this.seatingRowData.id : 'preview'}-chair-${i}`;
-      const chair = this.seatingRowData ? this.store.chairStore.chairs.get(chairId) : null;
+      const chairId = `${this._seatingRowData ? this._seatingRowData.id : 'preview'}-chair-${i}`;
+      const chair = this._seatingRowData ? this.store.chairStore.chairs.get(chairId) : null;
       
       chairsArray.push({
         id: chairId,
@@ -162,9 +227,9 @@ export class SeatingRowComponent implements OnInit {
   }
 
   getLabelLeftPosition(): number {
-    const effectiveSeatCount = this.seatingRowData ? this.seatingRowData.seatCount : this.seatCount;
-    const effectiveSeatSpacing = this.seatingRowData ? this.seatingRowData.seatSpacing : this.seatSpacing;
-    const labelPosition = this.seatingRowData?.labelPosition || 'left';
+    const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
+    const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
+    const labelPosition = this._seatingRowData?.labelPosition || 'left';
     
     // Calculate total row width (along the local x-axis)
     const totalRowWidth = (effectiveSeatCount - 1) * effectiveSeatSpacing;
@@ -185,8 +250,8 @@ export class SeatingRowComponent implements OnInit {
   }
 
   getRowWidth(): number {
-    const effectiveSeatCount = this.seatingRowData ? this.seatingRowData.seatCount : this.seatCount;
-    const effectiveSeatSpacing = this.seatingRowData ? this.seatingRowData.seatSpacing : this.seatSpacing;
+    const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
+    const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
     
     // Use exact chair spacing for consistent width
     if (effectiveSeatCount <= 1) {
@@ -198,15 +263,15 @@ export class SeatingRowComponent implements OnInit {
   }
 
   private generateChairsForSeatingRow(): void {
-    if (!this.seatingRowData) return;
+    if (!this._seatingRowData) return;
     
-    const totalChairs = this.seatingRowData.seatCount;
+    const totalChairs = this._seatingRowData.seatCount;
     
     // Generate chairs for the seating row
     for (let i = 0; i < totalChairs; i++) {
       const chair: Chair = {
-        id: `${this.seatingRowData.id}-chair-${i}`,
-        tableId: this.seatingRowData.id,
+        id: `${this._seatingRowData.id}-chair-${i}`,
+        tableId: this._seatingRowData.id,
         label: (i + 1).toString(),
         price: 0,
         position: {
@@ -352,6 +417,6 @@ export class SeatingRowComponent implements OnInit {
 
   // Helper getter to simplify HTML templates
   get isEffectivePreview(): boolean {
-    return this.isPreview || (this.seatingRowData && !!this.seatingRowData.isPreview);
+    return this._isPreview || (this._seatingRowData ? !!this._seatingRowData.isPreview : false);
   }
 } 
