@@ -162,20 +162,20 @@
         class="opacity-70 preview-polygon pointer-events-none fixed-preview"
         style="z-index: 100;">
       </app-polygon>
-
-      <!-- Zoom and coordinate controls -->
-      <div class="absolute bottom-4 right-4 flex flex-col items-end gap-2">
-        <!-- Coordinate display -->
-        <div class="bg-white rounded-md p-2 text-xs shadow-lg" *mobxAutorun>
-          X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
-        </div>
-        
-        <!-- Zoom controls -->
-        <div class="flex items-center bg-white rounded-md shadow-lg">
-          <button (click)="store.adjustZoom(-5)" class="btn btn-sm btn-ghost">-</button>
-          <span class="text-xs px-2">{{ store.zoomLevel.toFixed(0) }}%</span>
-          <button (click)="store.adjustZoom(5)" class="btn btn-sm btn-ghost">+</button>
-        </div>
-      </div>
     </div>
+</div>
+
+<!-- Zoom and coordinate controls -->
+<div class="absolute bottom-4 flex flex-col items-end gap-2" style="right: 340px;">
+  <!-- Coordinate display -->
+  <div class="bg-white rounded-md p-2 text-xs shadow-lg" *mobxAutorun>
+    X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
+  </div>
+  
+  <!-- Zoom controls -->
+  <div class="flex items-center bg-white rounded-md shadow-lg">
+    <button (click)="store.adjustZoom(-5)" class="btn btn-sm btn-ghost">-</button>
+    <span class="text-xs px-2">{{ store.zoomLevel.toFixed(0) }}%</span>
+    <button (click)="store.adjustZoom(5)" class="btn btn-sm btn-ghost">+</button>
+  </div>
 </div>

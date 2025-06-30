@@ -473,6 +473,10 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         }
         
         event.preventDefault();
+      } else if (activeTool === ToolType.None) {
+        // If no tool is selected, start panning with the left mouse button.
+        this.store.startPanning(event.clientX, event.clientY);
+        event.preventDefault();
       }
     }
   }
