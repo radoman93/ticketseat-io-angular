@@ -40,7 +40,6 @@ export * from './app/components/notifications/notifications.component';
 
 // Store exports
 export * from './app/stores/drag.store';
-export * from './app/stores/rotation.store';
 export * from './app/stores/history.store';
 
 // Store index for convenience
