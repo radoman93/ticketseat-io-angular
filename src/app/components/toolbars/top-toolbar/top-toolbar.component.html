@@ -1,135 +1,113 @@
-<div class="flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-white relative z-10">
-    <!-- Logo - always visible -->
-    <div class="text-lg font-bold text-yellow-600">TicketSeats Editor</div>
-    
-    <!-- Editor Mode Indicator -->
+<div class="flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm z-10">
+  <!-- Left Section: Logo and Title -->
+  <div class="flex items-center gap-4">
+    <div class="text-xl font-bold text-yellow-600">TicketSeats</div>
+    <div class="flex items-center gap-2 border-l border-gray-200 pl-4">
+      <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+      <span class="text-sm font-medium text-gray-500">Layout Editor</span>
+    </div>
+  </div>
+
+  <!-- Center Section: Editor Controls -->
+  <div class="hidden md:flex flex-1 items-center justify-center gap-6 text-sm">
+    <!-- Grid Size -->
     <div class="flex items-center gap-2">
-        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-        <span class="text-sm text-gray-600">Layout Editor</span>
+      <label for="grid-size" class="text-gray-600">Grid:</label>
+      <select id="grid-size"
+              class="select select-ghost select-sm focus:outline-none focus:ring-0"
+              [value]="store.gridSize"
+              (change)="updateGridSize($event)"
+              *mobxAutorun>
+        <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
+      </select>
     </div>
-    
-    <!-- Desktop menu - editor controls -->
-    <div class="hidden md:flex flex-1 justify-center items-center gap-5"> 
-        <div class="flex items-center text-xs gap-2">
-            <span>Grid Size:</span>
-            <select class="select select-ghost w-30 focus:outline-none focus:border-none focus:ring-0 active:outline-none active:border-none hover:border-none" 
-                    [value]="store.gridSize" 
-                    (change)="updateGridSize($event)"
-                    *mobxAutorun>
-                <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
-            </select>
-        </div>
-        <div class="flex items-center text-xs gap-2" *mobxAutorun>
-            <input type="checkbox" 
-                   [checked]="store.showGrid" 
-                   (change)="store.toggleGrid()" 
-                   class="checkbox checkbox-warning checkbox-sm" />
-            Show Grid
-        </div>
-        <div class="flex items-center text-xs gap-2" *mobxAutorun>
-            <input type="checkbox" 
-                   [checked]="store.showGuides" 
-                   (change)="store.toggleGuides()" 
-                   class="checkbox checkbox-warning checkbox-sm" />
-            Show Guides
-        </div>
-        
-        <!-- Element counter - MobX computed properties -->
-        <div *mobxAutorun class="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center gap-2">
-            <span class="font-semibold">Tables:</span>
-            <span class="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 rounded-full h-5 min-w-5 px-1">{{ layoutStore.tableCount }}</span>
-            <span *ngIf="selectionStore.hasSelection" class="text-blue-600">(1 selected)</span>
-            
-            <!-- Undo/Redo Buttons -->
-            <button (click)="historyStore.undo()"
-                    [disabled]="!historyStore.canUndo"
-                    class="btn btn-xs btn-ghost ml-2">
-                Undo
-            </button>
-            <button (click)="historyStore.redo()"
-                    [disabled]="!historyStore.canRedo"
-                    class="btn btn-xs btn-ghost">
-                Redo
-            </button>
-        </div>
-        
-        <!-- Export/Import buttons -->
-        <div class="flex items-center gap-2">
-            <button (click)="openExportDialog()"
-                    class="btn btn-xs btn-outline">
-                Export
-            </button>
-            <button (click)="openImportDialog()"
-                    class="btn btn-xs btn-outline">
-                Import
-            </button>
-        </div>
+
+    <!-- Show Grid Toggle -->
+    <div class="flex items-center gap-2" *mobxAutorun>
+      <input type="checkbox"
+             id="show-grid"
+             [checked]="store.showGrid"
+             (change)="store.toggleGrid()"
+             class="toggle toggle-sm toggle-success" />
+      <label for="show-grid" class="text-gray-600 cursor-pointer">Show Grid</label>
     </div>
-    
-    <!-- Action buttons - visible on desktop -->
-    <div class="hidden md:block">
-        <button class="btn btn-sm btn-warning">Save</button>
+
+    <!-- Undo/Redo -->
+    <div class="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
+      <button (click)="historyStore.undo()"
+              [disabled]="!historyStore.canUndo"
+              class="btn btn-xs btn-ghost"
+              title="Undo (Ctrl+Z)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"/></svg>
+      </button>
+      <div class="h-4 w-px bg-gray-300"></div>
+      <button (click)="historyStore.redo()"
+              [disabled]="!historyStore.canRedo"
+              class="btn btn-xs btn-ghost"
+              title="Redo (Ctrl+Y)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2m18-10l-4-4m4 4l-4 4"/></svg>
+      </button>
     </div>
-    
-    <!-- Hamburger menu button - only visible on small screens -->
+  </div>
+
+  <!-- Right Section: Actions and Info -->
+  <div class="flex items-center gap-4">
+    <!-- Table Count -->
+    <div *mobxAutorun class="hidden sm:flex items-center gap-2 text-sm">
+      <span class="font-medium text-gray-500">Tables:</span>
+      <span class="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-blue-700">
+        {{ layoutStore.tableCount }}
+      </span>
+    </div>
+
+    <!-- Import/Export -->
+    <div class="hidden sm:flex items-center gap-2">
+      <button (click)="openImportDialog()" class="btn btn-sm btn-ghost text-gray-600">Import</button>
+      <button (click)="openExportDialog()" class="btn btn-sm btn-ghost text-gray-600">Export</button>
+    </div>
+
+    <!-- Hamburger Menu (Mobile) -->
     <button class="md:hidden p-1 hover:bg-gray-100 rounded-md hamburger-button" (click)="toggleMenu()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-4-6h0" /></svg>
     </button>
+  </div>
 </div>
 
-<!-- Mobile menu without animation -->
-<div class="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-3" [class.hidden]="!isMobileMenuOpen">
-    <!-- Mobile Grid Controls -->
-    <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-700">Grid Size:</span>
-        <select class="select select-bordered select-sm max-w-xs" 
-                [value]="store.gridSize" 
-                (change)="updateGridSize($event)"
-                *mobxAutorun>
-            <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
-        </select>
-    </div>
-    
-    <div class="flex items-center justify-between" *mobxAutorun>
-        <span class="text-sm font-medium text-gray-700">Show Grid:</span>
-        <input type="checkbox" 
-               [checked]="store.showGrid" 
-               (change)="store.toggleGrid()" 
-               class="checkbox checkbox-warning checkbox-sm" />
-    </div>
-    
-    <div class="flex items-center justify-between" *mobxAutorun>
-        <span class="text-sm font-medium text-gray-700">Show Guides:</span>
-        <input type="checkbox" 
-               [checked]="store.showGuides" 
-               (change)="store.toggleGuides()" 
-               class="checkbox checkbox-warning checkbox-sm" />
-    </div>
-    
-    <!-- Mobile Action Buttons -->
-    <div class="flex gap-2 pt-2">
-        <button (click)="openExportDialog()"
-                class="btn btn-sm btn-outline flex-1">
-            Export
-        </button>
-        <button (click)="openImportDialog()"
-                class="btn btn-sm btn-outline flex-1">
-            Import
-        </button>
-        <button class="btn btn-sm btn-warning flex-1">Save</button>
-    </div>
+<!-- Mobile Menu (Collapsible) -->
+<div class="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-4" [class.hidden]="!isMobileMenuOpen">
+  <!-- Mobile Grid Controls -->
+  <div class="flex items-center justify-between">
+    <span class="text-sm font-medium text-gray-700">Grid Size:</span>
+    <select class="select select-bordered select-sm max-w-xs"
+            [value]="store.gridSize"
+            (change)="updateGridSize($event)"
+            *mobxAutorun>
+      <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
+    </select>
+  </div>
+  <div class="flex items-center justify-between" *mobxAutorun>
+    <span class="text-sm font-medium text-gray-700">Show Grid:</span>
+    <input type="checkbox"
+           [checked]="store.showGrid"
+           (change)="store.toggleGrid()"
+           class="toggle toggle-sm toggle-success" />
+  </div>
+
+  <!-- Mobile Action Buttons -->
+  <div class="flex flex-col gap-2 pt-2">
+    <button (click)="openImportDialog(); toggleMenu();" class="btn btn-sm btn-outline w-full">Import</button>
+    <button (click)="openExportDialog(); toggleMenu();" class="btn btn-sm btn-outline w-full">Export</button>
+  </div>
+
+  <!-- Mobile Table Count -->
+  <div *mobxAutorun class="flex items-center justify-between text-sm pt-2 border-t">
+    <span class="font-medium text-gray-500">Tables:</span>
+    <span class="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-blue-700">
+      {{ layoutStore.tableCount }}
+    </span>
+  </div>
 </div>
 
-<!-- Export Dialog -->
-<app-export-dialog 
-    [isOpen]="showExportDialog"
-    (close)="showExportDialog = false">
-</app-export-dialog>
-
-<!-- Import Dialog -->
-<app-import-dialog 
-    [isOpen]="showImportDialog"
-    (close)="showImportDialog = false">
-</app-import-dialog>
+<!-- Dialogs -->
+<app-export-dialog [isOpen]="showExportDialog" (close)="showExportDialog = false"></app-export-dialog>
+<app-import-dialog [isOpen]="showImportDialog" (close)="showImportDialog = false"></app-import-dialog>
