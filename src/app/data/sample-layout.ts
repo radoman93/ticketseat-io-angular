@@ -13,7 +13,9 @@ export const SAMPLE_LAYOUT: LayoutData = {
       radius: 40,
       seats: 8,
       rotation: 0,
-      label: "Table 1"
+      label: "Table 1",
+      tableLabelVisible: true,
+      chairLabelVisible: true
     } as RoundTableElement,
     {
       id: "table-2",
@@ -27,7 +29,9 @@ export const SAMPLE_LAYOUT: LayoutData = {
       leftChairs: 0,
       rightChairs: 0,
       rotation: 0,
-      label: "Table 2"
+      label: "Table 2",
+      tableLabelVisible: true,
+      chairLabelVisible: true
     } as RectangleTableElement,
     {
       id: "row-1",
@@ -38,7 +42,9 @@ export const SAMPLE_LAYOUT: LayoutData = {
       seats: 4,
       spacing: 40,
       rotation: 0,
-      label: "Row A"
+      label: "Row A",
+      chairLabelVisible: true,
+      rowLabelVisible: true
     } as SeatingRowElement
   ]
 };

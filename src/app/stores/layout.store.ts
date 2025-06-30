@@ -26,6 +26,16 @@ export class LayoutStore {
   addElement = action('addElement', (element: TableElement) => {
     // Create a copy to ensure we don't mutate the original object
     const newElement = {...element};
+    
+    // Ensure visibility properties are set to true by default
+    if (newElement.type === 'roundTable' || newElement.type === 'rectangleTable') {
+      newElement.tableLabelVisible = newElement.tableLabelVisible ?? true;
+      newElement.chairLabelVisible = newElement.chairLabelVisible ?? true;
+    } else if (newElement.type === 'seatingRow' || newElement.type === 'segmentedSeatingRow') {
+      newElement.rowLabelVisible = newElement.rowLabelVisible ?? true;
+      newElement.chairLabelVisible = newElement.chairLabelVisible ?? true;
+    }
+    
     this.elements.push(newElement);
     this.lastAddedId = newElement.id;
     return newElement;

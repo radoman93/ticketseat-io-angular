@@ -29,6 +29,7 @@
   border-radius: 10px;
   pointer-events: none;
   z-index: 0;
+  transform-origin: center center;
 }
 
 /* Rectangular selection for all table types */
@@ -36,6 +37,7 @@
   border-radius: 8px;
   background-color: rgba(59, 130, 246, 0.03);
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+  transform-origin: center center;
 }
 
 /* Highlight effect for selected elements */
@@ -85,44 +87,29 @@
   cursor: crosshair !important;
 }
 
-/* Rotation Handle */
-.rotation-handle {
-  position: absolute;
-  top: -30px; /* Position handle 10px above the selection box (20px handle + 10px line) */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 20px;
-  background-color: #3498db; /* Match selection indicator color */
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grabbing; /* Use a grabbing cursor to indicate rotation */
-  pointer-events: all; /* Make sure it can capture mouse events */
-  z-index: 1; /* Ensure it's above other parts of the selection indicator and the line */
+.table-wrapper.preview {
+    opacity: 0.5;
+    border-style: dashed;
 }
 
-.rotation-line {
-  position: absolute;
-  top: -10px;    /* Start line 10px above the selection box */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;     /* Line thickness */
-  height: 10px;   /* Length of the line (the gap between handle and box) */
-  background-color: #3498db; /* Match handle and selection indicator color */
-  pointer-events: none; /* Line should not interfere with mouse events */
-  z-index: 0; /* Behind the handle */
+.table-boundary {
+    /* Styles for the main table circle */
+    transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
-.rotation-handle svg {
-  pointer-events: none; /* Ensure SVG doesn't block mousedown on the handle div */
+.table-boundary.selected {
+    box-shadow: 0 0 0 3px #3b82f6, 0 0 0 5px rgba(59, 130, 246, 0.3); /* Tailwind blue-500 */
+}
+
+.seat {
+    /* Styles for the seats */
+    transition: background-color 0.2s ease-in-out;
 }
 
 .fixed-preview {
-  position: absolute;
-  pointer-events: none;
-  touch-action: none;
-  transform: none !important;
-  transition: none !important;
+    position: absolute;
+    pointer-events: none;
+    touch-action: none;
+    transform: none !important;
+    transition: none !important;
 } 

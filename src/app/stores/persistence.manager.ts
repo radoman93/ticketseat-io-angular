@@ -87,6 +87,23 @@ export class PersistenceManager {
     }
   }
   
+  private ensureVisibilityProperties(element: any): any {
+    if (element.type === 'roundTable' || element.type === 'rectangleTable') {
+      return {
+        ...element,
+        tableLabelVisible: element.tableLabelVisible ?? true,
+        chairLabelVisible: element.chairLabelVisible ?? true
+      };
+    } else if (element.type === 'seatingRow' || element.type === 'segmentedSeatingRow') {
+      return {
+        ...element,
+        chairLabelVisible: element.chairLabelVisible ?? true,
+        rowLabelVisible: element.rowLabelVisible ?? true
+      };
+    }
+    return element;
+  }
+  
   /**
    * Load a layout from storage by ID
    */
@@ -118,9 +135,9 @@ export class PersistenceManager {
         // Clear current layout
         layoutStore.clearAll();
         
-        // Add all elements from saved layout
+        // Add all elements from saved layout with visibility properties ensured
         layout.elements.forEach((element: any) => {
-          layoutStore.addElement(element);
+          layoutStore.addElement(this.ensureVisibilityProperties(element));
         });
       });
       
@@ -220,9 +237,9 @@ export class PersistenceManager {
         // Clear current layout
         layoutStore.clearAll();
         
-        // Add all elements from imported layout
+        // Add all elements from imported layout with visibility properties ensured
         importedData.elements.forEach((element: any) => {
-          layoutStore.addElement(element);
+          layoutStore.addElement(this.ensureVisibilityProperties(element));
         });
       });
       

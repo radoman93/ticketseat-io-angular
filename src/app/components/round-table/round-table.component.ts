@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding, OnInit } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableProperties, ChairProperties } from '../../services/selection.service';
@@ -14,7 +14,7 @@ import viewerStore from '../../stores/viewer.store';
   templateUrl: './round-table.component.html',
   styleUrls: []
 })
-export class RoundTableComponent implements OnInit {
+export class RoundTableComponent implements OnInit, OnChanges {
   @Input() x: number = 0;
   @Input() y: number = 0;
   @Input() radius: number = 50;
@@ -49,16 +49,53 @@ export class RoundTableComponent implements OnInit {
     });
   }
 
+  // Handle table click for selecting the table
+  handleTableClick(event: MouseEvent): void {
+    event.stopPropagation();
+    console.log('🔵 Table clicked, selecting table:', this.tableData);
+    
+    if (this.tableData && this.tableData.id) {
+      this.store.selectionStore.selectItem(this.tableData);
+    }
+  }
+
   ngOnInit() {
     console.log('🔄 Round table ngOnInit called. TableData:', this.tableData, 'isPreview:', this.isPreview);
+    this.generateChairsIfNeeded();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Check if properties that affect chair generation have changed
+    const seatCountChanged = changes['seats'] || (changes['tableData'] && 
+      changes['tableData'].previousValue?.seats !== changes['tableData'].currentValue?.seats);
+    const radiusChanged = changes['radius'] || (changes['tableData'] && 
+      changes['tableData'].previousValue?.radius !== changes['tableData'].currentValue?.radius);
     
+    if (seatCountChanged || radiusChanged) {
+      console.log('🔄 Chair-affecting properties changed, regenerating chairs');
+      this.generateChairsIfNeeded(true); // Force regeneration
+    }
+  }
+
+  private generateChairsIfNeeded(forceRegenerate: boolean = false) {
     // Generate chairs for this table if they don't exist and this is not a preview
     if (this.tableData && this.tableData.id && !this.isPreview) {
       const existingChairs = this.store.chairStore.getChairsByTable(this.tableData.id);
       console.log('📋 Existing chairs for table', this.tableData.id, ':', existingChairs);
       
-      if (existingChairs.length === 0) {
-        console.log('🪑 Generating chairs for table:', this.tableData.id);
+      const needsRegeneration = forceRegenerate || 
+        existingChairs.length === 0 || 
+        existingChairs.length !== this.tableData.seats;
+      
+      if (needsRegeneration) {
+        console.log('🪑 Generating/regenerating chairs for table:', this.tableData.id);
+        
+        // Remove existing chairs first
+        existingChairs.forEach(chair => {
+          this.store.chairStore.removeChair(chair.id);
+        });
+        
+        // Generate new chairs
         this.store.chairStore.generateChairsForTable(
           this.tableData.id, 
           this.tableData.seats, 
@@ -103,7 +140,6 @@ export class RoundTableComponent implements OnInit {
     
     const seatsArray = [];
     if (totalPositions === 0) {
-      return [];
       return [];
     }
 
@@ -218,7 +254,7 @@ export class RoundTableComponent implements OnInit {
       return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
     }
     
-    return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:scale-105 cursor-pointer`;
+    return `${baseClasses} bg-blue-200 border border-blue-300 hover:bg-blue-300 hover:scale-105 cursor-pointer`;
   }
 
   getSeatTitle(seat: any): string {

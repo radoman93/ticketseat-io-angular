@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding, OnInit } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { RectangleTableProperties } from '../../services/selection.service';
@@ -14,7 +14,7 @@ import viewerStore from '../../stores/viewer.store';
   templateUrl: './rectangle-table.component.html',
   styleUrls: []
 })
-export class RectangleTableComponent implements OnInit {
+export class RectangleTableComponent implements OnInit, OnChanges {
   @Input() x: number = 0;
   @Input() y: number = 0;
   @Input() width: number = 120;
@@ -57,14 +57,48 @@ export class RectangleTableComponent implements OnInit {
 
   ngOnInit() {
     console.log('🔄 Rectangle table ngOnInit called. TableData:', this.tableData, 'isPreview:', this.isPreview);
+    this.generateChairsIfNeeded();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Check if properties that affect chair generation have changed
+    const chairCountChanged = changes['upChairs'] || changes['downChairs'] || 
+      changes['leftChairs'] || changes['rightChairs'] ||
+      (changes['tableData'] && this.hasChairCountChanged(changes['tableData'].previousValue, changes['tableData'].currentValue));
     
+    if (chairCountChanged) {
+      console.log('🔄 Chair-affecting properties changed, regenerating chairs');
+      this.generateChairsIfNeeded(true); // Force regeneration
+    }
+  }
+
+  private hasChairCountChanged(prev: RectangleTableProperties, curr: RectangleTableProperties): boolean {
+    if (!prev || !curr) return false;
+    return prev.upChairs !== curr.upChairs ||
+           prev.downChairs !== curr.downChairs ||
+           prev.leftChairs !== curr.leftChairs ||
+           prev.rightChairs !== curr.rightChairs;
+  }
+
+  private generateChairsIfNeeded(forceRegenerate: boolean = false) {
     // Generate chairs for this rectangle table if they don't exist and this is not a preview
     if (this.tableData && this.tableData.id && !this.isPreview) {
       const existingChairs = this.store.chairStore.getChairsByTable(this.tableData.id);
       console.log('📋 Existing chairs for rectangle table', this.tableData.id, ':', existingChairs);
       
-      if (existingChairs.length === 0) {
-        console.log('🪑 Generating chairs for rectangle table:', this.tableData.id);
+      const needsRegeneration = forceRegenerate || 
+        existingChairs.length === 0 || 
+        existingChairs.length !== this.totalChairs;
+      
+      if (needsRegeneration) {
+        console.log('🪑 Generating/regenerating chairs for rectangle table:', this.tableData.id);
+        
+        // Remove existing chairs first
+        existingChairs.forEach(chair => {
+          this.store.chairStore.removeChair(chair.id);
+        });
+        
+        // Generate new chairs
         this.generateChairsForRectangleTable();
         console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
@@ -226,12 +260,13 @@ export class RectangleTableComponent implements OnInit {
           id: `${this.tableData.id}-chair-${chairIndex}`,
           tableId: this.tableData.id,
           label: (chairIndex + 1).toString(),
-          price: 0,
+          price: 25.00,
           position: {
             angle: 0, // Not used for rectangle tables
             distance: 25 // Standard chair offset
           },
-          isSelected: false
+          isSelected: false,
+          reservationStatus: 'free'
         };
         this.store.chairStore.addChair(chair);
         chairIndex++;

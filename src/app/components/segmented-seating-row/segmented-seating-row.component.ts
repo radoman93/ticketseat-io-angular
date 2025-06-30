@@ -3,28 +3,29 @@ import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
 import { makeAutoObservable, computed } from 'mobx';
-import { rootStore, rotationStore } from '../../stores';
+import { rootStore } from '../../stores';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
 
 @Component({
   selector: 'app-segmented-seating-row',
   standalone: true,
-  imports: [CommonModule, MobxAngularModule],
-  templateUrl: './segmented-seating-row.component.html',
-  styleUrls: []
+  imports: [
+    CommonModule,
+    MobxAngularModule
+  ],
+  templateUrl: './segmented-seating-row.component.html'
 })
 export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   @Input() seatingRowData!: SeatingRowProperties;
   @Input() isSelected: boolean = false;
   @Input() isPreview: boolean = false;
   @Input() previewSegment: SegmentProperties | null = null;
+  @Input() maxSegments: number = -1; // -1 means no limit
   @Input() chairLabelVisible: boolean = true;
   @Input() rowLabelVisible: boolean = true;
-  @Input() maxSegments: number = -1; // -1 = unlimited, 1 = regular row, >1 = limited segments
   
   store = rootStore;
-  rotationStore = rotationStore;
   viewerStore = viewerStore;
   
   constructor() {
@@ -415,20 +416,15 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     let centerX: number;
     let centerY: number;
 
-    if (this.rotationStore.isRotating && this.rotationStore.rotationCenter) {
-      centerX = this.rotationStore.rotationCenter.x;
-      centerY = this.rotationStore.rotationCenter.y;
-    } else {
-      let currentMinX = Infinity, currentMinY = Infinity, currentMaxX = -Infinity, currentMaxY = -Infinity;
-      points.forEach(p => {
-        currentMinX = Math.min(currentMinX, p.x);
-        currentMinY = Math.min(currentMinY, p.y);
-        currentMaxX = Math.max(currentMaxX, p.x);
-        currentMaxY = Math.max(currentMaxY, p.y);
-      });
-      centerX = (currentMinX + currentMaxX) / 2;
-      centerY = (currentMinY + currentMaxY) / 2;
-    }
+    let currentMinX = Infinity, currentMinY = Infinity, currentMaxX = -Infinity, currentMaxY = -Infinity;
+    points.forEach(p => {
+      currentMinX = Math.min(currentMinX, p.x);
+      currentMinY = Math.min(currentMinY, p.y);
+      currentMaxX = Math.max(currentMaxX, p.x);
+      currentMaxY = Math.max(currentMaxY, p.y);
+    });
+    centerX = (currentMinX + currentMaxX) / 2;
+    centerY = (currentMinY + currentMaxY) / 2;
 
     const rotation = this.seatingRowData.rotation || 0;
     const angle = -rotation * (Math.PI / 180);

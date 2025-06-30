@@ -6,6 +6,7 @@ import { RectangleTableComponent } from '../rectangle-table/rectangle-table.comp
 import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
 import { LineComponent } from '../line/line.component';
+import { PolygonComponent } from '../polygon/polygon.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
 import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties, LineProperties, PolygonProperties } from '../../services/selection.service';
@@ -19,11 +20,8 @@ import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import { LineService } from '../../services/line.service';
-import { RotateObjectCommand } from '../../commands/rotate-object.command';
-import { rotationStore } from '../../stores';
-import viewerStore from '../../stores/viewer.store';
-import { PolygonComponent } from '../polygon/polygon.component';
 import { PolygonService } from '../../services/polygon.service';
+import viewerStore from '../../stores/viewer.store';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineProperties | PolygonProperties;
@@ -62,14 +60,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   
   // MobX reaction disposer for tool changes
   private toolChangeDisposer: IReactionDisposer | null = null;
-
-  // Rotation state
-  isRotating: boolean = false;
-  rotatingItem: TablePosition | null = null;
-  originalRotatingItem: TablePosition | null = null;
-  rotationItemCenter: { x: number, y: number } = { x: 0, y: 0 };
-  initialMouseAngleForRotation: number = 0;
-  originalItemRotationValue: number = 0;
 
   // Segmented seating row state (used for both regular and segmented rows)
   isCreatingSegmentedRow: boolean = false;
@@ -124,7 +114,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           seats: 8,
           openSpaces: 0,
           name: `Table ${this.layoutStore.elements.length + 1}`,
-          rotation: 0
+          rotation: 0,
+          tableLabelVisible: true,
+          chairLabelVisible: true
         };
       } else if (activeTool === ToolType.RectangleTable) {
         // Initialize preview rectangle table when entering add mode
@@ -140,7 +132,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           leftChairs: 0,
           rightChairs: 0,
           name: `Table ${this.layoutStore.elements.length + 1}`,
-          rotation: 0
+          rotation: 0,
+          tableLabelVisible: true,
+          chairLabelVisible: true
         };
       } else if (activeTool === ToolType.SeatingRow) {
         // Initialize preview seating row using segmented approach (1 segment max)
@@ -316,8 +310,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
-    if (this.isRotating) return; // Already handling rotation, ignore other mousedown events
-
     // Disable all table manipulation and creation in viewer mode
     if (this.viewerStore.isViewerMode) {
       return;
@@ -492,76 +484,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       // Handle panning
       this.store.pan(event.clientX, event.clientY);
       this.drawGrid();
-    } else if (this.isRotating && this.rotatingItem) {
-      // Handle rotation of selected item
-      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
-      
-      // Calculate angle between center and current mouse position
-      const dx = x - this.rotationItemCenter.x;
-      const dy = y - this.rotationItemCenter.y;
-      const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI);
-      
-      // Calculate angle difference and apply to original rotation
-      let newRotation = this.originalItemRotationValue + (currentAngle - this.initialMouseAngleForRotation);
-      
-      // Snap to 15-degree increments if Shift key is pressed
-      if (event.shiftKey) {
-        newRotation = Math.round(newRotation / 15) * 15;
-      }
-      
-      // Update rotation in store
-      if (this.rotatingItem?.type === 'segmentedSeatingRow' && this.originalRotatingItem?.segments) {
-        // For segmented rows, we need to rotate each segment around the center point
-        const segmentedRow = this.layoutStore.elements.find(el => el.id === this.rotatingItem?.id);
-        if (segmentedRow && segmentedRow.segments) {
-          // Calculate rotation difference from the original rotation
-          const rotationDiff = newRotation - this.originalItemRotationValue;
-          const angleInRadians = rotationDiff * (Math.PI / 180);
-
-          // Get original segments to avoid cumulative rotation errors
-          const originalSegments = this.originalRotatingItem.segments;
-          
-          // Rotate each segment's start and end points around the center
-          const updatedSegments = originalSegments.map((segment: SegmentProperties) => {
-            // Rotate start point
-            const startDx = segment.startX - this.rotationItemCenter.x;
-            const startDy = segment.startY - this.rotationItemCenter.y;
-            const newStartX = this.rotationItemCenter.x + startDx * Math.cos(angleInRadians) - startDy * Math.sin(angleInRadians);
-            const newStartY = this.rotationItemCenter.y + startDx * Math.sin(angleInRadians) + startDy * Math.cos(angleInRadians);
-            
-            // Rotate end point
-            const endDx = segment.endX - this.rotationItemCenter.x;
-            const endDy = segment.endY - this.rotationItemCenter.y;
-            const newEndX = this.rotationItemCenter.x + endDx * Math.cos(angleInRadians) - endDy * Math.sin(angleInRadians);
-            const newEndY = this.rotationItemCenter.y + endDx * Math.sin(angleInRadians) + endDy * Math.cos(angleInRadians);
-
-            // Calculate new segment rotation
-            const originalSegmentRotation = Math.atan2(segment.endY - segment.startY, segment.endX - segment.startX) * (180 / Math.PI);
-            const newSegmentRotation = originalSegmentRotation + rotationDiff;
-            
-            return {
-              ...segment,
-              startX: newStartX,
-              startY: newStartY,
-              endX: newEndX,
-              endY: newEndY,
-              rotation: newSegmentRotation
-            };
-          });
-          
-          // Update the segmented row with new segment positions and rotation
-          if(this.rotatingItem) {
-            this.layoutStore.updateElement(this.rotatingItem.id, {
-              rotation: newRotation,
-              segments: updatedSegments
-            });
-          }
-        }
-      } else if (this.rotatingItem) {
-        // For other elements, just update the rotation
-        this.layoutStore.updateElement(this.rotatingItem.id, { rotation: newRotation });
-      }
     } else if (this.dragStore.isDragging) {
       // Handle dragging an existing item
       this.dragStore.updateDragPosition(event.clientX, event.clientY);
@@ -602,8 +524,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           ...this.previewSegment,
           ...updatedSegment
         };
-        
-        // console.log('Updated regular row preview segment:', this.previewSegment);
       } else if (this.isCreatingSegmentedRow && this.previewSegment) {
         // Update the end point of the current segment being created
         this.activeSegmentEndX = x;
@@ -621,8 +541,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           ...this.previewSegment,
           ...updatedSegment
         };
-        
-        console.log('Updated preview segment:', this.previewSegment);
       }
     } else if (this.isCreatingLine && this.previewLine) {
       // Update the last point of the line being created for live preview
@@ -655,35 +573,39 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mouseup', ['$event'])
   onMouseUp(event: MouseEvent): void {
-    if (event.button === 1) {
+    if (this.toolStore.activeTool === ToolType.RoundTable && this.previewTable) {
+      // Create a new round table at the preview position
+      const newTable: RoundTableProperties = {
+        ...this.previewTable as RoundTableProperties,
+        id: `table-${Date.now()}`,
+        tableLabelVisible: true,
+        chairLabelVisible: true
+      };
+      this.layoutStore.addElement(newTable);
+    } else if (this.toolStore.activeTool === ToolType.RectangleTable && this.previewTable) {
+      // Create a new rectangle table at the preview position
+      const newTable: RectangleTableProperties = {
+        ...this.previewTable as RectangleTableProperties,
+        id: `table-${Date.now()}`,
+        tableLabelVisible: true,
+        chairLabelVisible: true
+      };
+      this.layoutStore.addElement(newTable);
+    } else if (this.toolStore.activeTool === ToolType.SeatingRow && this.previewTable) {
+      // Create a new seating row at the preview position
+      const newRow: SeatingRowProperties = {
+        ...this.previewTable as SeatingRowProperties,
+        id: `row-${Date.now()}`,
+        chairLabelVisible: true,
+        rowLabelVisible: true
+      };
+      this.layoutStore.addElement(newRow);
+    } else if (event.button === 1) {
       // End panning on middle mouse release
       this.store.stopPanning();
     } else if (event.button === 0) {
-      // End rotation if in rotation mode
-      if (this.isRotating) {
-        if (this.rotatingItem && this.originalRotatingItem) {
-          const oldState = {
-            rotation: this.originalRotatingItem.rotation || 0,
-            segments: this.originalRotatingItem.segments
-          };
-          const newState = {
-            rotation: this.rotatingItem.rotation || 0,
-            segments: this.layoutStore.getElementById(this.rotatingItem.id)?.segments
-          };
-          
-          // Only create a command if the rotation actually changed
-          if (oldState.rotation !== newState.rotation) {
-            const command = new RotateObjectCommand(this.rotatingItem.id, oldState, newState);
-            this.historyStore.executeCommand(command);
-          }
-        }
-        this.isRotating = false;
-        this.rotatingItem = null;
-        this.originalRotatingItem = null;
-        rotationStore.endRotation();
-      }
       // End dragging if in drag mode
-      else if (this.dragStore.isDragging) {
+      if (this.dragStore.isDragging) {
         this.dragStore.endDragging(this.historyStore);
       } else if (this.dragStore.potentialDragItem) {
         // If we were potentially dragging but didn't move enough, clear it
@@ -715,10 +637,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
               totalSeats: metrics.totalSeats
             };
             
-            console.log('Added segment. Total segments:', metrics.totalSegments, 
-                      'Total seats:', metrics.totalSeats);
-            console.log('Current segments:', this.segmentedRowSegments);
-            
             // Prepare for next segment
             if (this.segmentedRowSegments.length > 0) {
               const lastSegment = this.segmentedRowSegments[this.segmentedRowSegments.length - 1];
@@ -736,7 +654,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
               const seatSpacing = lastSegment.seatSpacing;
               
               // Position the initial endpoint exactly one chair spacing away in the same direction
-              // This creates a consistent visual appearance for the preview
               const dirX = distance > 0 ? dx / distance : 0;
               const dirY = distance > 0 ? dy / distance : 0;
               
@@ -1003,71 +920,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
   }
 
-  // Start rotating an item
-  startRotate(item: TablePosition, event: MouseEvent): void {
-    event.stopPropagation();
-    
-    // Disable rotation in viewer mode
-    if (this.viewerStore.isViewerMode) {
-      return;
-    }
-    
-    this.isRotating = true;
-    this.rotatingItem = item;
-    this.originalRotatingItem = JSON.parse(JSON.stringify(item)); // Deep copy
-    this.originalItemRotationValue = item.rotation || 0;
-    
-    // Store original position for rotation reference
-    this.activeSegmentStartX = item.x;
-    this.activeSegmentStartY = item.y;
-
-    // Calculate center point based on item type
-    if (item.type === 'segmentedSeatingRow') {
-      // Get the segmented row component reference
-      const segmentedRow = this.layoutStore.elements.find(el => el.id === item.id);
-      if (segmentedRow && segmentedRow.segments) {
-        // Calculate center from all segments
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        const segments: SegmentProperties[] = segmentedRow.segments;
-        segments.forEach((segment: SegmentProperties) => {
-          minX = Math.min(minX, segment.startX, segment.endX);
-          minY = Math.min(minY, segment.startY, segment.endY);
-          maxX = Math.max(maxX, segment.startX, segment.endX);
-          maxY = Math.max(maxY, segment.startY, segment.endY);
-        });
-        
-        this.rotationItemCenter = {
-          x: (minX + maxX) / 2,
-          y: (minY + maxY) / 2
-        };
-        rotationStore.startRotation(this.rotationItemCenter);
-      }
-    } else {
-      // For other items, use their center point
-      this.rotationItemCenter = {
-        x: item.x,
-        y: item.y
-      };
-    }
-    
-    // Calculate initial angle between center and mouse position
-    const mouseX = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-    const mouseY = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
-    const dx = mouseX - this.rotationItemCenter.x;
-    const dy = mouseY - this.rotationItemCenter.y;
-    this.initialMouseAngleForRotation = Math.atan2(dy, dx) * (180 / Math.PI);
-  }
-
-  // Handle zoom in button
-  zoomIn(): void {
-    this.store.adjustZoom(5);
-  }
-  
-  // Handle zoom out button
-  zoomOut(): void {
-    this.store.adjustZoom(-5);
-  }
-
   // Handle regular seating row completion
   private finalizeRegularRow(): void {
     console.log('Finalizing regular seating row');
@@ -1134,49 +986,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.previewLine = null;
   }
 
-  // Handle line selection
-  selectLine(line: LineProperties, event?: MouseEvent): void {
-    console.log('SelectLine called with', line);
-    
-    // Prevent starting a drag if we're in line creation mode
-    if (this.toolStore.activeTool === ToolType.Line) {
-      return;
-    }
-    
-    // Disable all line manipulation in viewer mode
-    if (this.viewerStore.isViewerMode) {
-      return;
-    }
-    
-    // Deselect any selected chairs when selecting a line
-    this.rootStore.chairStore.deselectChair();
-    
-    // Set line as selected
-    this.selectionStore.selectItem(line);
-    
-    // Get the mouse event if available for drag preparation
-    if (event && event.clientX && event.clientY) {
-      // Only prepare for dragging by setting the potential drag item
-      this.dragStore.prepareForDragging(
-        line, 
-        event.clientX, 
-        event.clientY
-      );
-    }
-  }
-
-  // Handle line rotation start
-  startLineRotate(event: { line: LineProperties, event: MouseEvent }): void {
-    event.event.stopPropagation();
-    
-    // Disable rotation in viewer mode
-    if (this.viewerStore.isViewerMode) {
-      return;
-    }
-    
-    this.startRotate(event.line, event.event);
-  }
-
   // Handle polygon completion
   private finalizePolygon(): void {
     if (!this.previewPolygon || this.previewPolygon.points.length < 3) {
@@ -1209,37 +1018,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     console.log('Canceling polygon creation');
     this.isCreatingPolygon = false;
     this.previewPolygon = null;
-  }
-
-  // Handle polygon selection
-  selectPolygon(polygon: PolygonProperties, event?: MouseEvent): void {
-    console.log('SelectPolygon called with', polygon);
-    
-    // Prevent starting a drag if we're in polygon creation mode
-    if (this.toolStore.activeTool === ToolType.Polygon) {
-      return;
-    }
-    
-    // Disable all polygon manipulation in viewer mode
-    if (this.viewerStore.isViewerMode) {
-      return;
-    }
-    
-    // Deselect any selected chairs when selecting a polygon
-    this.rootStore.chairStore.deselectChair();
-    
-    // Set polygon as selected
-    this.selectionStore.selectItem(polygon);
-    
-    // Get the mouse event if available for drag preparation
-    if (event && event.clientX && event.clientY) {
-      // Only prepare for dragging by setting the potential drag item
-      this.dragStore.prepareForDragging(
-        polygon, 
-        event.clientX, 
-        event.clientY
-      );
-    }
   }
 
   // Handle polygon auto-completion

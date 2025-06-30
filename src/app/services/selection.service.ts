@@ -22,8 +22,8 @@ export interface RoundTableProperties extends Selectable {
   openSpaces: number;
   name: string;
   rotation?: number;
-  tableLabelVisible?: boolean;
-  chairLabelVisible?: boolean;
+  tableLabelVisible: boolean;
+  chairLabelVisible: boolean;
   chairs?: ChairProperties[];
 }
 
@@ -38,8 +38,8 @@ export interface RectangleTableProperties extends Selectable {
   rightChairs: number;
   name: string;
   rotation?: number;
-  tableLabelVisible?: boolean;
-  chairLabelVisible?: boolean;
+  tableLabelVisible: boolean;
+  chairLabelVisible: boolean;
   chairs?: ChairProperties[];
 }
 
@@ -83,8 +83,8 @@ export interface SeatingRowProperties extends Selectable {
   seatSpacing: number;
   name: string;
   rotation?: number;
-  chairLabelVisible?: boolean;
-  rowLabelVisible?: boolean;
+  chairLabelVisible: boolean;
+  rowLabelVisible: boolean;
   labelPosition?: 'left' | 'center' | 'right';
   chairs?: ChairProperties[];
   isSegmented?: boolean;

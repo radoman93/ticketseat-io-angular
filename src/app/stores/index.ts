@@ -7,14 +7,13 @@
 
 // MobX Store exports
 export { gridStore } from './grid.store';
-export { layoutStore } from './layout.store';
-export { selectionStore } from './selection.store';
-export { dragStore } from './drag.store';
 export { toolStore } from './tool.store';
-export { ChairStore } from './chair.store';
-export { HistoryStore } from './history.store';
-export { default as rotationStore } from './rotation.store';
+export { selectionStore } from './selection.store';
+export { layoutStore } from './layout.store';
+export { dragStore } from './drag.store';
 export { default as viewerStore } from './viewer.store';
+export { chairStore } from './chair.store';
+export { HistoryStore } from './history.store';
 
 // Root store
 export { rootStore } from './root.store';

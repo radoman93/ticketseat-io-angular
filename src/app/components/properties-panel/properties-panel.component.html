@@ -22,8 +22,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="roundTableProperties.radius" 
-            (change)="updateProperty('radius', roundTableProperties.radius)"
+            [ngModel]="roundTableProperties.radius" 
+            (ngModelChange)="updateProperty('radius', $event)"
             min="20" 
             max="100"
             step="5">
@@ -43,8 +43,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="roundTableProperties.seats" 
-            (change)="updateProperty('seats', roundTableProperties.seats)"
+            [ngModel]="roundTableProperties.seats" 
+            (ngModelChange)="updateProperty('seats', $event)"
             min="4" 
             max="20">
           <button 
@@ -63,8 +63,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="roundTableProperties.openSpaces" 
-            (change)="updateProperty('openSpaces', roundTableProperties.openSpaces)"
+            [ngModel]="roundTableProperties.openSpaces" 
+            (ngModelChange)="updateProperty('openSpaces', $event)"
             min="0" 
             max="20">
           <button 
@@ -90,8 +90,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="roundTableProperties.rotation" 
-            (change)="updateProperty('rotation', roundTableProperties.rotation)"
+            [ngModel]="roundTableProperties.rotation" 
+            (ngModelChange)="updateProperty('rotation', $event)"
             step="15">
           <button 
             class="join-item btn btn-xs" 
@@ -122,16 +122,17 @@
         <input 
           type="text" 
           class="input input-bordered input-sm w-36 max-w-xs" 
-          [(ngModel)]="roundTableProperties.name" 
-          (input)="updateProperty('name', roundTableProperties.name)">
+          [ngModel]="roundTableProperties.name" 
+          (ngModelChange)="updateProperty('name', $event)">
       </div>
       
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="roundTableProperties.tableLabelVisible" 
-            (change)="updateProperty('tableLabelVisible', roundTableProperties.tableLabelVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
+            [ngModel]="roundTableProperties.tableLabelVisible" 
+            (ngModelChange)="updateProperty('tableLabelVisible', $event)">
         </label>
       </div>
     </div>
@@ -146,8 +147,9 @@
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="roundTableProperties.chairLabelVisible" 
-            (change)="updateProperty('chairLabelVisible', roundTableProperties.chairLabelVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
+            [ngModel]="roundTableProperties.chairLabelVisible" 
+            (ngModelChange)="updateProperty('chairLabelVisible', $event)">
         </label>
       </div>
     </div>
@@ -193,8 +195,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.width" 
-            (change)="updateProperty('width', rectangleTableProperties.width)"
+            [ngModel]="rectangleTableProperties.width" 
+            (ngModelChange)="updateProperty('width', $event)"
             min="60" 
             max="300"
             step="10">
@@ -214,8 +216,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.height" 
-            (change)="updateProperty('height', rectangleTableProperties.height)"
+            [ngModel]="rectangleTableProperties.height" 
+            (ngModelChange)="updateProperty('height', $event)"
             min="40" 
             max="200"
             step="10">
@@ -243,8 +245,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.upChairs" 
-            (change)="updateProperty('upChairs', rectangleTableProperties.upChairs)"
+            [ngModel]="rectangleTableProperties.upChairs" 
+            (ngModelChange)="updateProperty('upChairs', $event)"
             min="0" 
             max="20">
           <button 
@@ -263,8 +265,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.downChairs" 
-            (change)="updateProperty('downChairs', rectangleTableProperties.downChairs)"
+            [ngModel]="rectangleTableProperties.downChairs" 
+            (ngModelChange)="updateProperty('downChairs', $event)"
             min="0" 
             max="20">
           <button 
@@ -283,8 +285,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.leftChairs" 
-            (change)="updateProperty('leftChairs', rectangleTableProperties.leftChairs)"
+            [ngModel]="rectangleTableProperties.leftChairs" 
+            (ngModelChange)="updateProperty('leftChairs', $event)"
             min="0" 
             max="20">
           <button 
@@ -303,8 +305,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.rightChairs" 
-            (change)="updateProperty('rightChairs', rectangleTableProperties.rightChairs)"
+            [ngModel]="rectangleTableProperties.rightChairs" 
+            (ngModelChange)="updateProperty('rightChairs', $event)"
             min="0" 
             max="20">
           <button 
@@ -330,8 +332,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="rectangleTableProperties.rotation" 
-            (change)="updateProperty('rotation', rectangleTableProperties.rotation)"
+            [ngModel]="rectangleTableProperties.rotation" 
+            (ngModelChange)="updateProperty('rotation', $event)"
             step="15">
           <button 
             class="join-item btn btn-xs" 
@@ -362,16 +364,17 @@
         <input 
           type="text" 
           class="input input-bordered input-sm w-36 max-w-xs" 
-          [(ngModel)]="rectangleTableProperties.name" 
-          (input)="updateProperty('name', rectangleTableProperties.name)">
+          [ngModel]="rectangleTableProperties.name" 
+          (ngModelChange)="updateProperty('name', $event)">
       </div>
       
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="rectangleTableProperties.tableLabelVisible" 
-            (change)="updateProperty('tableLabelVisible', rectangleTableProperties.tableLabelVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
+            [ngModel]="rectangleTableProperties.tableLabelVisible" 
+            (ngModelChange)="updateProperty('tableLabelVisible', $event)">
         </label>
       </div>
     </div>
@@ -386,8 +389,9 @@
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="rectangleTableProperties.chairLabelVisible" 
-            (change)="updateProperty('chairLabelVisible', rectangleTableProperties.chairLabelVisible)">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
+            [ngModel]="rectangleTableProperties.chairLabelVisible" 
+            (ngModelChange)="updateProperty('chairLabelVisible', $event)">
         </label>
       </div>
     </div>
@@ -696,8 +700,8 @@
           <input 
             type="number" 
             class="join-item input input-bordered input-xs w-14 text-center"
-            [(ngModel)]="lineProperties.thickness" 
-            (change)="updateProperty('thickness', lineProperties.thickness)"
+            [ngModel]="lineProperties.thickness" 
+            (ngModelChange)="updateProperty('thickness', lineProperties.thickness)"
             min="1" 
             max="20"
             step="1">
@@ -714,13 +718,13 @@
           <input 
             type="color" 
             class="w-10 h-8 rounded border border-gray-300 cursor-pointer"
-            [(ngModel)]="lineProperties.color" 
-            (change)="updateProperty('color', lineProperties.color)">
+            [ngModel]="lineProperties.color" 
+            (ngModelChange)="updateProperty('color', lineProperties.color)">
           <input 
             type="text" 
             class="input input-bordered input-xs w-20 text-center text-xs"
-            [(ngModel)]="lineProperties.color" 
-            (change)="updateProperty('color', lineProperties.color)"
+            [ngModel]="lineProperties.color" 
+            (ngModelChange)="updateProperty('color', lineProperties.color)"
             placeholder="#000000">
         </div>
       </div>
@@ -748,8 +752,8 @@
         <input 
           type="text" 
           class="input input-bordered input-sm w-36 max-w-xs" 
-          [(ngModel)]="lineProperties.name" 
-          (input)="updateProperty('name', lineProperties.name)">
+          [ngModel]="lineProperties.name" 
+          (ngModelChange)="updateProperty('name', lineProperties.name)">
       </div>
     </div>
 

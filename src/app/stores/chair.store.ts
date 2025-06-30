@@ -96,12 +96,13 @@ export class ChairStore {
         id: `${tableId}-chair-${i}`,
         tableId: tableId,
         label: (i + 1).toString(),
-        price: 0,
+        price: 25.00, // Default price
         position: {
           angle: angleStep * i,
           distance: distanceToChairCenter
         },
-        isSelected: false
+        isSelected: false,
+        reservationStatus: 'free' // Default to free (matches Chair model)
       };
       chairs.push(chair);
       this.addChair(chair);
@@ -111,6 +112,15 @@ export class ChairStore {
     console.log('Generated', chairs.length, 'chairs for table', tableId);
     return chairs;
   }
+  
+  // Helper method to remove all chairs for a table
+  removeChairsForTable = action('removeChairsForTable', (tableId: string) => {
+    const chairsToRemove = this.getChairsByTable(tableId);
+    chairsToRemove.forEach(chair => {
+      this.removeChair(chair.id);
+    });
+    console.log(`Removed ${chairsToRemove.length} chairs for table ${tableId}`);
+  });
 }
 
 // Create singleton instance
