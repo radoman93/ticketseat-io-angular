@@ -434,22 +434,27 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         // Deselect tool after placing
         this.toolStore.setActiveTool(ToolType.None);
       } else if (activeTool === ToolType.Line) {
-        // Line tool: click to add points, double-click to finish
+        // Line tool: first click to start, second click to finish
         const gridCoords = this.getGridCoordinates(event);
         const x = gridCoords.x;
         const y = gridCoords.y;
 
+        console.log('Line tool click detected, isCreatingLine:', this.isCreatingLine);
+
         if (!this.isCreatingLine) {
-          // First click: start creating a line with two points (start point and current mouse position)
+          // First click: start creating a line with two points (start and current position)
           this.isCreatingLine = true;
           this.previewLine = this.lineService.createLine(x, y);
-          // Add a second point immediately so we can see the line
+          // Add the second point immediately for preview
           this.previewLine = this.lineService.addPoint(this.previewLine, x, y);
-          console.log('Starting line creation at', x, y);
+          console.log('Starting line creation at', x, y, 'previewLine:', this.previewLine);
         } else if (this.previewLine) {
-          // Subsequent clicks: add points to the line
-          this.previewLine = this.lineService.addPoint(this.previewLine, x, y);
-          console.log('Added point to line at', x, y);
+          // Second click: update the end point and finish the line
+          this.previewLine.points[1] = { x, y };
+          console.log('Finishing line at', x, y, 'final previewLine:', this.previewLine);
+          this.finalizeLine();
+        } else {
+          console.log('Line tool: isCreatingLine is true but previewLine is null');
         }
 
         event.preventDefault();
@@ -474,14 +479,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             this.finalizePolygon();
           } else {
             // Subsequent clicks: add points to the polygon (but don't auto-close)
-            const originalPolygon = this.previewPolygon;
+            console.log('Before adding point: polygon has', this.previewPolygon.points.length, 'points');
             this.previewPolygon = this.polygonService.addPoint(this.previewPolygon, x, y, true, false);
-
-            console.log('Added point to polygon at', x, y, 'total points:', this.previewPolygon.points.length);
+            console.log('After adding point: polygon has', this.previewPolygon.points.length, 'points at', x, y);
           }
         }
 
         event.preventDefault();
+        event.stopPropagation();
       } else if (activeTool === ToolType.None) {
         // If no tool is selected, start panning with the left mouse button.
         this.store.startPanning(event.clientX, event.clientY);
@@ -559,12 +564,19 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         };
       }
     } else if (this.isCreatingLine && this.previewLine) {
-      // Update the last point of the line being created for live preview
+      // Update the end point of the line being created for live preview
       const gridCoords = this.getGridCoordinates(event);
       const x = gridCoords.x;
       const y = gridCoords.y;
 
-      this.previewLine = this.lineService.updateLastPoint(this.previewLine, x, y);
+      // For line tool, we always update the second point (end point) during preview
+      if (this.previewLine.points.length === 1) {
+        // Add the second point for preview
+        this.previewLine.points.push({ x, y });
+      } else {
+        // Update the second point
+        this.previewLine.points[1] = { x, y };
+      }
     } else if (this.isCreatingPolygon && this.previewPolygon) {
       // Update the last point of the polygon being created for live preview
       const gridCoords = this.getGridCoordinates(event);
@@ -701,8 +713,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   onDoubleClick(event: MouseEvent): void {
     if (this.isCreatingSegmentedRow && this.segmentedRowSegments.length > 0) {
       this.finalizeSegmentedSeatingRow();
-    } else if (this.isCreatingLine && this.previewLine && this.previewLine.points.length >= 2) {
-      this.finalizeLine();
     } else if (this.isCreatingPolygon && this.previewPolygon && this.previewPolygon.points.length >= 3) {
       this.finalizePolygon();
     }
