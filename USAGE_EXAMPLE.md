@@ -1,5 +1,47 @@
 # Usage Examples
 
+## Setup Requirements
+
+Before using the components, make sure you have completed the following setup steps:
+
+### 1. Install the Package
+
+```bash
+npm install @radoman93/ticketseat-io-angular --registry=https://npm.pkg.github.com
+```
+
+### 2. Import Styles
+
+Add to your `src/styles.css`:
+
+```css
+@import '@radoman93/ticketseat-io-angular/styles.css';
+```
+
+### 3. Copy Assets
+
+Copy the library assets to your project:
+
+```bash
+cp -r node_modules/@radoman93/ticketseat-io-angular/assets ./src/assets/
+```
+
+Or add to your `angular.json`:
+
+```json
+{
+  "assets": [
+    "src/favicon.ico",
+    "src/assets",
+    {
+      "glob": "**/*",
+      "input": "node_modules/@radoman93/ticketseat-io-angular/assets",
+      "output": "assets"
+    }
+  ]
+}
+```
+
 ## Component Overview
 
 This library provides two main components:

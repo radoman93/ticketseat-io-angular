@@ -114,6 +114,40 @@ module.exports = {
 }
 ```
 
+### Assets Setup
+
+The library includes icon assets that need to be accessible by your application. You have two options:
+
+#### Option 1: Copy assets to your public folder (Recommended)
+
+Copy the assets from the library to your application's public folder:
+
+```bash
+cp -r node_modules/@radoman93/ticketseat-io-angular/assets ./src/assets/
+```
+
+Or manually copy the `assets` folder from `node_modules/@radoman93/ticketseat-io-angular/assets` to your `src/assets/` directory.
+
+#### Option 2: Configure angular.json to include library assets
+
+Add the library assets to your `angular.json` build configuration:
+
+```json
+{
+  "assets": [
+    "src/favicon.ico",
+    "src/assets",
+    {
+      "glob": "**/*",
+      "input": "node_modules/@radoman93/ticketseat-io-angular/assets",
+      "output": "assets"
+    }
+  ]
+}
+```
+
+**Note**: The library expects icons to be available at `assets/icons/toolbar/` path relative to your application root.
+
 ## Quick Start
 
 ### Admin Dashboard - Layout Editor
@@ -462,3 +496,45 @@ export class BookingComponent {
   [reservedIds]="preReservedSeats">
 </app-event-viewer>
 ```
+
+## Troubleshooting
+
+### Icons Not Loading
+
+If toolbar icons are not displaying:
+
+1. **Check Assets Setup**: Ensure you've copied the assets folder or configured angular.json correctly
+   ```bash
+   # Verify assets exist in your project
+   ls -la src/assets/icons/toolbar/
+   ```
+
+2. **Verify Build Output**: Check that assets are included in your build
+   ```bash
+   # After build, check dist folder
+   ls -la dist/assets/icons/toolbar/
+   ```
+
+3. **Console Errors**: Check browser console for 404 errors on icon requests
+
+4. **Path Issues**: The library expects icons at `assets/icons/toolbar/` relative to your app root
+
+### Styling Issues
+
+1. **Import Order**: Make sure the library CSS is imported after your base styles
+2. **Tailwind Conflicts**: If using Tailwind, ensure proper purge/content configuration
+3. **Missing Styles**: Verify the CSS file is actually being loaded in your application
+
+### Build Errors
+
+1. **Peer Dependencies**: Ensure all peer dependencies are installed
+2. **Angular Version**: Make sure you're using a compatible Angular version (19+)
+3. **Module Resolution**: Check that your bundler can resolve the library modules
+
+### Performance Issues
+
+1. **Large Layouts**: For layouts with many elements, consider virtualization
+2. **Memory Usage**: Clear unused layout data when navigating away
+3. **Event Listeners**: The library properly cleans up event listeners on destroy
+
+## Contributing

@@ -30,6 +30,16 @@ try {
   } else {
     console.log('✅ ./styles.css export already exists');
   }
+
+  // Add assets export if it doesn't exist
+  if (!packageJson.exports['./assets/*']) {
+    packageJson.exports['./assets/*'] = {
+      "default": "./assets/*"
+    };
+    console.log('✅ Added ./assets/* export');
+  } else {
+    console.log('✅ ./assets/* export already exists');
+  }
   
   // Write the updated package.json back
   fs.writeFileSync(distPackageJsonPath, JSON.stringify(packageJson, null, 2));

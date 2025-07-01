@@ -13,11 +13,12 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "npm run build:lib && npm run add:css-export && npm run build:css && npm run copy:css",
+    "build": "npm run build:lib && npm run add:css-export && npm run build:css && npm run copy:css && npm run copy:assets",
     "build:lib": "ng-packagr -p ng-package.json",
     "add:css-export": "node add-css-export.js",
     "build:css": "npx tailwindcss -i ./src/lib-styles.css -o ./temp-styles.css --minify",
     "copy:css": "cp ./temp-styles.css ./dist/styles.css && rm ./temp-styles.css",
+    "copy:assets": "cp -r ./src/assets ./dist/assets",
     "prebuild": "echo 'Building library...'",
     "postbuild": "npm run verify",
     "verify": "node verify-package.js",

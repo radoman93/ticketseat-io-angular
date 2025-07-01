@@ -62,6 +62,22 @@ try {
     console.log('⚠️  Type definitions not found');
   }
 
+  // Check assets directory
+  const assetsPath = path.join(distPath, 'assets');
+  if (fs.existsSync(assetsPath)) {
+    console.log('✅ Assets directory found');
+    
+    // Check for icons specifically
+    const iconsPath = path.join(assetsPath, 'icons');
+    if (fs.existsSync(iconsPath)) {
+      console.log('✅ Icons directory found');
+    } else {
+      console.log('⚠️  Icons directory not found in assets');
+    }
+  } else {
+    console.log('⚠️  Assets directory not found - icons may not load');
+  }
+
   console.log('\n🎉 Package verification successful!');
   console.log('\nUsers can now import the CSS using:');
   console.log("   @import '@radoman93/ticketseat-io-angular/styles.css';");
