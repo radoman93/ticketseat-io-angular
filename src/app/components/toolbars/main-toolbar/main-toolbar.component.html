@@ -4,7 +4,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.RoundTable)"
     (click)="toggleTool(ToolType.RoundTable)"
     title="Round Table">
-    <img [src]="isToolActive(ToolType.RoundTable) ? 'assets/icons/toolbar/active/round-table-tool.svg' : 'assets/icons/toolbar/inactive/round-table-tool.svg'" class="h-6 w-6" alt="Round Table" />
+    <img [src]="getToolbarIcon('round-table-tool', isToolActive(ToolType.RoundTable))" class="h-6 w-6" alt="Round Table" />
   </button>
   
   <button 
@@ -12,7 +12,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.RectangleTable)"
     (click)="toggleTool(ToolType.RectangleTable)"
     title="Rectangle Table">
-    <img [src]="isToolActive(ToolType.RectangleTable) ? 'assets/icons/toolbar/active/rectangular-table-tool.svg' : 'assets/icons/toolbar/inactive/rectangular-table-tool.svg'" class="h-6 w-6" alt="Rectangle Table" />
+    <img [src]="getToolbarIcon('rectangular-table-tool', isToolActive(ToolType.RectangleTable))" class="h-6 w-6" alt="Rectangle Table" />
   </button>
   
   <button 
@@ -20,7 +20,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.SeatingRow)"
     (click)="toggleTool(ToolType.SeatingRow)"
     title="Seating Row">
-    <img [src]="isToolActive(ToolType.SeatingRow) ? 'assets/icons/toolbar/active/row-tool.svg' : 'assets/icons/toolbar/inactive/row-tool.svg'" class="h-6 w-6" alt="Seating Row" />
+    <img [src]="getToolbarIcon('row-tool', isToolActive(ToolType.SeatingRow))" class="h-6 w-6" alt="Seating Row" />
   </button>
   
   <button 
@@ -28,7 +28,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.SegmentedSeatingRow)"
     (click)="toggleTool(ToolType.SegmentedSeatingRow)"
     title="Segmented Seating Row">
-    <img [src]="isToolActive(ToolType.SegmentedSeatingRow) ? 'assets/icons/toolbar/active/segmented-row-tool.svg' : 'assets/icons/toolbar/inactive/segmented-row-tool.svg'" class="h-6 w-6" alt="Segmented Seating Row" />
+    <img [src]="getToolbarIcon('segmented-row-tool', isToolActive(ToolType.SegmentedSeatingRow))" class="h-6 w-6" alt="Segmented Seating Row" />
   </button>
   
   <button 
@@ -36,7 +36,7 @@
     [class.bg-blue-100]="isToolActive(ToolType.Line)"
     (click)="toggleTool(ToolType.Line)"
     title="Line">
-    <img [src]="isToolActive(ToolType.Line) ? 'assets/icons/toolbar/active/line-tool.svg' : 'assets/icons/toolbar/inactive/line-tool.svg'" class="h-6 w-6" alt="Line" />
+    <img [src]="getToolbarIcon('line-tool', isToolActive(ToolType.Line))" class="h-6 w-6" alt="Line" />
   </button>
 
   <button 
@@ -44,6 +44,6 @@
     [class.bg-blue-100]="isToolActive(ToolType.Polygon)"
     (click)="toggleTool(ToolType.Polygon)"
     title="Polygon">
-    <img [src]="isToolActive(ToolType.Polygon) ? 'assets/icons/toolbar/active/polygon-tool.svg' : 'assets/icons/toolbar/inactive/polygon-tool.svg'" class="h-6 w-6" alt="Polygon" />
+    <img [src]="getToolbarIcon('polygon-tool', isToolActive(ToolType.Polygon))" class="h-6 w-6" alt="Polygon" />
   </button>
 </div>

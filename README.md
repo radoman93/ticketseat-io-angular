@@ -116,7 +116,7 @@ module.exports = {
 
 ### Assets Setup
 
-The library includes icon assets that need to be accessible by your application. You have two options:
+The library includes icon assets that need to be accessible by your application. You have several options:
 
 #### Option 1: Copy assets to your public folder (Recommended)
 
@@ -146,7 +146,27 @@ Add the library assets to your `angular.json` build configuration:
 }
 ```
 
-**Note**: The library expects icons to be available at `assets/icons/toolbar/` path relative to your application root.
+#### Option 3: Configure custom asset path (Advanced)
+
+If you want to use a different asset path, you can configure the library's asset service:
+
+```typescript
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { TICKETSEAT_ASSET_BASE_PATH } from '@radoman93/ticketseat-io-angular';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    {
+      provide: TICKETSEAT_ASSET_BASE_PATH,
+      useValue: 'custom-path/to/assets' // Change this to your custom path
+    }
+    // ... other providers
+  ]
+});
+```
+
+**Note**: The library expects icons to be available at `{basePath}/icons/toolbar/` path relative to your application root.
 
 ## Quick Start
 
@@ -517,7 +537,20 @@ If toolbar icons are not displaying:
 
 3. **Console Errors**: Check browser console for 404 errors on icon requests
 
-4. **Path Issues**: The library expects icons at `assets/icons/toolbar/` relative to your app root
+4. **Configure Custom Path**: If using a custom asset path, make sure to configure the TICKETSEAT_ASSET_BASE_PATH provider
+   ```typescript
+   import { TICKETSEAT_ASSET_BASE_PATH } from '@radoman93/ticketseat-io-angular';
+   
+   // In your main.ts or app.config.ts
+   providers: [
+     {
+       provide: TICKETSEAT_ASSET_BASE_PATH,
+       useValue: 'your-custom-path'
+     }
+   ]
+   ```
+
+5. **Path Issues**: The library expects icons at `{basePath}/icons/toolbar/` relative to your app root
 
 ### Styling Issues
 

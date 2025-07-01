@@ -4,4 +4,5 @@ export * from './segmented-seating-row.service';
 export * from './mobx-error.service';
 export * from './layout-export-import.service';
 export * from './layout-validator.service';
-export * from './line.service'; 
+export * from './line.service';
+export * from './asset.service'; 

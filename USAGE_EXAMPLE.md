@@ -42,6 +42,26 @@ Or add to your `angular.json`:
 }
 ```
 
+### 4. (Optional) Configure Custom Asset Path
+
+If you need to use a different asset path, configure it in your main.ts:
+
+```typescript
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { TICKETSEAT_ASSET_BASE_PATH } from '@radoman93/ticketseat-io-angular';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    {
+      provide: TICKETSEAT_ASSET_BASE_PATH,
+      useValue: 'my-custom-assets' // Your custom path
+    }
+    // ... other providers
+  ]
+});
+```
+
 ## Component Overview
 
 This library provides two main components:

@@ -51,6 +51,7 @@ export * from './app/models';
 // Specific service exports (avoiding problematic index imports)
 export * from './app/services/layout-export-import.service';
 export * from './app/services/layout-validator.service';
+export * from './app/services/asset.service';
 
 // Specific command exports (avoiding problematic index imports)
 export * from './app/commands/add-object.command';

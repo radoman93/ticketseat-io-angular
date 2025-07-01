@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToolService, ToolType } from '../../../services/tool.service';
+import { AssetService } from '../../../services/asset.service';
 
 @Component({
   selector: 'app-main-toolbar',
@@ -12,7 +13,10 @@ import { ToolService, ToolType } from '../../../services/tool.service';
 export class MainToolbarComponent {
   ToolType = ToolType; // Make enum available in template
 
-  constructor(private toolService: ToolService) {}
+  constructor(
+    private toolService: ToolService,
+    private assetService: AssetService
+  ) {}
 
   toggleTool(tool: ToolType): void {
     // If the tool is already active, deactivate it
@@ -26,5 +30,9 @@ export class MainToolbarComponent {
 
   isToolActive(tool: ToolType): boolean {
     return this.toolService.getActiveTool() === tool;
+  }
+
+  getToolbarIcon(iconName: string, isActive: boolean): string {
+    return this.assetService.getToolbarIcon(iconName, isActive ? 'active' : 'inactive');
   }
 }
