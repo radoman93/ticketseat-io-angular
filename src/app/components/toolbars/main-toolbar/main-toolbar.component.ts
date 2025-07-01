@@ -16,7 +16,7 @@ export class MainToolbarComponent {
   constructor(
     private toolService: ToolService,
     private assetService: AssetService
-  ) {}
+  ) { }
 
   toggleTool(tool: ToolType): void {
     // If the tool is already active, deactivate it

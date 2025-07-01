@@ -1,49 +1,44 @@
 <div class="flex flex-col h-full bg-white border-r border-gray-200 w-12">
-  <button 
+  <button
     class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
-    [class.bg-blue-100]="isToolActive(ToolType.RoundTable)"
-    (click)="toggleTool(ToolType.RoundTable)"
+    [class.bg-blue-100]="isToolActive(ToolType.RoundTable)" (click)="toggleTool(ToolType.RoundTable)"
     title="Round Table">
-    <img [src]="getToolbarIcon('round-table-tool', isToolActive(ToolType.RoundTable))" class="h-6 w-6" alt="Round Table" />
+    <img [src]="getToolbarIcon('round-table-tool', isToolActive(ToolType.RoundTable))" class="h-6 w-6"
+      alt="Round Table" />
   </button>
-  
-  <button 
+
+  <button
     class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
-    [class.bg-blue-100]="isToolActive(ToolType.RectangleTable)"
-    (click)="toggleTool(ToolType.RectangleTable)"
+    [class.bg-blue-100]="isToolActive(ToolType.RectangleTable)" (click)="toggleTool(ToolType.RectangleTable)"
     title="Rectangle Table">
-    <img [src]="getToolbarIcon('rectangular-table-tool', isToolActive(ToolType.RectangleTable))" class="h-6 w-6" alt="Rectangle Table" />
+    <img [src]="getToolbarIcon('rectangular-table-tool', isToolActive(ToolType.RectangleTable))" class="h-6 w-6"
+      alt="Rectangle Table" />
   </button>
-  
-  <button 
+
+  <button
     class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
-    [class.bg-blue-100]="isToolActive(ToolType.SeatingRow)"
-    (click)="toggleTool(ToolType.SeatingRow)"
+    [class.bg-blue-100]="isToolActive(ToolType.SeatingRow)" (click)="toggleTool(ToolType.SeatingRow)"
     title="Seating Row">
     <img [src]="getToolbarIcon('row-tool', isToolActive(ToolType.SeatingRow))" class="h-6 w-6" alt="Seating Row" />
   </button>
-  
-  <button 
+
+  <button
     class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
-    [class.bg-blue-100]="isToolActive(ToolType.SegmentedSeatingRow)"
-    (click)="toggleTool(ToolType.SegmentedSeatingRow)"
+    [class.bg-blue-100]="isToolActive(ToolType.SegmentedSeatingRow)" (click)="toggleTool(ToolType.SegmentedSeatingRow)"
     title="Segmented Seating Row">
-    <img [src]="getToolbarIcon('segmented-row-tool', isToolActive(ToolType.SegmentedSeatingRow))" class="h-6 w-6" alt="Segmented Seating Row" />
+    <img [src]="getToolbarIcon('segmented-row-tool', isToolActive(ToolType.SegmentedSeatingRow))" class="h-6 w-6"
+      alt="Segmented Seating Row" />
   </button>
-  
-  <button 
+
+  <button
     class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
-    [class.bg-blue-100]="isToolActive(ToolType.Line)"
-    (click)="toggleTool(ToolType.Line)"
-    title="Line">
+    [class.bg-blue-100]="isToolActive(ToolType.Line)" (click)="toggleTool(ToolType.Line)" title="Line">
     <img [src]="getToolbarIcon('line-tool', isToolActive(ToolType.Line))" class="h-6 w-6" alt="Line" />
   </button>
 
-  <button 
+  <button
     class="w-10 h-10 mx-auto my-2 flex items-center justify-center rounded hover:bg-gray-100 transition-colors duration-200"
-    [class.bg-blue-100]="isToolActive(ToolType.Polygon)"
-    (click)="toggleTool(ToolType.Polygon)"
-    title="Polygon">
+    [class.bg-blue-100]="isToolActive(ToolType.Polygon)" (click)="toggleTool(ToolType.Polygon)" title="Polygon">
     <img [src]="getToolbarIcon('polygon-tool', isToolActive(ToolType.Polygon))" class="h-6 w-6" alt="Polygon" />
   </button>
 </div>

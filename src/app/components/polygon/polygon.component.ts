@@ -146,10 +146,10 @@ export class PolygonComponent {
   @Input() isSelected: boolean = false;
   @Input() isPolygonClosed: boolean = false;
   @Input() isPreview: boolean = false;
-  
+
   @Output() select = new EventEmitter<{ polygon: PolygonProperties, event: MouseEvent }>();
 
-  constructor(private polygonService: PolygonService) {}
+  constructor(private polygonService: PolygonService) { }
 
   get pathString(): string {
     return this.polygon.points.map(point => `${point.x - this.svgLeft},${point.y - this.svgTop}`).join(' ');
@@ -169,11 +169,11 @@ export class PolygonComponent {
     const width = Math.max(maxX - minX, 50);
     const height = Math.max(maxY - minY, 50);
 
-    return { 
-      minX: minX - (width - (maxX - minX)) / 2, 
-      minY: minY - (height - (maxY - minY)) / 2, 
-      maxX: maxX + (width - (maxX - minX)) / 2, 
-      maxY: maxY + (height - (maxY - minY)) / 2 
+    return {
+      minX: minX - (width - (maxX - minX)) / 2,
+      minY: minY - (height - (maxY - minY)) / 2,
+      maxX: maxX + (width - (maxX - minX)) / 2,
+      maxY: maxY + (height - (maxY - minY)) / 2
     };
   }
 

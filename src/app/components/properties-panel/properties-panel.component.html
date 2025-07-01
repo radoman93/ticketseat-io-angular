@@ -11,65 +11,39 @@
       <div class="flex items-center mb-3">
         <label for="tableSettings" class="text-gray-700 font-medium">Table Settings</label>
       </div>
-      
+
       <!-- Radius -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Radius:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementRadius()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="roundTableProperties.radius" 
-            (ngModelChange)="updateProperty('radius', $event)"
-            min="20" 
-            max="100"
-            step="5">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementRadius()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementRadius()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="roundTableProperties.radius" (ngModelChange)="updateProperty('radius', $event)" min="20"
+            max="100" step="5">
+          <button class="join-item btn btn-xs" (click)="incrementRadius()">+</button>
         </div>
       </div>
-      
+
       <!-- Chairs -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Chairs:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementChairs()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="roundTableProperties.seats" 
-            (ngModelChange)="updateProperty('seats', $event)"
-            min="4" 
-            max="20">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementChairs()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementChairs()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="roundTableProperties.seats" (ngModelChange)="updateProperty('seats', $event)" min="4" max="20">
+          <button class="join-item btn btn-xs" (click)="incrementChairs()">+</button>
         </div>
       </div>
-      
+
       <!-- Open Spaces -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Open Spaces:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementOpenSpaces()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="roundTableProperties.openSpaces" 
-            (ngModelChange)="updateProperty('openSpaces', $event)"
-            min="0" 
+          <button class="join-item btn btn-xs" (click)="decrementOpenSpaces()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="roundTableProperties.openSpaces" (ngModelChange)="updateProperty('openSpaces', $event)" min="0"
             max="20">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementOpenSpaces()">+</button>
+          <button class="join-item btn btn-xs" (click)="incrementOpenSpaces()">+</button>
         </div>
       </div>
     </div>
@@ -79,23 +53,15 @@
       <div class="flex items-center mb-3">
         <label for="shapeToggle" class="text-gray-700 font-medium">Shape</label>
       </div>
-      
+
       <!-- Rotation -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Rotation:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementRotation()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="roundTableProperties.rotation" 
-            (ngModelChange)="updateProperty('rotation', $event)"
-            step="15">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementRotation()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementRotation()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="roundTableProperties.rotation" (ngModelChange)="updateProperty('rotation', $event)" step="15">
+          <button class="join-item btn btn-xs" (click)="incrementRotation()">+</button>
         </div>
       </div>
     </div>
@@ -105,33 +71,27 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Table Labeling</label>
       </div>
-      
+
       <!-- ID (non-editable) -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Id</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
-          [value]="selectedItem?.id || ''" 
-          disabled>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
       </div>
-      
+
       <!-- Displayed Label -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Display Label</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm w-36 max-w-xs" 
-          [ngModel]="roundTableProperties.name" 
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs" [ngModel]="roundTableProperties.name"
           (ngModelChange)="updateProperty('name', $event)">
       </div>
-      
+
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
-            [ngModel]="roundTableProperties.tableLabelVisible" 
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [ngModel]="roundTableProperties.tableLabelVisible"
             (ngModelChange)="updateProperty('tableLabelVisible', $event)">
         </label>
       </div>
@@ -142,13 +102,13 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Chair Labeling</label>
       </div>
-      
+
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
-            [ngModel]="roundTableProperties.chairLabelVisible" 
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [ngModel]="roundTableProperties.chairLabelVisible"
             (ngModelChange)="updateProperty('chairLabelVisible', $event)">
         </label>
       </div>
@@ -161,11 +121,11 @@
 
     <!-- Delete Button -->
     <div class="px-4 py-2 mt-auto">
-      <button 
-        class="btn btn-error btn-sm w-full"
-        (click)="deleteElement()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
         Delete
       </button>
@@ -184,46 +144,28 @@
       <div class="flex items-center mb-3">
         <label for="tableSettings" class="text-gray-700 font-medium">Table Settings</label>
       </div>
-      
+
       <!-- Width -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Width:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementWidth()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.width" 
-            (ngModelChange)="updateProperty('width', $event)"
-            min="60" 
-            max="300"
-            step="10">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementWidth()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementWidth()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.width" (ngModelChange)="updateProperty('width', $event)" min="60"
+            max="300" step="10">
+          <button class="join-item btn btn-xs" (click)="incrementWidth()">+</button>
         </div>
       </div>
-      
+
       <!-- Height -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Height:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementHeight()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.height" 
-            (ngModelChange)="updateProperty('height', $event)"
-            min="40" 
-            max="200"
-            step="10">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementHeight()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementHeight()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.height" (ngModelChange)="updateProperty('height', $event)" min="40"
+            max="200" step="10">
+          <button class="join-item btn btn-xs" (click)="incrementHeight()">+</button>
         </div>
       </div>
     </div>
@@ -234,84 +176,52 @@
         <label class="text-gray-700 font-medium">Chair Distribution</label>
         <span class="ml-auto text-xs text-gray-500">Total: {{totalChairsRect}}</span>
       </div>
-      
+
       <!-- Top Chairs -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Top:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementUpChairs()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.upChairs" 
-            (ngModelChange)="updateProperty('upChairs', $event)"
-            min="0" 
+          <button class="join-item btn btn-xs" (click)="decrementUpChairs()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.upChairs" (ngModelChange)="updateProperty('upChairs', $event)" min="0"
             max="20">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementUpChairs()">+</button>
+          <button class="join-item btn btn-xs" (click)="incrementUpChairs()">+</button>
         </div>
       </div>
-      
+
       <!-- Bottom Chairs -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Bottom:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementDownChairs()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.downChairs" 
-            (ngModelChange)="updateProperty('downChairs', $event)"
-            min="0" 
-            max="20">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementDownChairs()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementDownChairs()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.downChairs" (ngModelChange)="updateProperty('downChairs', $event)"
+            min="0" max="20">
+          <button class="join-item btn btn-xs" (click)="incrementDownChairs()">+</button>
         </div>
       </div>
-      
+
       <!-- Left Chairs -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Left:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementLeftChairs()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.leftChairs" 
-            (ngModelChange)="updateProperty('leftChairs', $event)"
-            min="0" 
-            max="20">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementLeftChairs()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementLeftChairs()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.leftChairs" (ngModelChange)="updateProperty('leftChairs', $event)"
+            min="0" max="20">
+          <button class="join-item btn btn-xs" (click)="incrementLeftChairs()">+</button>
         </div>
       </div>
-      
+
       <!-- Right Chairs -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Right:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementRightChairs()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.rightChairs" 
-            (ngModelChange)="updateProperty('rightChairs', $event)"
-            min="0" 
-            max="20">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementRightChairs()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementRightChairs()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.rightChairs" (ngModelChange)="updateProperty('rightChairs', $event)"
+            min="0" max="20">
+          <button class="join-item btn btn-xs" (click)="incrementRightChairs()">+</button>
         </div>
       </div>
     </div>
@@ -321,23 +231,16 @@
       <div class="flex items-center mb-3">
         <label for="shapeToggle" class="text-gray-700 font-medium">Shape</label>
       </div>
-      
+
       <!-- Rotation -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Rotation:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementRotation()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="rectangleTableProperties.rotation" 
-            (ngModelChange)="updateProperty('rotation', $event)"
+          <button class="join-item btn btn-xs" (click)="decrementRotation()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="rectangleTableProperties.rotation" (ngModelChange)="updateProperty('rotation', $event)"
             step="15">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementRotation()">+</button>
+          <button class="join-item btn btn-xs" (click)="incrementRotation()">+</button>
         </div>
       </div>
     </div>
@@ -347,33 +250,27 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Table Labeling</label>
       </div>
-      
+
       <!-- ID (non-editable) -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Id</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
-          [value]="selectedItem?.id || ''" 
-          disabled>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
       </div>
-      
+
       <!-- Displayed Label -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Display Label</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm w-36 max-w-xs" 
-          [ngModel]="rectangleTableProperties.name" 
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs" [ngModel]="rectangleTableProperties.name"
           (ngModelChange)="updateProperty('name', $event)">
       </div>
-      
+
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
-            [ngModel]="rectangleTableProperties.tableLabelVisible" 
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [ngModel]="rectangleTableProperties.tableLabelVisible"
             (ngModelChange)="updateProperty('tableLabelVisible', $event)">
         </label>
       </div>
@@ -384,13 +281,13 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Chair Labeling</label>
       </div>
-      
+
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" 
-            [ngModel]="rectangleTableProperties.chairLabelVisible" 
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [ngModel]="rectangleTableProperties.chairLabelVisible"
             (ngModelChange)="updateProperty('chairLabelVisible', $event)">
         </label>
       </div>
@@ -403,11 +300,11 @@
 
     <!-- Delete Button -->
     <div class="px-4 py-2 mt-auto">
-      <button 
-        class="btn btn-error btn-sm w-full"
-        (click)="deleteElement()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
         Delete
       </button>
@@ -415,9 +312,12 @@
   </div>
 
   <!-- Empty state panel -->
-  <div *ngIf="!selectedItem" class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <div *ngIf="!selectedItem"
+    class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
     <h3 class="text-base font-medium text-gray-700 mb-1">No Element Selected</h3>
     <p class="text-xs text-gray-500">Select an element on the canvas to edit properties</p>
@@ -435,43 +335,31 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Row Settings</label>
       </div>
-      
+
       <!-- Number of seats -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Number of seats:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
+          <button class="join-item btn btn-xs"
             (click)="updateProperty('seatCount', ($any(selectedItem)['seatCount'] || 1) - 1)">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [value]="$any(selectedItem)['seatCount']" 
-            (change)="updateProperty('seatCount', $any($event.target)['value'])"
-            min="1" 
-            max="50">
-          <button 
-            class="join-item btn btn-xs" 
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [value]="$any(selectedItem)['seatCount']"
+            (change)="updateProperty('seatCount', $any($event.target)['value'])" min="1" max="50">
+          <button class="join-item btn btn-xs"
             (click)="updateProperty('seatCount', ($any(selectedItem)['seatCount'] || 1) + 1)">+</button>
         </div>
       </div>
-      
+
       <!-- Seat spacing -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Seat spacing:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
+          <button class="join-item btn btn-xs"
             (click)="updateProperty('seatSpacing', ($any(selectedItem)['seatSpacing'] || 35) - 1)">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [value]="$any(selectedItem)['seatSpacing']" 
-            (change)="updateProperty('seatSpacing', $any($event.target)['value'])"
-            min="20" 
-            max="100">
-          <button 
-            class="join-item btn btn-xs" 
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [value]="$any(selectedItem)['seatSpacing']"
+            (change)="updateProperty('seatSpacing', $any($event.target)['value'])" min="20" max="100">
+          <button class="join-item btn btn-xs"
             (click)="updateProperty('seatSpacing', ($any(selectedItem)['seatSpacing'] || 35) + 1)">+</button>
           <span class="text-xs text-gray-500 ml-1">px</span>
         </div>
@@ -483,32 +371,22 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Row Label</label>
       </div>
-      
+
       <!-- Row name -->
       <div class="mb-2">
-        <input 
-          type="text" 
-          class="input input-bordered input-sm w-full"
-          [value]="$any(selectedItem)['name']" 
-          (input)="updateProperty('name', $any($event.target)['value'])"
-          placeholder="Enter row name">
+        <input type="text" class="input input-bordered input-sm w-full" [value]="$any(selectedItem)['name']"
+          (input)="updateProperty('name', $any($event.target)['value'])" placeholder="Enter row name">
       </div>
 
       <!-- Label position -->
       <div class="mb-2">
         <label class="text-sm text-gray-600 block mb-1">Label position:</label>
         <div class="grid grid-cols-3 gap-1">
-          <button 
-            class="btn btn-xs"
-            [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'left'"
+          <button class="btn btn-xs" [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'left'"
             (click)="updateProperty('labelPosition', 'left')">Left</button>
-          <button 
-            class="btn btn-xs"
-            [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'center'"
+          <button class="btn btn-xs" [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'center'"
             (click)="updateProperty('labelPosition', 'center')">Center</button>
-          <button 
-            class="btn btn-xs"
-            [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'right'"
+          <button class="btn btn-xs" [class.btn-primary]="$any(selectedItem)['labelPosition'] === 'right'"
             (click)="updateProperty('labelPosition', 'right')">Right</button>
         </div>
       </div>
@@ -517,12 +395,11 @@
       <div class="flex items-center justify-between mt-3">
         <label class="text-sm text-gray-600">Show row label</label>
         <label class="relative inline-flex items-center cursor-pointer">
-          <input 
-            type="checkbox" 
-            class="sr-only peer"
-            [checked]="$any(selectedItem)['rowLabelVisible']"
+          <input type="checkbox" class="sr-only peer" [checked]="$any(selectedItem)['rowLabelVisible']"
             (change)="updateProperty('rowLabelVisible', $any($event.target)['checked'])">
-          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div
+            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+          </div>
         </label>
       </div>
 
@@ -530,21 +407,18 @@
       <div class="flex items-center justify-between mt-3">
         <label class="text-sm text-gray-600">Show seat labels</label>
         <label class="relative inline-flex items-center cursor-pointer">
-          <input 
-            type="checkbox" 
-            class="sr-only peer"
-            [checked]="$any(selectedItem)['chairLabelVisible']"
+          <input type="checkbox" class="sr-only peer" [checked]="$any(selectedItem)['chairLabelVisible']"
             (change)="updateProperty('chairLabelVisible', $any($event.target)['checked'])">
-          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div
+            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+          </div>
         </label>
       </div>
     </div>
 
     <!-- Delete button -->
     <div class="px-4 py-3">
-      <button 
-        class="btn btn-error btn-sm w-full"
-        (click)="deleteElement()">
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
         Delete Row
       </button>
     </div>
@@ -562,7 +436,7 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Row Stats</label>
       </div>
-      
+
       <!-- Total Segments (non-editable) -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Total Segments:</label>
@@ -570,7 +444,7 @@
           {{ segmentedSeatingRowProperties.totalSegments }}
         </div>
       </div>
-      
+
       <!-- Total Seats (non-editable) -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Total Seats:</label>
@@ -578,17 +452,13 @@
           {{ segmentedSeatingRowProperties.totalSeats }}
         </div>
       </div>
-      
+
       <!-- Seat Spacing -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Seat Spacing:</label>
-        <input 
-          type="number" 
-          class="input input-bordered input-xs w-14 text-center"
-          [(ngModel)]="segmentedSeatingRowProperties.seatSpacing" 
-          (change)="updateProperty('seatSpacing', segmentedSeatingRowProperties.seatSpacing)"
-          min="20" 
-          max="100"
+        <input type="number" class="input input-bordered input-xs w-14 text-center"
+          [(ngModel)]="segmentedSeatingRowProperties.seatSpacing"
+          (change)="updateProperty('seatSpacing', segmentedSeatingRowProperties.seatSpacing)" min="20" max="100"
           step="5">
       </div>
     </div>
@@ -599,45 +469,39 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Row Labeling</label>
       </div>
-      
+
       <!-- ID (non-editable) -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Id</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
-          [value]="selectedItem?.id || ''" 
-          disabled>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
       </div>
-      
+
       <!-- Displayed Label -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Display Label</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm w-36 max-w-xs" 
-          [(ngModel)]="segmentedSeatingRowProperties.name" 
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs"
+          [(ngModel)]="segmentedSeatingRowProperties.name"
           (input)="updateProperty('name', segmentedSeatingRowProperties.name)">
       </div>
-      
+
       <!-- Label Position -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Position</label>
-        <select 
-          class="select select-bordered select-sm w-36"
-          [(ngModel)]="segmentedSeatingRowProperties.labelPosition"
+        <select class="select select-bordered select-sm w-36" [(ngModel)]="segmentedSeatingRowProperties.labelPosition"
           (change)="updateProperty('labelPosition', segmentedSeatingRowProperties.labelPosition)">
           <option value="left">Left</option>
           <option value="center">Center</option>
           <option value="right">Right</option>
         </select>
       </div>
-      
+
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="segmentedSeatingRowProperties.rowLabelVisible" 
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [(ngModel)]="segmentedSeatingRowProperties.rowLabelVisible"
             (change)="updateProperty('rowLabelVisible', segmentedSeatingRowProperties.rowLabelVisible)">
         </label>
       </div>
@@ -648,12 +512,13 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Chair Labeling</label>
       </div>
-      
+
       <!-- Visible Toggle -->
       <div class="flex items-center justify-between">
         <label class="text-sm text-gray-600">Visible</label>
         <label class="cursor-pointer">
-          <input type="checkbox" class="toggle toggle-warning toggle-sm" [(ngModel)]="segmentedSeatingRowProperties.chairLabelVisible" 
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [(ngModel)]="segmentedSeatingRowProperties.chairLabelVisible"
             (change)="updateProperty('chairLabelVisible', segmentedSeatingRowProperties.chairLabelVisible)">
         </label>
       </div>
@@ -666,11 +531,11 @@
 
     <!-- Delete Button -->
     <div class="px-4 py-2 mt-auto">
-      <button 
-        class="btn btn-error btn-sm w-full"
-        (click)="deleteElement()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
         Delete
       </button>
@@ -689,42 +554,27 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Line Settings</label>
       </div>
-      
+
       <!-- Thickness -->
       <div class="flex items-center justify-between mb-3">
         <label class="text-sm text-gray-600">Thickness:</label>
         <div class="join">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="decrementLineThickness()">-</button>
-          <input 
-            type="number" 
-            class="join-item input input-bordered input-xs w-14 text-center"
-            [ngModel]="lineProperties.thickness" 
-            (ngModelChange)="updateProperty('thickness', lineProperties.thickness)"
-            min="1" 
-            max="20"
-            step="1">
-          <button 
-            class="join-item btn btn-xs" 
-            (click)="incrementLineThickness()">+</button>
+          <button class="join-item btn btn-xs" (click)="decrementLineThickness()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="lineProperties.thickness" (ngModelChange)="updateProperty('thickness', lineProperties.thickness)"
+            min="1" max="20" step="1">
+          <button class="join-item btn btn-xs" (click)="incrementLineThickness()">+</button>
         </div>
       </div>
-      
+
       <!-- Color -->
       <div class="flex items-center justify-between mb-3">
         <label class="text-sm text-gray-600">Color:</label>
         <div class="flex items-center gap-2">
-          <input 
-            type="color" 
-            class="w-10 h-8 rounded border border-gray-300 cursor-pointer"
-            [ngModel]="lineProperties.color" 
-            (ngModelChange)="updateProperty('color', lineProperties.color)">
-          <input 
-            type="text" 
-            class="input input-bordered input-xs w-20 text-center text-xs"
-            [ngModel]="lineProperties.color" 
-            (ngModelChange)="updateProperty('color', lineProperties.color)"
+          <input type="color" class="w-10 h-8 rounded border border-gray-300 cursor-pointer"
+            [ngModel]="lineProperties.color" (ngModelChange)="updateProperty('color', lineProperties.color)">
+          <input type="text" class="input input-bordered input-xs w-20 text-center text-xs"
+            [ngModel]="lineProperties.color" (ngModelChange)="updateProperty('color', lineProperties.color)"
             placeholder="#000000">
         </div>
       </div>
@@ -735,24 +585,18 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Line Labeling</label>
       </div>
-      
+
       <!-- ID (non-editable) -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Id</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm input-disabled w-36 text-xs text-right" 
-          [value]="selectedItem?.id || ''" 
-          disabled>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
       </div>
-      
+
       <!-- Displayed Label -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Display Label</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-sm w-36 max-w-xs" 
-          [ngModel]="lineProperties.name" 
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs" [ngModel]="lineProperties.name"
           (ngModelChange)="updateProperty('name', lineProperties.name)">
       </div>
     </div>
@@ -762,7 +606,7 @@
       <div class="flex items-center mb-3">
         <label class="text-gray-700 font-medium">Line Info</label>
       </div>
-      
+
       <!-- Number of Points -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Points:</label>
@@ -774,11 +618,11 @@
 
     <!-- Delete Button -->
     <div class="px-4 py-2 mt-auto">
-      <button 
-        class="btn btn-error btn-sm w-full"
-        (click)="deleteElement()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
         Delete
       </button>
@@ -797,34 +641,25 @@
       <div class="flex items-center mb-3">
         <label for="basicSettings" class="text-gray-700 font-medium">Basic Properties</label>
       </div>
-      
+
       <!-- Name -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Name:</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-xs w-32"
-          [ngModel]="polygonProperties.name || 'Polygon'" 
+        <input type="text" class="input input-bordered input-xs w-32" [ngModel]="polygonProperties.name || 'Polygon'"
           (ngModelChange)="updateProperty('name', $event)">
       </div>
-      
+
       <!-- Label -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Label:</label>
-        <input 
-          type="text" 
-          class="input input-bordered input-xs w-32"
-          [ngModel]="polygonProperties.label || 'Polygon'" 
+        <input type="text" class="input input-bordered input-xs w-32" [ngModel]="polygonProperties.label || 'Polygon'"
           (ngModelChange)="updateProperty('label', $event)">
       </div>
-      
+
       <!-- Label Visibility -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Show Label:</label>
-        <input 
-          type="checkbox" 
-          class="toggle toggle-sm"
-          [ngModel]="polygonProperties.labelVisible === true" 
+        <input type="checkbox" class="toggle toggle-sm" [ngModel]="polygonProperties.labelVisible === true"
           (ngModelChange)="updateProperty('labelVisible', $event)">
       </div>
     </div>
@@ -834,38 +669,28 @@
       <div class="flex items-center mb-3">
         <label for="styleSettings" class="text-gray-700 font-medium">Appearance</label>
       </div>
-      
+
       <!-- Stroke Color -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Stroke Color:</label>
-        <input 
-          type="color" 
-          class="w-8 h-8 rounded border border-gray-300"
-          [ngModel]="polygonProperties.strokeColor || '#000000'" 
+        <input type="color" class="w-8 h-8 rounded border border-gray-300"
+          [ngModel]="polygonProperties.strokeColor || '#000000'"
           (ngModelChange)="updateProperty('strokeColor', $event)">
       </div>
-      
+
       <!-- Fill Color -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Fill Color:</label>
-        <input 
-          type="color" 
-          class="w-8 h-8 rounded border border-gray-300"
-          [ngModel]="polygonProperties.fillColor || '#E5E5E5'" 
-          (ngModelChange)="updateProperty('fillColor', $event)">
+        <input type="color" class="w-8 h-8 rounded border border-gray-300"
+          [ngModel]="polygonProperties.fillColor || '#E5E5E5'" (ngModelChange)="updateProperty('fillColor', $event)">
       </div>
-      
+
       <!-- Thickness -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Thickness:</label>
-        <input 
-          type="number" 
-          class="input input-bordered input-xs w-20 text-center"
-          [ngModel]="polygonProperties.thickness || 2" 
-          (ngModelChange)="updateProperty('thickness', $event)"
-          min="1" 
-          max="10"
-          step="1">
+        <input type="number" class="input input-bordered input-xs w-20 text-center"
+          [ngModel]="polygonProperties.thickness || 2" (ngModelChange)="updateProperty('thickness', $event)" min="1"
+          max="10" step="1">
       </div>
     </div>
 
@@ -874,7 +699,7 @@
       <div class="flex items-center mb-3">
         <label for="infoSettings" class="text-gray-700 font-medium">Information</label>
       </div>
-      
+
       <!-- Status -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Status:</label>
@@ -882,7 +707,7 @@
           {{ polygonProperties.closed ? 'Closed' : 'Open' }}
         </div>
       </div>
-      
+
       <!-- Points Count -->
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm text-gray-600">Points:</label>
@@ -894,14 +719,14 @@
 
     <!-- Delete Button -->
     <div class="px-4 py-2 mt-auto">
-      <button 
-        class="btn btn-error btn-sm w-full"
-        (click)="deleteElement()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
         Delete
       </button>
     </div>
   </div>
-</div> 
+</div>

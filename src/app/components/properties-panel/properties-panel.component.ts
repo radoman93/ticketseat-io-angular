@@ -24,12 +24,12 @@ import { UpdateObjectCommand } from '../../commands/update-object.command';
 export class PropertiesPanelComponent implements OnInit, OnDestroy {
   selectionStore = selectionStore;
   layoutStore = layoutStore;
-  
+
   private disposer: IReactionDisposer | null = null;
 
   constructor(
     private historyStore: HistoryStore
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Set up autorun to track changes and sync selection with layout
@@ -40,7 +40,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
         if (freshItem && freshItem !== this.selectionStore.selectedItem) {
           // Update the selection with the fresh item from layout store
           this.selectionStore.selectItem(freshItem);
-          
+
           // Ensure visibility properties are set to true
           if (freshItem.type === 'roundTable' || freshItem.type === 'rectangleTable') {
             if (freshItem.tableLabelVisible === undefined) {
@@ -78,32 +78,32 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     // Always get the fresh version from layout store
     return this.layoutStore.getElementById(this.selectionStore.selectedItem.id) || this.selectionStore.selectedItem;
   }
-  
+
   @computed
   get roundTableProperties(): RoundTableProperties {
     return this.selectedItem as RoundTableProperties;
   }
-  
+
   @computed
   get rectangleTableProperties(): RectangleTableProperties {
     return this.selectedItem as RectangleTableProperties;
   }
-  
+
   @computed
   get seatingRowProperties(): SeatingRowProperties {
     return this.selectedItem as SeatingRowProperties;
   }
-  
+
   @computed
   get segmentedSeatingRowProperties(): SeatingRowProperties {
     return this.selectedItem as SeatingRowProperties;
   }
-  
+
   @computed
   get lineProperties(): LineProperties {
     return this.selectedItem as LineProperties;
   }
-  
+
   @computed
   get polygonProperties(): PolygonProperties {
     return this.selectedItem as PolygonProperties;
@@ -112,20 +112,20 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   @action
   updateProperty(property: string, value: any): void {
     if (!this.selectedItem) return;
-    
+
     // Convert string numbers to actual numbers
     if (typeof value === 'string' && !isNaN(Number(value))) {
       value = Number(value);
     }
-    
+
     // Ensure visibility properties are set to true by default
     if ((property === 'tableLabelVisible' || property === 'chairLabelVisible' || property === 'rowLabelVisible') && value === undefined) {
       value = true;
     }
-    
+
     // Update the element in the layout store
     const updatedElement = this.layoutStore.updateElement(this.selectedItem.id, { [property]: value });
-    
+
     // Update the selection with the new element reference
     if (updatedElement) {
       this.selectionStore.selectItem(updatedElement);
@@ -139,119 +139,119 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
       this.historyStore.executeCommand(cmd);
     }
   }
-  
+
   // Property modifiers
-  
+
   // Round Table
   @action incrementRadius(): void {
     if (!this.roundTableProperties) return;
     const newValue = Math.min(100, (this.roundTableProperties.radius || 0) + 5);
     this.updateProperty('radius', newValue);
   }
-  
+
   @action decrementRadius(): void {
     if (!this.roundTableProperties) return;
     const newValue = Math.max(20, (this.roundTableProperties.radius || 0) - 5);
     this.updateProperty('radius', newValue);
   }
-  
+
   @action incrementChairs(): void {
     if (!this.roundTableProperties) return;
     const newValue = Math.min(20, (this.roundTableProperties.seats || 0) + 1);
     this.updateProperty('seats', newValue);
   }
-  
+
   @action decrementChairs(): void {
     if (!this.roundTableProperties) return;
     const newValue = Math.max(4, (this.roundTableProperties.seats || 0) - 1);
     this.updateProperty('seats', newValue);
   }
-  
+
   @action incrementOpenSpaces(): void {
     if (!this.roundTableProperties) return;
     const newValue = Math.min(20, (this.roundTableProperties.openSpaces || 0) + 1);
     this.updateProperty('openSpaces', newValue);
   }
-  
+
   @action decrementOpenSpaces(): void {
     if (!this.roundTableProperties) return;
     const newValue = Math.max(0, (this.roundTableProperties.openSpaces || 0) - 1);
     this.updateProperty('openSpaces', newValue);
   }
-  
+
   // Rectangle Table
   @action incrementWidth(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.min(300, (this.rectangleTableProperties.width || 0) + 10);
     this.updateProperty('width', newValue);
   }
-  
+
   @action decrementWidth(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.max(60, (this.rectangleTableProperties.width || 0) - 10);
     this.updateProperty('width', newValue);
   }
-  
+
   @action incrementHeight(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.min(200, (this.rectangleTableProperties.height || 0) + 10);
     this.updateProperty('height', newValue);
   }
-  
+
   @action decrementHeight(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.max(40, (this.rectangleTableProperties.height || 0) - 10);
     this.updateProperty('height', newValue);
   }
-  
+
   @action incrementUpChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.min(20, (this.rectangleTableProperties.upChairs || 0) + 1);
     this.updateProperty('upChairs', newValue);
   }
-  
+
   @action decrementUpChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.max(0, (this.rectangleTableProperties.upChairs || 0) - 1);
     this.updateProperty('upChairs', newValue);
   }
-  
+
   @action incrementDownChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.min(20, (this.rectangleTableProperties.downChairs || 0) + 1);
     this.updateProperty('downChairs', newValue);
   }
-  
+
   @action decrementDownChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.max(0, (this.rectangleTableProperties.downChairs || 0) - 1);
     this.updateProperty('downChairs', newValue);
   }
-  
+
   @action incrementLeftChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.min(20, (this.rectangleTableProperties.leftChairs || 0) + 1);
     this.updateProperty('leftChairs', newValue);
   }
-  
+
   @action decrementLeftChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.max(0, (this.rectangleTableProperties.leftChairs || 0) - 1);
     this.updateProperty('leftChairs', newValue);
   }
-  
+
   @action incrementRightChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.min(20, (this.rectangleTableProperties.rightChairs || 0) + 1);
     this.updateProperty('rightChairs', newValue);
   }
-  
+
   @action decrementRightChairs(): void {
     if (!this.rectangleTableProperties) return;
     const newValue = Math.max(0, (this.rectangleTableProperties.rightChairs || 0) - 1);
     this.updateProperty('rightChairs', newValue);
   }
-  
+
   @computed
   get totalChairsRect(): number {
     if (!this.rectangleTableProperties) return 0;
@@ -265,21 +265,21 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     const currentRotation = (this.selectedItem as any).rotation || 0;
     this.updateProperty('rotation', currentRotation + 15);
   }
-  
+
   @action decrementRotation(): void {
     if (!this.selectedItem) return;
     const currentRotation = (this.selectedItem as any).rotation || 0;
     this.updateProperty('rotation', currentRotation - 15);
   }
-  
+
   // Line
-  @action incrementLineThickness(): void { 
+  @action incrementLineThickness(): void {
     if (!this.lineProperties || !this.lineProperties.thickness) return;
     const newValue = Math.min(10, this.lineProperties.thickness + 1);
     this.updateProperty('thickness', newValue);
   }
-  
-  @action decrementLineThickness(): void { 
+
+  @action decrementLineThickness(): void {
     if (!this.lineProperties || !this.lineProperties.thickness) return;
     const newValue = Math.max(1, this.lineProperties.thickness - 1);
     this.updateProperty('thickness', newValue);

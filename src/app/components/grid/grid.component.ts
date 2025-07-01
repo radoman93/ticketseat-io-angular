@@ -29,11 +29,11 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
 @Component({
   selector: 'app-grid',
   imports: [
-    MobxAngularModule, 
-    RoundTableComponent, 
-    RectangleTableComponent, 
-    SeatingRowComponent, 
-    SegmentedSeatingRowComponent, 
+    MobxAngularModule,
+    RoundTableComponent,
+    RectangleTableComponent,
+    SeatingRowComponent,
+    SegmentedSeatingRowComponent,
     LineComponent,
     PolygonComponent,
     CommonModule
@@ -51,13 +51,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   layoutStore = layoutStore;
   dragStore = dragStore;
   viewerStore = viewerStore;
-  
+
   // Make enum available in template
   ToolType = ToolType;
-  
+
   // Preview table for add mode
   previewTable: TablePosition | null = null;
-  
+
   // MobX reaction disposer for tool changes
   private toolChangeDisposer: IReactionDisposer | null = null;
 
@@ -86,7 +86,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     private segmentedSeatingRowService: SegmentedSeatingRowService,
     private lineService: LineService,
     private polygonService: PolygonService
-  ) {}
+  ) { }
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('gridContainer') gridContainerRef!: ElementRef<HTMLDivElement>;
@@ -97,7 +97,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.toolChangeDisposer = autorun(() => {
       const activeTool = this.toolStore.activeTool;
       const previousTool = this.toolStore.previousTool;
-      
+
       // Check if we're switching away from the Polygon tool
       if (previousTool === ToolType.Polygon && activeTool !== ToolType.Polygon) {
         // Auto-complete the polygon if it exists and has at least 3 points
@@ -160,7 +160,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           totalSegments: 0,
           totalSeats: 0
         };
-        
+
         // Reset seating row creation state
         this.isCreatingSegmentedRow = false;
         this.isCreatingRegularRow = false;
@@ -210,7 +210,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         this.isCreatingLine = false;
       }
     });
-    
+
     // Register delete handler with MobX selection store
     this.selectionStore.registerDeleteHandler((item) => {
       this.layoutStore.deleteElement(item.id);
@@ -224,7 +224,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     if (ctx) {
       this.ctx = ctx;
       this.drawGrid();
-      
+
       // Register the drawGrid method as a callback
       this.store.registerRedrawCallback(this.drawGrid.bind(this));
     }
@@ -302,7 +302,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   ngOnDestroy() {
     // Unregister the callback when component is destroyed
     this.store.unregisterRedrawCallback(this.drawGrid.bind(this));
-    
+
     // Clean up MobX reactions
     if (this.toolChangeDisposer) {
       this.toolChangeDisposer();
@@ -323,13 +323,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     } else if (event.button === 0) {
       // Left mouse button for selection/dragging/adding
       const activeTool = this.toolStore.activeTool;
-      
+
       if (activeTool === ToolType.SeatingRow && this.previewTable) {
         // Regular row tool: click-to-start drawing mode
         const gridCoords = this.getGridCoordinates(event);
         const x = gridCoords.x;
         const y = gridCoords.y;
-        
+
         if (!this.isCreatingRegularRow) {
           // First click: start drawing the row
           this.isCreatingRegularRow = true;
@@ -340,7 +340,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           this.activeSegmentStartY = y;
           this.activeSegmentEndX = x;
           this.activeSegmentEndY = y;
-          
+
           // Create preview segment for regular row
           this.previewSegment = this.segmentedSeatingRowService.createSegment(
             this.segmentedRowId,
@@ -351,20 +351,20 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             y,
             35 // Default seat spacing
           );
-          
+
           console.log('Starting regular row drawing mode at', x, y);
         } else {
           // Second click: finish the row
           this.finalizeRegularRow();
         }
-        
+
         event.preventDefault();
       } else if (activeTool === ToolType.SegmentedSeatingRow) {
         // Start or continue creating a segmented seating row
         const gridCoords = this.getGridCoordinates(event);
         const x = gridCoords.x;
         const y = gridCoords.y;
-        
+
         if (!this.isCreatingSegmentedRow) {
           // Starting a new segmented row
           this.isCreatingSegmentedRow = true;
@@ -372,7 +372,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           this.activeSegmentStartY = y;
           this.activeSegmentEndX = x;
           this.activeSegmentEndY = y;
-          
+
           // Create preview segment
           this.previewSegment = this.segmentedSeatingRowService.createSegment(
             this.segmentedRowId,
@@ -383,7 +383,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             y,
             35 // Default seat spacing
           );
-          
+
           console.log('Starting new segmented row with first segment at', x, y);
         } else {
           // Continue with a new segment in the existing row
@@ -391,12 +391,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           if (this.segmentedRowSegments.length > 0) {
             const lastSegment = this.segmentedRowSegments[this.segmentedRowSegments.length - 1];
             const nextStart = this.segmentedSeatingRowService.calculateNextSegmentStartPosition(lastSegment);
-            
+
             this.activeSegmentStartX = nextStart.x;
             this.activeSegmentStartY = nextStart.y;
             this.activeSegmentEndX = x;
             this.activeSegmentEndY = y;
-            
+
             // Create preview segment for the next segment
             this.previewSegment = this.segmentedSeatingRowService.createSegment(
               this.segmentedRowId,
@@ -407,15 +407,15 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
               y,
               35 // Default seat spacing
             );
-            
-            console.log('Starting new segment in existing row from', 
-                      this.activeSegmentStartX, this.activeSegmentStartY, 
-                      'to', x, y);
+
+            console.log('Starting new segment in existing row from',
+              this.activeSegmentStartX, this.activeSegmentStartY,
+              'to', x, y);
           } else {
             console.error('Expected segments array not to be empty');
           }
         }
-        
+
         event.preventDefault();
       } else if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
         // We're in add mode for round/rectangle tables, add a new table
@@ -438,7 +438,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         const gridCoords = this.getGridCoordinates(event);
         const x = gridCoords.x;
         const y = gridCoords.y;
-        
+
         if (!this.isCreatingLine) {
           // First click: start creating a line with two points (start point and current mouse position)
           this.isCreatingLine = true;
@@ -451,13 +451,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           this.previewLine = this.lineService.addPoint(this.previewLine, x, y);
           console.log('Added point to line at', x, y);
         }
-        
+
         event.preventDefault();
       } else if (activeTool === ToolType.Polygon) {
         const gridCoords = this.getGridCoordinates(event);
         const x = gridCoords.x;
         const y = gridCoords.y;
-        
+
         if (!this.isCreatingPolygon) {
           // First click: start creating a polygon
           this.isCreatingPolygon = true;
@@ -466,7 +466,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         } else if (this.previewPolygon) {
           // Check if we're clicking near the first point to close the polygon
           const isNearFirstPoint = this.polygonService.isNearFirstPoint(this.previewPolygon, x, y);
-          
+
           if (isNearFirstPoint && this.previewPolygon.points.length >= 3) {
             // User clicked on the first point - close the polygon
             console.log('User clicked on first point, closing polygon...');
@@ -476,11 +476,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             // Subsequent clicks: add points to the polygon (but don't auto-close)
             const originalPolygon = this.previewPolygon;
             this.previewPolygon = this.polygonService.addPoint(this.previewPolygon, x, y, true, false);
-            
+
             console.log('Added point to polygon at', x, y, 'total points:', this.previewPolygon.points.length);
           }
         }
-        
+
         event.preventDefault();
       } else if (activeTool === ToolType.None) {
         // If no tool is selected, start panning with the left mouse button.
@@ -516,25 +516,25 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const gridCoords = this.getGridCoordinates(event);
       const x = gridCoords.x;
       const y = gridCoords.y;
-      
+
       // Always update preview position for non-creating mode
       if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow) {
         this.previewTable.x = x;
         this.previewTable.y = y;
       }
-      
+
       if (this.isCreatingRegularRow && this.previewSegment) {
         // Update the end point of the regular row being created
         this.activeSegmentEndX = x;
         this.activeSegmentEndY = y;
-        
+
         // Update the preview segment with the new end position
         const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
           this.previewSegment,
           x,
           y
         );
-        
+
         // Apply updates to preview segment
         this.previewSegment = {
           ...this.previewSegment,
@@ -544,14 +544,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         // Update the end point of the current segment being created
         this.activeSegmentEndX = x;
         this.activeSegmentEndY = y;
-        
+
         // Update the preview segment with the new end position
         const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
           this.previewSegment,
           x,
           y
         );
-        
+
         // Apply updates to preview segment
         this.previewSegment = {
           ...this.previewSegment,
@@ -563,17 +563,17 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const gridCoords = this.getGridCoordinates(event);
       const x = gridCoords.x;
       const y = gridCoords.y;
-      
+
       this.previewLine = this.lineService.updateLastPoint(this.previewLine, x, y);
     } else if (this.isCreatingPolygon && this.previewPolygon) {
       // Update the last point of the polygon being created for live preview
       const gridCoords = this.getGridCoordinates(event);
       const x = gridCoords.x;
       const y = gridCoords.y;
-      
+
       // If the polygon only has one point, add a second point for the preview
       if (this.previewPolygon.points.length === 1) {
-        this.previewPolygon.points.push({x, y});
+        this.previewPolygon.points.push({ x, y });
       } else {
         // Update the last point position for preview (snap but don't close)
         this.previewPolygon = this.polygonService.updateLastPoint(this.previewPolygon, x, y, true, false);
@@ -635,10 +635,10 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       else if (this.isCreatingSegmentedRow && this.previewSegment) {
         // Add the current segment to our segments array
         this.segmentedRowSegments.push(this.previewSegment);
-        
+
         // Check if this is a regular row (SeatingRow tool) - only allow 1 segment
         const isRegularRow = this.toolStore.activeTool === ToolType.SeatingRow;
-        
+
         if (isRegularRow) {
           // For regular rows, complete immediately after first segment
           this.finalizeSegmentedSeatingRowAsRegular();
@@ -648,7 +648,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           if (this.previewTable && this.previewTable.type === 'segmentedSeatingRow') {
             // Calculate metrics for the segmented row
             const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(this.segmentedRowSegments);
-            
+
             // Update the preview table with the segments and metrics
             this.previewTable = {
               ...this.previewTable,
@@ -656,30 +656,30 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
               totalSegments: metrics.totalSegments,
               totalSeats: metrics.totalSeats
             };
-            
+
             // Prepare for next segment
             if (this.segmentedRowSegments.length > 0) {
               const lastSegment = this.segmentedRowSegments[this.segmentedRowSegments.length - 1];
               const nextStart = this.segmentedSeatingRowService.calculateNextSegmentStartPosition(lastSegment);
-              
+
               this.activeSegmentStartX = nextStart.x;
               this.activeSegmentStartY = nextStart.y;
-              
+
               // Calculate direction from the last segment
               const dx = lastSegment.endX - lastSegment.startX;
               const dy = lastSegment.endY - lastSegment.startY;
               const distance = Math.sqrt(dx * dx + dy * dy);
-              
+
               // Use the exact chair spacing from the previous segment for consistency
               const seatSpacing = lastSegment.seatSpacing;
-              
+
               // Position the initial endpoint exactly one chair spacing away in the same direction
               const dirX = distance > 0 ? dx / distance : 0;
               const dirY = distance > 0 ? dy / distance : 0;
-              
+
               const previewEndX = nextStart.x + (dirX * seatSpacing);
               const previewEndY = nextStart.y + (dirY * seatSpacing);
-              
+
               this.previewSegment = this.segmentedSeatingRowService.createSegment(
                 this.segmentedRowId,
                 this.segmentedRowSegments.length,
@@ -707,7 +707,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.finalizePolygon();
     }
   }
-  
+
   // Handle ESC key to cancel or complete operations
   @HostListener('document:keydown.escape', ['$event'])
   onEscapeKey(event: KeyboardEvent): void {
@@ -735,19 +735,19 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       }
     }
   }
-  
+
   // Finalize and add the segmented seating row to the layout
   private finalizeSegmentedSeatingRow(): void {
     if (this.segmentedRowSegments.length === 0) {
       console.log('No segments to finalize');
       return;
     }
-    
+
     console.log('Finalizing segmented seating row with', this.segmentedRowSegments.length, 'segments');
-    
+
     // Calculate metrics for the final row
     const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(this.segmentedRowSegments);
-    
+
     // Create the final segmented seating row
     const newSegmentedRow = {
       id: this.segmentedRowId,
@@ -767,24 +767,24 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       totalSegments: metrics.totalSegments,
       totalSeats: metrics.totalSeats
     };
-    
+
     // Add to layout and history
     const addCmd = new AddObjectCommand(newSegmentedRow);
     this.historyStore.executeCommand(addCmd);
-    
+
     // Reset state
     this.resetSegmentedSeatingRowState();
 
     // Deselect tool after finalizing
     this.toolStore.setActiveTool(ToolType.None);
   }
-  
+
   // Cancel segmented seating row creation
   private cancelSegmentedSeatingRow(): void {
     console.log('Canceling segmented seating row creation');
     this.resetSegmentedSeatingRowState();
   }
-  
+
   // Reset segmented seating row state
   private resetSegmentedSeatingRowState(): void {
     this.isCreatingSegmentedRow = false;
@@ -796,7 +796,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.segmentedRowSegments = [];
     this.previewSegment = null;
     this.segmentedRowId = `segmented-row-${Date.now()}`;
-    
+
     // Reset preview table
     if (this.toolStore.activeTool === ToolType.SegmentedSeatingRow) {
       this.previewTable = {
@@ -823,7 +823,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Handle table selection and start dragging
   selectTable(table: TablePosition, event: Event): void {
     event.stopPropagation();
-    
+
     // Also prevent any click event from bubbling up
     if (event.type === 'mousedown') {
       const mousedownEvent = event as MouseEvent;
@@ -834,30 +834,30 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       };
       window.addEventListener('click', clickHandler, true);
     }
-    
+
     // Prevent starting a drag if we're in table add mode
     if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow) {
       return;
     }
-    
+
     // Disable all table manipulation in viewer mode
     if (this.viewerStore.isViewerMode) {
       return;
     }
-    
+
     // Deselect any selected chairs when selecting a table
     this.rootStore.chairStore.deselectChair();
-    
+
     // Set table as selected
     this.selectionStore.selectItem(table);
-    
+
     // Get the mouse event if available
     const mouseEvent = event as MouseEvent;
     if (mouseEvent && mouseEvent.clientX && mouseEvent.clientY) {
       // Only prepare for dragging by setting the potential drag item
       this.dragStore.prepareForDragging(
-        table, 
-        mouseEvent.clientX, 
+        table,
+        mouseEvent.clientX,
         mouseEvent.clientY
       );
     }
@@ -871,7 +871,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.selectionStore.deselectItem();
       // Clear any reference to the previously dragged item
       this.dragStore.draggedItem = null;
-      
+
       // Also deselect any selected chairs
       this.rootStore.chairStore.deselectChair();
     }
@@ -901,13 +901,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     if (this.viewerStore.isViewerMode) {
       return;
     }
-    
+
     // Delete key to remove selected table
     if (event.key === 'Delete' && this.selectionStore.hasSelection) {
       this.deleteSelectedTable();
       event.preventDefault();
     }
-    
+
     // Escape key to cancel operations
     if (event.key === 'Escape') {
       if (this.isCreatingSegmentedRow) {
@@ -943,14 +943,14 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Handle regular seating row completion
   private finalizeRegularRow(): void {
     console.log('Finalizing regular seating row');
-    
+
     if (this.previewSegment) {
       // Add the current segment to our segments array
       this.segmentedRowSegments.push(this.previewSegment);
-      
+
       // Complete the regular row immediately
       this.finalizeSegmentedSeatingRow();
-      
+
       // Reset regular row state
       this.isCreatingRegularRow = false;
       this.previewSegment = null;
@@ -975,7 +975,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Handle line completion
   private finalizeLine(): void {
     console.log('Finalizing line');
-    
+
     if (this.previewLine && this.previewLine.points.length >= 2) {
       // Create the final line object
       const newLine: LineProperties = {
@@ -983,18 +983,18 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         id: `line-${Date.now()}`,
         name: `Line ${this.layoutStore.elements.length + 1}`
       };
-      
+
       // Add to layout and history
       const addCmd = new AddObjectCommand(newLine);
       this.historyStore.executeCommand(addCmd);
-      
+
       console.log('Line added to layout:', newLine);
     }
-    
+
     // Reset line creation state
     this.isCreatingLine = false;
     this.previewLine = null;
-    
+
     // Deselect tool after finalizing
     this.toolStore.setActiveTool(ToolType.None);
   }
@@ -1024,7 +1024,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     // Add to layout and history
     const addCmd = new AddObjectCommand(newPolygon);
     this.historyStore.executeCommand(addCmd);
-    
+
     // Get the actual polygon from the layout store (it might have been modified)
     const addedPolygon = this.layoutStore.getElementById(newPolygon.id);
     if (addedPolygon) {
@@ -1063,16 +1063,16 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
     // Get the grid container's position in the viewport
     const containerRect = this.gridContainerRef.nativeElement.getBoundingClientRect();
-    
+
     // Convert viewport coordinates to container coordinates
     const containerX = event.clientX - containerRect.left;
     const containerY = event.clientY - containerRect.top;
-    
+
     // Apply inverse transformations: first undo pan offset, then undo zoom
     const zoomFactor = this.store.zoomLevel / 100;
     const x = (containerX - this.store.panOffset.x) / zoomFactor;
     const y = (containerY - this.store.panOffset.y) / zoomFactor;
-    
+
     return { x, y };
   }
 } 

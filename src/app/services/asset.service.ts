@@ -16,7 +16,7 @@ export interface ToolbarIcon {
 })
 export class AssetService {
   private basePath: string;
-  
+
   constructor(@Optional() @Inject(TICKETSEAT_ASSET_BASE_PATH) basePath: string | null) {
     this.basePath = basePath || 'assets';
   }

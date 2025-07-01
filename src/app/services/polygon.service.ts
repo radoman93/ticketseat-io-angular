@@ -11,7 +11,7 @@ export class PolygonService {
     return {
       id: `polygon-${Date.now()}`,
       type: 'polygon',
-      points: [{x, y}], // Start with a single point at the exact position
+      points: [{ x, y }], // Start with a single point at the exact position
       thickness: 2,
       strokeColor: '#000000',
       fillColor: '#E5E5E5',
@@ -47,7 +47,7 @@ export class PolygonService {
     }
 
     // Add the new point directly to the existing array
-    polygon.points.push({x, y});
+    polygon.points.push({ x, y });
 
     console.log('Added point to polygon. Total points:', polygon.points.length);
     return polygon;
@@ -70,7 +70,7 @@ export class PolygonService {
         // Snap to first point
         newX = firstPoint.x;
         newY = firstPoint.y;
-        
+
         // Only mark as closed if explicitly requested (for clicks, not mouse moves)
         if (shouldClose && polygon.points.length >= 3 && !polygon.closed) {
           polygon.closed = true;
@@ -81,20 +81,20 @@ export class PolygonService {
     // Direct update mode - only modifies the last point directly
     // This creates a stable reference for all other points
     const lastPointIndex = polygon.points.length - 1;
-    
+
     // Create a fresh points array with all but the last point preserved
     // This ensures we don't modify any existing point references
     if (lastPointIndex > 0) {
       // Use slice to copy all points except the last one
       // Then add the updated last point
       const updatedPoints = polygon.points.slice(0, lastPointIndex);
-      updatedPoints.push({x: newX, y: newY});
+      updatedPoints.push({ x: newX, y: newY });
       polygon.points = updatedPoints;
     } else {
       // If there's only one point, simply update it
-      polygon.points[lastPointIndex] = {x: newX, y: newY};
+      polygon.points[lastPointIndex] = { x: newX, y: newY };
     }
-    
+
     // Return the same object reference
     return polygon;
   }
@@ -106,7 +106,7 @@ export class PolygonService {
     for (let i = 0; i < polygon.points.length; i++) {
       const point1 = polygon.points[i];
       const point2 = polygon.points[(i + 1) % polygon.points.length];
-      
+
       const distance = this.pointToLineDistance(x, y, point1.x, point1.y, point2.x, point2.y);
       if (distance <= tolerance) return true;
     }
@@ -149,29 +149,29 @@ export class PolygonService {
 
   isNearFirstPoint(polygon: PolygonProperties, x: number, y: number): boolean {
     if (polygon.points.length < 3) return false;
-    
+
     const firstPoint = polygon.points[0];
     const distance = Math.sqrt(
       Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2)
     );
-    
+
     return distance <= this.SNAP_THRESHOLD;
   }
 
-  calculateCenter(polygon: PolygonProperties): {x: number, y: number} {
-    if (!polygon.points.length) return {x: 0, y: 0};
-    
+  calculateCenter(polygon: PolygonProperties): { x: number, y: number } {
+    if (!polygon.points.length) return { x: 0, y: 0 };
+
     if (polygon.points.length === 1) {
-      return {x: polygon.points[0].x, y: polygon.points[0].y};
+      return { x: polygon.points[0].x, y: polygon.points[0].y };
     }
-    
+
     if (polygon.points.length === 2) {
       return {
         x: (polygon.points[0].x + polygon.points[1].x) / 2,
         y: (polygon.points[0].y + polygon.points[1].y) / 2
       };
     }
-    
+
     // For polygons with 3+ points, calculate the geometric centroid (center of mass)
     if (polygon.closed && polygon.points.length >= 3) {
       return this.calculatePolygonCentroid(polygon.points);
@@ -179,19 +179,19 @@ export class PolygonService {
       // For open polygons, use simple average
       const sumX = polygon.points.reduce((sum, point) => sum + point.x, 0);
       const sumY = polygon.points.reduce((sum, point) => sum + point.y, 0);
-      
+
       return {
         x: sumX / polygon.points.length,
         y: sumY / polygon.points.length
       };
     }
   }
-  
-  private calculatePolygonCentroid(points: {x: number, y: number}[]): {x: number, y: number} {
+
+  private calculatePolygonCentroid(points: { x: number, y: number }[]): { x: number, y: number } {
     let area = 0;
     let cx = 0;
     let cy = 0;
-    
+
     // Calculate using the shoelace formula for polygon centroid
     for (let i = 0; i < points.length; i++) {
       const j = (i + 1) % points.length;
@@ -199,15 +199,15 @@ export class PolygonService {
       const yi = points[i].y;
       const xj = points[j].x;
       const yj = points[j].y;
-      
+
       const cross = xi * yj - xj * yi;
       area += cross;
       cx += (xi + xj) * cross;
       cy += (yi + yj) * cross;
     }
-    
+
     area = area / 2;
-    
+
     // Avoid division by zero for degenerate polygons
     if (Math.abs(area) < 1e-10) {
       // Fallback to simple average if area is too small
@@ -218,10 +218,10 @@ export class PolygonService {
         y: sumY / points.length
       };
     }
-    
+
     cx = cx / (6 * area);
     cy = cy / (6 * area);
-    
-    return {x: cx, y: cy};
+
+    return { x: cx, y: cy };
   }
 } 

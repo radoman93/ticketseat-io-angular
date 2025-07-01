@@ -57,7 +57,7 @@ export interface SegmentProperties {
 
 export interface LineProperties extends Selectable {
   type: 'line';
-  points: {x: number, y: number}[];
+  points: { x: number, y: number }[];
   thickness?: number;
   color?: string;
   name?: string;
@@ -65,7 +65,7 @@ export interface LineProperties extends Selectable {
 
 export interface PolygonProperties extends Selectable {
   type: 'polygon';
-  points: {x: number, y: number}[];
+  points: { x: number, y: number }[];
   thickness?: number;
   strokeColor?: string;
   fillColor?: string;
@@ -118,7 +118,7 @@ export class SelectionService {
   isItemSelected(itemId: string): boolean {
     return selectionStore.isItemSelected(itemId);
   }
-  
+
   requestDeleteItem(item: Selectable): void {
     layoutStore.deleteElement(item.id);
     selectionStore.deselectItem();

@@ -29,7 +29,7 @@ try {
   // Check if styles.css is exported
   if (exports['./styles.css']) {
     console.log('✅ styles.css export found');
-    
+
     // Check if the actual file exists
     const cssPath = path.join(distPath, 'styles.css');
     if (fs.existsSync(cssPath)) {
@@ -45,7 +45,7 @@ try {
   // Check main library export
   if (exports['.']) {
     console.log('✅ Main library export found');
-    
+
     const mainPath = path.join(distPath, exports['.'].default);
     if (fs.existsSync(mainPath)) {
       console.log('✅ Main library file exists');
@@ -66,7 +66,7 @@ try {
   const assetsPath = path.join(distPath, 'assets');
   if (fs.existsSync(assetsPath)) {
     console.log('✅ Assets directory found');
-    
+
     // Check for icons specifically
     const iconsPath = path.join(assetsPath, 'icons');
     if (fs.existsSync(iconsPath)) {
