@@ -326,8 +326,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       
       if (activeTool === ToolType.SeatingRow && this.previewTable) {
         // Regular row tool: click-to-start drawing mode
-        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
         
         if (!this.isCreatingRegularRow) {
           // First click: start drawing the row
@@ -360,8 +361,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         event.preventDefault();
       } else if (activeTool === ToolType.SegmentedSeatingRow) {
         // Start or continue creating a segmented seating row
-        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
         
         if (!this.isCreatingSegmentedRow) {
           // Starting a new segmented row
@@ -417,11 +419,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         event.preventDefault();
       } else if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
         // We're in add mode for round/rectangle tables, add a new table
+        const gridCoords = this.getGridCoordinates(event);
         const newTable: TablePosition = {
           ...this.previewTable,
           id: `table-${Date.now()}`,
-          x: (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100),
-          y: (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100)
+          x: gridCoords.x,
+          y: gridCoords.y
         };
 
         // Add to layout and history
@@ -432,8 +435,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         this.toolStore.setActiveTool(ToolType.None);
       } else if (activeTool === ToolType.Line) {
         // Line tool: click to add points, double-click to finish
-        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
         
         if (!this.isCreatingLine) {
           // First click: start creating a line with two points (start point and current mouse position)
@@ -450,8 +454,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         
         event.preventDefault();
       } else if (activeTool === ToolType.Polygon) {
-        const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-        const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
         
         if (!this.isCreatingPolygon) {
           // First click: start creating a polygon
@@ -508,8 +513,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       }
     } else if (this.previewTable) {
       // Update position of preview object when in add mode
-      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      const gridCoords = this.getGridCoordinates(event);
+      const x = gridCoords.x;
+      const y = gridCoords.y;
       
       // Always update preview position for non-creating mode
       if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow) {
@@ -554,14 +560,16 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       }
     } else if (this.isCreatingLine && this.previewLine) {
       // Update the last point of the line being created for live preview
-      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      const gridCoords = this.getGridCoordinates(event);
+      const x = gridCoords.x;
+      const y = gridCoords.y;
       
       this.previewLine = this.lineService.updateLastPoint(this.previewLine, x, y);
     } else if (this.isCreatingPolygon && this.previewPolygon) {
       // Update the last point of the polygon being created for live preview
-      const x = (event.clientX - this.store.panOffset.x) / (this.store.zoomLevel / 100);
-      const y = (event.clientY - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+      const gridCoords = this.getGridCoordinates(event);
+      const x = gridCoords.x;
+      const y = gridCoords.y;
       
       // If the polygon only has one point, add a second point for the preview
       if (this.previewPolygon.points.length === 1) {
@@ -1045,5 +1053,26 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       console.log('Auto-completing polygon');
       this.finalizePolygon();
     }
+  }
+
+  // Helper method to convert viewport coordinates to grid coordinates
+  private getGridCoordinates(event: MouseEvent): { x: number, y: number } {
+    if (!this.gridContainerRef) {
+      return { x: 0, y: 0 };
+    }
+
+    // Get the grid container's position in the viewport
+    const containerRect = this.gridContainerRef.nativeElement.getBoundingClientRect();
+    
+    // Convert viewport coordinates to container coordinates
+    const containerX = event.clientX - containerRect.left;
+    const containerY = event.clientY - containerRect.top;
+    
+    // Apply inverse transformations: first undo pan offset, then undo zoom
+    const zoomFactor = this.store.zoomLevel / 100;
+    const x = (containerX - this.store.panOffset.x) / zoomFactor;
+    const y = (containerY - this.store.panOffset.y) / zoomFactor;
+    
+    return { x, y };
   }
 } 
