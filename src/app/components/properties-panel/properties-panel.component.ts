@@ -56,6 +56,10 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
             if (freshItem.chairLabelVisible === undefined) {
               this.updateProperty('chairLabelVisible', true);
             }
+          } else if (freshItem.type === 'polygon') {
+            if (freshItem.labelVisible === undefined) {
+              this.updateProperty('labelVisible', true);
+            }
           }
         }
       }
@@ -98,6 +102,11 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   @computed
   get lineProperties(): LineProperties {
     return this.selectedItem as LineProperties;
+  }
+  
+  @computed
+  get polygonProperties(): PolygonProperties {
+    return this.selectedItem as PolygonProperties;
   }
 
   @action

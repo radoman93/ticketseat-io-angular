@@ -459,15 +459,19 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           this.previewPolygon = this.polygonService.createPolygon(x, y);
           console.log('Starting polygon creation at', x, y, 'polygon:', this.previewPolygon);
         } else if (this.previewPolygon) {
-          // Subsequent clicks: add points to the polygon
-          const originalPolygon = this.previewPolygon;
-          this.previewPolygon = this.polygonService.addPoint(this.previewPolygon, x, y);
+          // Check if we're clicking near the first point to close the polygon
+          const isNearFirstPoint = this.polygonService.isNearFirstPoint(this.previewPolygon, x, y);
           
-          // Check if the polygon was just closed
-          if (!originalPolygon.closed && this.previewPolygon.closed) {
-            console.log('Polygon was closed via snapping, finalizing...');
+          if (isNearFirstPoint && this.previewPolygon.points.length >= 3) {
+            // User clicked on the first point - close the polygon
+            console.log('User clicked on first point, closing polygon...');
+            this.previewPolygon.closed = true;
             this.finalizePolygon();
           } else {
+            // Subsequent clicks: add points to the polygon (but don't auto-close)
+            const originalPolygon = this.previewPolygon;
+            this.previewPolygon = this.polygonService.addPoint(this.previewPolygon, x, y, true, false);
+            
             console.log('Added point to polygon at', x, y, 'total points:', this.previewPolygon.points.length);
           }
         }
@@ -563,16 +567,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       if (this.previewPolygon.points.length === 1) {
         this.previewPolygon.points.push({x, y});
       } else {
-        // Update the last point position for preview
-        const wasClosedBefore = this.previewPolygon.closed;
-        this.previewPolygon = this.polygonService.updateLastPoint(this.previewPolygon, x, y);
-        
-        // Check if the polygon was just closed by the mouse movement
-        if (!wasClosedBefore && this.previewPolygon.closed && this.previewPolygon.points.length >= 3) {
-          console.log('Polygon was closed via mouse movement, finalizing...');
-          // Add a small delay to allow the visual feedback of closing before finalizing
-          setTimeout(() => this.finalizePolygon(), 200);
-        }
+        // Update the last point position for preview (snap but don't close)
+        this.previewPolygon = this.polygonService.updateLastPoint(this.previewPolygon, x, y, true, false);
       }
     }
   }
@@ -1020,6 +1016,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     // Add to layout and history
     const addCmd = new AddObjectCommand(newPolygon);
     this.historyStore.executeCommand(addCmd);
+    
+    // Get the actual polygon from the layout store (it might have been modified)
+    const addedPolygon = this.layoutStore.getElementById(newPolygon.id);
+    if (addedPolygon) {
+      // Select the newly created polygon to show properties panel
+      this.selectionStore.selectItem(addedPolygon);
+    }
 
     // Reset state
     this.isCreatingPolygon = false;

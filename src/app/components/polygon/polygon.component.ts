@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PolygonProperties } from '../../services/selection.service';
+import { PolygonService } from '../../services/polygon.service';
 
 @Component({
   selector: 'app-polygon',
@@ -96,16 +97,17 @@ import { PolygonProperties } from '../../services/selection.service';
         </circle>
       </g>
 
-      <!-- Label in the center (only for closed polygons) -->
+      <!-- Label in the center -->
       <text
-        *ngIf="polygon.label && polygon.points.length >= 3 && isPolygonClosed"
+        *ngIf="polygon.label && polygon.labelVisible === true && polygon.points.length >= 2 && !isPreview"
         [attr.x]="centerX - svgLeft"
         [attr.y]="centerY - svgTop"
         text-anchor="middle"
         alignment-baseline="middle"
         [style.pointer-events]="'none'"
         fill="#000000"
-        font-size="14px">
+        font-size="14px"
+        font-family="Arial, sans-serif">
         {{polygon.label}}
       </text>
     </svg>
@@ -146,6 +148,8 @@ export class PolygonComponent {
   @Input() isPreview: boolean = false;
   
   @Output() select = new EventEmitter<{ polygon: PolygonProperties, event: MouseEvent }>();
+
+  constructor(private polygonService: PolygonService) {}
 
   get pathString(): string {
     return this.polygon.points.map(point => `${point.x - this.svgLeft},${point.y - this.svgTop}`).join(' ');
@@ -206,13 +210,13 @@ export class PolygonComponent {
   }
 
   get centerX(): number {
-    const bounds = this.svgBounds;
-    return (bounds.minX + bounds.maxX) / 2;
+    const centroid = this.polygonService.calculateCenter(this.polygon);
+    return centroid.x;
   }
 
   get centerY(): number {
-    const bounds = this.svgBounds;
-    return (bounds.minY + bounds.maxY) / 2;
+    const centroid = this.polygonService.calculateCenter(this.polygon);
+    return centroid.y;
   }
 
   handlePolygonClick(event: MouseEvent): void {

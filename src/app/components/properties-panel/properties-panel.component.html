@@ -784,4 +784,124 @@
       </button>
     </div>
   </div>
+
+  <!-- Polygon Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'polygon'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Polygon
+    </div>
+
+    <!-- Basic Properties Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label for="basicSettings" class="text-gray-700 font-medium">Basic Properties</label>
+      </div>
+      
+      <!-- Name -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Name:</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-xs w-32"
+          [ngModel]="polygonProperties.name || 'Polygon'" 
+          (ngModelChange)="updateProperty('name', $event)">
+      </div>
+      
+      <!-- Label -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Label:</label>
+        <input 
+          type="text" 
+          class="input input-bordered input-xs w-32"
+          [ngModel]="polygonProperties.label || 'Polygon'" 
+          (ngModelChange)="updateProperty('label', $event)">
+      </div>
+      
+      <!-- Label Visibility -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Show Label:</label>
+        <input 
+          type="checkbox" 
+          class="toggle toggle-sm"
+          [ngModel]="polygonProperties.labelVisible === true" 
+          (ngModelChange)="updateProperty('labelVisible', $event)">
+      </div>
+    </div>
+
+    <!-- Style Settings Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label for="styleSettings" class="text-gray-700 font-medium">Appearance</label>
+      </div>
+      
+      <!-- Stroke Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Stroke Color:</label>
+        <input 
+          type="color" 
+          class="w-8 h-8 rounded border border-gray-300"
+          [ngModel]="polygonProperties.strokeColor || '#000000'" 
+          (ngModelChange)="updateProperty('strokeColor', $event)">
+      </div>
+      
+      <!-- Fill Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Fill Color:</label>
+        <input 
+          type="color" 
+          class="w-8 h-8 rounded border border-gray-300"
+          [ngModel]="polygonProperties.fillColor || '#E5E5E5'" 
+          (ngModelChange)="updateProperty('fillColor', $event)">
+      </div>
+      
+      <!-- Thickness -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Thickness:</label>
+        <input 
+          type="number" 
+          class="input input-bordered input-xs w-20 text-center"
+          [ngModel]="polygonProperties.thickness || 2" 
+          (ngModelChange)="updateProperty('thickness', $event)"
+          min="1" 
+          max="10"
+          step="1">
+      </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label for="infoSettings" class="text-gray-700 font-medium">Information</label>
+      </div>
+      
+      <!-- Status -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Status:</label>
+        <div class="text-sm font-medium">
+          {{ polygonProperties.closed ? 'Closed' : 'Open' }}
+        </div>
+      </div>
+      
+      <!-- Points Count -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Points:</label>
+        <div class="text-sm font-medium">
+          {{ polygonProperties.points.length || 0 }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Button -->
+    <div class="px-4 py-2 mt-auto">
+      <button 
+        class="btn btn-error btn-sm w-full"
+        (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  </div>
 </div> 

@@ -17,11 +17,12 @@ export class PolygonService {
       fillColor: '#E5E5E5',
       name: 'New Polygon',
       label: 'New Polygon',
+      labelVisible: true,
       closed: false
     };
   }
 
-  addPoint(polygon: PolygonProperties, x: number, y: number, shouldSnap: boolean = true): PolygonProperties {
+  addPoint(polygon: PolygonProperties, x: number, y: number, shouldSnap: boolean = true, shouldClose: boolean = true): PolygonProperties {
     if (shouldSnap && polygon.points.length > 2) {
       // Check if we're near the first point to close the polygon
       const firstPoint = polygon.points[0];
@@ -30,13 +31,18 @@ export class PolygonService {
       );
 
       if (distance <= this.SNAP_THRESHOLD) {
-        // Close the polygon by marking it as closed
-        console.log('Polygon closed by snapping to first point');
-        polygon.closed = true;
-        
-        // Important: Don't add another point, use the exact coordinates of the first point
-        // This creates a perfect connection
-        return polygon;
+        // Only close the polygon if explicitly requested
+        if (shouldClose) {
+          console.log('Polygon closed by clicking on first point');
+          polygon.closed = true;
+          // Important: Don't add another point, use the exact coordinates of the first point
+          return polygon;
+        } else {
+          // Just snap but don't close (for preview purposes)
+          console.log('Snapping to first point but not closing');
+          // Don't add the point if we're just snapping for preview
+          return polygon;
+        }
       }
     }
 
@@ -47,7 +53,7 @@ export class PolygonService {
     return polygon;
   }
 
-  updateLastPoint(polygon: PolygonProperties, x: number, y: number, shouldSnap: boolean = true): PolygonProperties {
+  updateLastPoint(polygon: PolygonProperties, x: number, y: number, shouldSnap: boolean = true, shouldClose: boolean = false): PolygonProperties {
     if (!polygon.points.length) return polygon;
 
     let newX = x;
@@ -65,8 +71,8 @@ export class PolygonService {
         newX = firstPoint.x;
         newY = firstPoint.y;
         
-        // Mark the polygon as closed when snapping to first point
-        if (polygon.points.length >= 3 && !polygon.closed) {
+        // Only mark as closed if explicitly requested (for clicks, not mouse moves)
+        if (shouldClose && polygon.points.length >= 3 && !polygon.closed) {
           polygon.closed = true;
         }
       }
@@ -154,13 +160,68 @@ export class PolygonService {
 
   calculateCenter(polygon: PolygonProperties): {x: number, y: number} {
     if (!polygon.points.length) return {x: 0, y: 0};
-
-    const sumX = polygon.points.reduce((sum, point) => sum + point.x, 0);
-    const sumY = polygon.points.reduce((sum, point) => sum + point.y, 0);
-
-    return {
-      x: sumX / polygon.points.length,
-      y: sumY / polygon.points.length
-    };
+    
+    if (polygon.points.length === 1) {
+      return {x: polygon.points[0].x, y: polygon.points[0].y};
+    }
+    
+    if (polygon.points.length === 2) {
+      return {
+        x: (polygon.points[0].x + polygon.points[1].x) / 2,
+        y: (polygon.points[0].y + polygon.points[1].y) / 2
+      };
+    }
+    
+    // For polygons with 3+ points, calculate the geometric centroid (center of mass)
+    if (polygon.closed && polygon.points.length >= 3) {
+      return this.calculatePolygonCentroid(polygon.points);
+    } else {
+      // For open polygons, use simple average
+      const sumX = polygon.points.reduce((sum, point) => sum + point.x, 0);
+      const sumY = polygon.points.reduce((sum, point) => sum + point.y, 0);
+      
+      return {
+        x: sumX / polygon.points.length,
+        y: sumY / polygon.points.length
+      };
+    }
+  }
+  
+  private calculatePolygonCentroid(points: {x: number, y: number}[]): {x: number, y: number} {
+    let area = 0;
+    let cx = 0;
+    let cy = 0;
+    
+    // Calculate using the shoelace formula for polygon centroid
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length;
+      const xi = points[i].x;
+      const yi = points[i].y;
+      const xj = points[j].x;
+      const yj = points[j].y;
+      
+      const cross = xi * yj - xj * yi;
+      area += cross;
+      cx += (xi + xj) * cross;
+      cy += (yi + yj) * cross;
+    }
+    
+    area = area / 2;
+    
+    // Avoid division by zero for degenerate polygons
+    if (Math.abs(area) < 1e-10) {
+      // Fallback to simple average if area is too small
+      const sumX = points.reduce((sum, point) => sum + point.x, 0);
+      const sumY = points.reduce((sum, point) => sum + point.y, 0);
+      return {
+        x: sumX / points.length,
+        y: sumY / points.length
+      };
+    }
+    
+    cx = cx / (6 * area);
+    cy = cy / (6 * area);
+    
+    return {x: cx, y: cy};
   }
 } 

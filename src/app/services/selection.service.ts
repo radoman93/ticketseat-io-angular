@@ -71,6 +71,7 @@ export interface PolygonProperties extends Selectable {
   fillColor?: string;
   name?: string;
   label?: string;
+  labelVisible?: boolean;
   closed?: boolean;
 }
 
