@@ -433,6 +433,60 @@ export class DynamicLayoutComponent {
 }
 ```
 
+## Real-time Layout Updates
+
+The EventEditorComponent now provides real-time updates of the layout state through the `layoutUpdated` event. This allows parent applications to stay synchronized with the latest layout changes.
+
+### Usage Example
+
+```typescript
+import { Component } from '@angular/core';
+import { LayoutExportData } from '@radoman93/ticketseat-io-angular';
+
+@Component({
+  selector: 'app-root',
+  template: `
+    <app-event-editor
+      [design]="initialDesign"
+      (layoutUpdated)="onLayoutUpdated($event)">
+    </app-event-editor>
+  `
+})
+export class AppComponent {
+  initialDesign: LayoutExportData = {
+    // Your initial layout data
+  };
+
+  onLayoutUpdated(layout: LayoutExportData) {
+    // Handle the updated layout data
+    console.log('Layout updated:', layout);
+    
+    // You can:
+    // - Save to your backend
+    // - Update your application state
+    // - Trigger other actions based on layout changes
+  }
+}
+```
+
+The `layoutUpdated` event provides the complete layout data including:
+- All elements (tables, rows, etc.)
+- Chairs nested under their parent elements
+- Current grid settings
+- Meta information
+
+The event is emitted whenever:
+- Elements are added, removed, or modified
+- Chairs are added or removed
+- Element properties are changed
+- Grid settings are updated
+
+This feature makes it easy to:
+- Keep your application state in sync with the editor
+- Implement auto-save functionality
+- Create real-time collaborative editing features
+- Track changes for undo/redo functionality
+
 ## Examples
 
 For complete examples and advanced usage patterns, see the [USAGE_EXAMPLE.md](./USAGE_EXAMPLE.md) file.
@@ -570,4 +624,25 @@ If toolbar icons are not displaying:
 2. **Memory Usage**: Clear unused layout data when navigating away
 3. **Event Listeners**: The library properly cleans up event listeners on destroy
 
-## Contributing
+## Testing the Layout Updates Feature
+
+To test the real-time layout update functionality:
+
+1. Run the development server:
+   ```bash
+   npm run start
+   ```
+
+2. Navigate to the example page:
+   ```
+   http://localhost:4200/examples/editor-with-updates
+   ```
+
+3. Try the following actions to see real-time updates:
+   - Add a round or rectangle table
+   - Move elements around
+   - Add or remove chairs
+   - Modify element properties
+   - Change grid settings
+
+The debug panel on the right will show the latest layout data in real-time, demonstrating how the `layoutUpdated` event emits changes to the parent application.

@@ -126,8 +126,7 @@ export class AppComponent {
           seatSpacing: 35,
           name: 'Row B'
         }
-      ],
-      chairs: []
+      ]
     };
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GridComponent } from '../grid/grid.component';
 import { MainToolbarComponent } from '../toolbars/main-toolbar/main-toolbar.component';
@@ -9,6 +9,10 @@ import { ChairPropertiesPanelComponent } from '../chair-properties-panel/chair-p
 import { NotificationsComponent } from '../notifications/notifications.component';
 import viewerStore from '../../stores/viewer.store';
 import { LayoutExportImportService, LayoutExportData } from '../../services/layout-export-import.service';
+import { autorun, IReactionDisposer } from 'mobx';
+import { layoutStore } from '../../stores/layout.store';
+import { rootStore } from '../../stores/root.store';
+import { gridStore } from '../../stores/grid.store';
 
 @Component({
   selector: 'app-event-editor',
@@ -26,11 +30,14 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
   templateUrl: './event-editor.component.html',
   styleUrls: ['./event-editor.component.css']
 })
-export class EventEditorComponent implements OnInit, OnChanges {
+export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
   title = 'ticketseat-io-angular';
   viewerStore = viewerStore;
 
   @Input() design?: LayoutExportData | string | null;
+  @Output() layoutUpdated = new EventEmitter<LayoutExportData>();
+
+  private disposers: IReactionDisposer[] = [];
 
   constructor(private layoutImportService: LayoutExportImportService) {
     // Ensure we're in editor mode when this component is used
@@ -39,6 +46,27 @@ export class EventEditorComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.loadDesignIfProvided();
+
+    // Watch for changes in the layout and chairs
+    this.disposers.push(
+      autorun(() => {
+        // Access observables to track changes
+        const elements = layoutStore.elements;
+        const chairs = Array.from(rootStore.chairStore.chairs.values());
+        const gridSize = gridStore.gridSize;
+        const showGrid = gridStore.showGrid;
+        const showGuides = gridStore.showGuides;
+
+        // Export and emit the updated layout
+        const layoutData = this.layoutImportService.exportLayout('current-layout');
+        this.layoutUpdated.emit(layoutData);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    // Clean up all autorun disposers
+    this.disposers.forEach(dispose => dispose());
   }
 
   ngOnChanges(changes: SimpleChanges): void {

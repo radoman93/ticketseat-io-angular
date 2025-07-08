@@ -18,6 +18,10 @@ export interface LayoutExportData {
     showGuides: boolean;
   };
   elements: any[];
+}
+
+// Legacy format interface for backward compatibility
+export interface LegacyLayoutExportData extends LayoutExportData {
   chairs: Chair[];
 }
 
@@ -33,6 +37,25 @@ export class LayoutExportImportService {
    */
   exportLayout(name: string, description?: string): LayoutExportData {
     const chairs = Array.from(rootStore.chairStore.chairs.values());
+    
+    // Group chairs by their parent element
+    const chairsByElement = new Map<string, Chair[]>();
+    chairs.forEach(chair => {
+      if (!chairsByElement.has(chair.tableId)) {
+        chairsByElement.set(chair.tableId, []);
+      }
+      chairsByElement.get(chair.tableId)!.push(chair);
+    });
+    
+    // Create elements with their chairs nested
+    const elementsWithChairs = layoutStore.elements.map(element => {
+      const elementChairs = chairsByElement.get(element.id) || [];
+      return {
+        ...element,
+        chairs: elementChairs
+      };
+    });
+    
     const exportData: LayoutExportData = {
       meta: {
         version: '1.0',
@@ -46,8 +69,7 @@ export class LayoutExportImportService {
         showGrid: gridStore.showGrid,
         showGuides: gridStore.showGuides
       },
-      elements: [...layoutStore.elements],
-      chairs: chairs
+      elements: elementsWithChairs
     };
 
     return exportData;
@@ -76,7 +98,7 @@ export class LayoutExportImportService {
   /**
    * Import a layout from JSON data
    */
-  importLayout(data: LayoutExportData, mode: 'replace' | 'merge' = 'replace'): void {
+  importLayout(data: LayoutExportData | LegacyLayoutExportData, mode: 'replace' | 'merge' = 'replace'): void {
     // Validate the data structure
     if (!this.validateLayoutData(data)) {
       throw new Error('Invalid layout data format');
@@ -97,25 +119,77 @@ export class LayoutExportImportService {
       gridStore.toggleGuides();
     }
 
-    // Add chairs FIRST, so they exist when elements are created
-    if (data.chairs) {
-      data.chairs.forEach(chair => {
-        if (mode === 'merge') {
-          // In merge mode, we might need to handle chair ID conflicts if we merge layouts
-          // For now, we assume chairs are uniquely tied to elements that get new IDs
+    // Handle backward compatibility: check if the old format (with separate chairs array) is used
+    if ('chairs' in data && data.chairs && Array.isArray(data.chairs)) {
+      // Old format: chairs are in a separate array
+      console.log('Importing old format with separate chairs array');
+      
+      // Group chairs by their parent element for the old format
+      const chairsByElement = new Map<string, Chair[]>();
+      data.chairs.forEach((chair: Chair) => {
+        if (!chairsByElement.has(chair.tableId)) {
+          chairsByElement.set(chair.tableId, []);
         }
-        rootStore.chairStore.addChair(chair);
+        chairsByElement.get(chair.tableId)!.push(chair);
+      });
+      
+      // Process elements and associate their chairs
+      data.elements.forEach((element: any) => {
+        if (mode === 'merge') {
+          const oldId = element.id;
+          element.id = `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Update chair tableIds for the new element ID
+          const elementChairs = chairsByElement.get(oldId) || [];
+          elementChairs.forEach(chair => {
+            chair.tableId = element.id;
+            chair.id = `${element.id}-chair-${chair.label}`;
+          });
+        }
+        
+        // Add element to layout
+        layoutStore.addElement(element);
+        
+        // Add chairs to chair store
+        const elementChairs = chairsByElement.get(element.id) || [];
+        elementChairs.forEach(chair => {
+          rootStore.chairStore.addChair(chair);
+        });
+      });
+    } else {
+      // New format: chairs are nested within elements
+      console.log('Importing new format with nested chairs');
+      
+      data.elements.forEach((element: any) => {
+        if (mode === 'merge') {
+          // Generate new IDs for merged elements to avoid conflicts
+          const oldId = element.id;
+          element.id = `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Update chair tableIds if chairs exist
+          if (element.chairs && Array.isArray(element.chairs)) {
+            element.chairs.forEach((chair: Chair) => {
+              chair.tableId = element.id;
+              chair.id = `${element.id}-chair-${chair.label}`;
+            });
+          }
+        }
+        
+        // Extract chairs before adding element
+        const chairs = element.chairs || [];
+        
+        // Remove chairs from element object before adding to layout
+        const { chairs: _, ...elementWithoutChairs } = element;
+        
+        // Add element to layout
+        layoutStore.addElement(elementWithoutChairs);
+        
+        // Add chairs to chair store
+        chairs.forEach((chair: Chair) => {
+          rootStore.chairStore.addChair(chair);
+        });
       });
     }
-
-    // Add elements
-    data.elements.forEach(element => {
-      if (mode === 'merge') {
-        // Generate new IDs for merged elements to avoid conflicts
-        element.id = `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      }
-      layoutStore.addElement(element);
-    });
   }
 
   /**
@@ -124,7 +198,7 @@ export class LayoutExportImportService {
   async importLayoutFromFile(file: File, mode: 'replace' | 'merge' = 'replace'): Promise<void> {
     try {
       const text = await file.text();
-      const data = JSON.parse(text) as LayoutExportData;
+      const data = JSON.parse(text);
       this.importLayout(data, mode);
     } catch (error) {
       throw new Error(`Failed to import layout: ${error}`);
@@ -134,8 +208,8 @@ export class LayoutExportImportService {
   /**
    * Validate layout data structure
    */
-  private validateLayoutData(data: any): data is LayoutExportData {
-    return (
+  private validateLayoutData(data: any): data is LayoutExportData | LegacyLayoutExportData {
+    const hasBasicStructure = (
       data &&
       typeof data === 'object' &&
       data.meta &&
@@ -145,9 +219,11 @@ export class LayoutExportImportService {
       typeof data.settings.gridSize === 'number' &&
       typeof data.settings.showGrid === 'boolean' &&
       typeof data.settings.showGuides === 'boolean' &&
-      Array.isArray(data.elements) &&
-      Array.isArray(data.chairs)
+      Array.isArray(data.elements)
     );
+    
+    // Accept both old format (with chairs array) and new format (without)
+    return hasBasicStructure;
   }
 
   /**
