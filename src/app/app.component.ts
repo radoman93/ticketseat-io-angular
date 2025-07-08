@@ -14,10 +14,10 @@ import { LayoutExportData } from './services/layout-export-import.service';
 })
 export class AppComponent {
   title = 'TicketSeat.io Angular Demo';
-  
+
   // Component toggle
   showEditor = true;
-  
+
   // Sample pre-reserved seat IDs for viewer testing
   preReservedSeats: string[] = [
     'table-1-chair-2',  // Table 1, seat 3
@@ -25,10 +25,10 @@ export class AppComponent {
     'seating-row-1-chair-3', // Row 1, seat 4
     'seating-row-2-chair-0', // Row 2, seat 1
   ];
-  
+
   // Custom reserved seats input
   customReservedSeats = '';
-  
+
   // Sample layout data
   sampleLayout: LayoutExportData | null = null;
 
@@ -58,7 +58,7 @@ export class AppComponent {
   addSampleReservedSeats(): void {
     this.preReservedSeats = [
       'table-1-chair-2',
-      'table-1-chair-5', 
+      'table-1-chair-5',
       'seating-row-1-chair-3',
       'seating-row-2-chair-0',
     ];

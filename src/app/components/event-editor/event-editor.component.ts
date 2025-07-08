@@ -18,11 +18,11 @@ import { gridStore } from '../../stores/grid.store';
   selector: 'app-event-editor',
   standalone: true,
   imports: [
-    CommonModule, 
-    GridComponent, 
-    MainToolbarComponent, 
-    TopToolbarComponent, 
-    MobxAngularModule, 
+    CommonModule,
+    GridComponent,
+    MainToolbarComponent,
+    TopToolbarComponent,
+    MobxAngularModule,
     PropertiesPanelComponent,
     ChairPropertiesPanelComponent,
     NotificationsComponent
@@ -79,7 +79,7 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
     if (this.design) {
       try {
         let designData: LayoutExportData;
-        
+
         // Handle both string and object inputs
         if (typeof this.design === 'string') {
           designData = JSON.parse(this.design);

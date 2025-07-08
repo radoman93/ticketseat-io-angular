@@ -4,10 +4,10 @@ import { LayoutExportData } from '../services/layout-export-import.service';
 import { EventEditorComponent } from '../components/event-editor/event-editor.component';
 
 @Component({
-  standalone: true,
-  imports: [CommonModule, JsonPipe, EventEditorComponent],
-  selector: 'app-editor-with-updates',
-  template: `
+    standalone: true,
+    imports: [CommonModule, JsonPipe, EventEditorComponent],
+    selector: 'app-editor-with-updates',
+    template: `
     <div class="container">
       <app-event-editor
         [design]="initialDesign"
@@ -21,7 +21,7 @@ import { EventEditorComponent } from '../components/event-editor/event-editor.co
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .container {
       height: 100vh;
       display: flex;
@@ -41,25 +41,25 @@ import { EventEditorComponent } from '../components/event-editor/event-editor.co
   `]
 })
 export class EditorWithUpdatesComponent {
-  initialDesign: LayoutExportData = {
-    meta: {
-      version: '1.0',
-      name: 'Test Layout',
-      created: new Date().toISOString(),
-      creator: 'TicketSeats v1.0'
-    },
-    settings: {
-      gridSize: 25,
-      showGrid: true,
-      showGuides: true
-    },
-    elements: []
-  };
+    initialDesign: LayoutExportData = {
+        meta: {
+            version: '1.0',
+            name: 'Test Layout',
+            created: new Date().toISOString(),
+            creator: 'TicketSeats v1.0'
+        },
+        settings: {
+            gridSize: 25,
+            showGrid: true,
+            showGuides: true
+        },
+        elements: []
+    };
 
-  lastUpdate?: LayoutExportData;
+    lastUpdate?: LayoutExportData;
 
-  onLayoutUpdated(layout: LayoutExportData) {
-    console.log('Layout updated:', layout);
-    this.lastUpdate = layout;
-  }
+    onLayoutUpdated(layout: LayoutExportData) {
+        console.log('Layout updated:', layout);
+        this.lastUpdate = layout;
+    }
 }
