@@ -1,6 +1,6 @@
 {
   "name": "@radoman93/ticketseat-io-angular",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "Angular library for ticket seat management with drag-and-drop functionality",
   "main": "dist/bundles/ticketseat-io-angular.umd.js",
   "module": "dist/fesm2015/ticketseat-io-angular.js",
