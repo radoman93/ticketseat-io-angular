@@ -35,7 +35,7 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
           <div class="flex items-center gap-2">
             <span class="text-sm text-green-700 font-medium">Selected Seats:</span>
             <span class="bg-green-600 text-white px-2 py-1 rounded-full text-sm font-bold">
-              {{ viewerStore.selectedSeatsCount }}
+              {{ viewerStore.selectedSeatsCount }}{{ getSeatLimitDisplay() }}
             </span>
           </div>
           <div class="text-sm text-green-600">
@@ -77,6 +77,7 @@ export class EventViewerComponent implements OnInit, OnChanges {
 
   @Input() design?: LayoutExportData | string | null;
   @Input() reservedIds?: string[] | null;
+  @Input() seatLimit?: number; // New property to limit seat selection
 
   constructor(private layoutImportService: LayoutExportImportService) {
     // Ensure we're in viewer mode when this component is used
@@ -86,15 +87,20 @@ export class EventViewerComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.loadDesignIfProvided();
     this.setReservedSeatsIfProvided();
+    this.setSeatLimitIfProvided();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['design'] && !changes['design'].firstChange) {
       this.loadDesignIfProvided();
     }
-    
+
     if (changes['reservedIds']) {
       this.setReservedSeatsIfProvided();
+    }
+
+    if (changes['seatLimit']) {
+      this.setSeatLimitIfProvided();
     }
   }
 
@@ -102,7 +108,7 @@ export class EventViewerComponent implements OnInit, OnChanges {
     if (this.design) {
       try {
         let designData: LayoutExportData;
-        
+
         // Handle both string and object inputs
         if (typeof this.design === 'string') {
           designData = JSON.parse(this.design);
@@ -129,10 +135,31 @@ export class EventViewerComponent implements OnInit, OnChanges {
     }
   }
 
+  private setSeatLimitIfProvided(): void {
+    if (this.seatLimit !== undefined && this.seatLimit > 0) {
+      this.viewerStore.setSeatLimit(this.seatLimit);
+      console.log('Seat limit set to:', this.seatLimit);
+    } else {
+      // Clear seat limit if not provided or invalid
+      this.viewerStore.setSeatLimit(null);
+    }
+  }
+
   getSelectionInstructions(): string {
     if (this.viewerStore.selectedSeatsCount === 0) {
-      return 'Click on available seats to select them for reservation';
+      const limitText = this.viewerStore.seatLimit
+        ? ` (max ${this.viewerStore.seatLimit})`
+        : '';
+      return `Click on available seats to select them for reservation${limitText}`;
     }
-    return `Ready to reserve ${this.viewerStore.selectedSeatsCount} seat(s)`;
+
+    const remainingText = this.viewerStore.seatLimit
+      ? ` (${this.viewerStore.remainingSeats} remaining)`
+      : '';
+    return `Ready to reserve ${this.viewerStore.selectedSeatsCount} seat(s)${remainingText}`;
   }
-} 
+
+  getSeatLimitDisplay(): string {
+    return this.viewerStore.seatLimit ? ` / ${this.viewerStore.seatLimit}` : '';
+  }
+}

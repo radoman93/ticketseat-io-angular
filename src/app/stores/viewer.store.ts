@@ -16,17 +16,20 @@ export class ViewerStore {
   preReservedSeats: string[] = []; // External reserved seat IDs
   customerInfo: { name: string; email?: string; phone?: string } = { name: '' };
   notifications: Notification[] = [];
-  
+  seatLimit: number | null = null; // Maximum number of seats that can be selected
+
   constructor() {
     makeAutoObservable(this, {
       selectedSeatsForReservation: observable,
       preReservedSeats: observable,
+      seatLimit: observable,
       setMode: action,
       toggleMode: action,
       selectSeatForReservation: action,
       deselectSeatForReservation: action,
       clearSelectedSeats: action,
       setPreReservedSeats: action,
+      setSeatLimit: action,
       reserveSelectedSeats: action,
       updateCustomerInfo: action,
       addNotification: action,
@@ -35,7 +38,9 @@ export class ViewerStore {
       canReserveSeats: computed,
       isViewerMode: computed,
       isEditorMode: computed,
-      selectedSeatsCount: computed
+      selectedSeatsCount: computed,
+      isSeatLimitReached: computed,
+      remainingSeats: computed
     });
   }
 
@@ -49,6 +54,16 @@ export class ViewerStore {
 
   get selectedSeatsCount(): number {
     return this.selectedSeatsForReservation.length;
+  }
+
+  get isSeatLimitReached(): boolean {
+    if (this.seatLimit === null) return false;
+    return this.selectedSeatsCount >= this.seatLimit;
+  }
+
+  get remainingSeats(): number {
+    if (this.seatLimit === null) return Infinity;
+    return Math.max(0, this.seatLimit - this.selectedSeatsCount);
   }
 
   get canReserveSeats(): boolean {
@@ -80,6 +95,20 @@ export class ViewerStore {
     return this.preReservedSeats.includes(chairId);
   }
 
+  setSeatLimit(limit: number | null): void {
+    this.seatLimit = limit;
+
+    // If setting a limit and current selection exceeds it, truncate selection
+    if (limit !== null && this.selectedSeatsForReservation.length > limit) {
+      // Keep only the first 'limit' number of selected seats
+      this.selectedSeatsForReservation = this.selectedSeatsForReservation.slice(0, limit);
+      this.addNotification({
+        message: `Selection reduced to ${limit} seat(s) due to seat limit`,
+        type: 'info'
+      });
+    }
+  }
+
   selectSeatForReservation(chairId: string): void {
     // Don't allow selection of pre-reserved seats
     if (this.isPreReservedSeat(chairId)) {
@@ -87,9 +116,19 @@ export class ViewerStore {
       return;
     }
 
-    if (!this.selectedSeatsForReservation.includes(chairId)) {
-      this.selectedSeatsForReservation.push(chairId);
+    // Check if seat is already selected
+    if (this.selectedSeatsForReservation.includes(chairId)) {
+      return; // Already selected
     }
+
+    // Check seat limit before adding
+    if (this.seatLimit !== null && this.selectedSeatsCount >= this.seatLimit) {
+      this.showSeatLimitReachedFeedback();
+      return;
+    }
+
+    // Add seat to selection
+    this.selectedSeatsForReservation.push(chairId);
   }
 
   deselectSeatForReservation(chairId: string): void {
@@ -139,13 +178,13 @@ export class ViewerStore {
   getSeatReservationStatus(chair: Chair): 'free' | 'reserved' | 'selected-for-reservation' | 'pre-reserved' {
     // Check if seat is pre-reserved first (external reservation)
     if (this.isPreReservedSeat(chair.id)) return 'pre-reserved';
-    
+
     // Check internal reservation status
     if (chair.reservationStatus === 'reserved') return 'reserved';
-    
+
     // Check if currently selected for reservation
     if (this.isSeatSelectedForReservation(chair.id)) return 'selected-for-reservation';
-    
+
     return 'free';
   }
 
@@ -156,7 +195,7 @@ export class ViewerStore {
       timestamp: Date.now()
     };
     this.notifications.push(newNotification);
-    
+
     // Auto-remove after 3 seconds
     setTimeout(() => {
       this.removeNotification(newNotification.id);
@@ -178,8 +217,16 @@ export class ViewerStore {
       type: 'warning'
     });
   }
+
+  // Helper method to show seat limit reached feedback
+  showSeatLimitReachedFeedback(): void {
+    this.addNotification({
+      message: `You can only select up to ${this.seatLimit} seat(s) for reservation`,
+      type: 'warning'
+    });
+  }
 }
 
 // Create and export singleton instance
 const viewerStore = new ViewerStore();
-export default viewerStore; 
+export default viewerStore;
