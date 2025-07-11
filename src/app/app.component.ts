@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { EventEditorComponent } from './components/event-editor/event-editor.component';
 import { EventViewerComponent } from './components/event-viewer/event-viewer.component';
 import { LayoutExportData } from './services/layout-export-import.service';
+import { Chair } from './models/chair.model';
 
 @Component({
   selector: 'app-root',
@@ -63,6 +64,19 @@ export class AppComponent {
       'seating-row-2-chair-0',
     ];
     this.customReservedSeats = this.preReservedSeats.join(', ');
+  }
+
+  onSelectedSeatsChange(selectedChairs: Chair[]): void {
+    console.log('Selected seats changed:', selectedChairs);
+    console.log('Selected seat count:', selectedChairs.length);
+    console.log('Selected seat IDs:', selectedChairs.map(chair => chair.id));
+    console.log('Selected seat details:', selectedChairs.map(chair => ({
+      id: chair.id,
+      label: chair.label,
+      tableId: chair.tableId,
+      price: chair.price,
+      reservationStatus: chair.reservationStatus
+    })));
   }
 
   private createSampleLayout(): void {

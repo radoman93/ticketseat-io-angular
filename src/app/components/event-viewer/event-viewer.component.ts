@@ -1,10 +1,13 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GridComponent } from '../grid/grid.component';
 import { ReservationPanelComponent } from '../reservation-panel/reservation-panel.component';
 import { NotificationsComponent } from '../notifications/notifications.component';
 import { MobxAngularModule } from 'mobx-angular';
+import { reaction } from 'mobx';
 import viewerStore from '../../stores/viewer.store';
+import { rootStore } from '../../stores/root.store';
+import { Chair } from '../../models/chair.model';
 import { LayoutExportImportService, LayoutExportData } from '../../services/layout-export-import.service';
 
 @Component({
@@ -72,12 +75,16 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
     }
   `]
 })
-export class EventViewerComponent implements OnInit, OnChanges {
+export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   viewerStore = viewerStore;
+
+  private selectionReactionDisposer?: () => void;
 
   @Input() design?: LayoutExportData | string | null;
   @Input() reservedIds?: string[] | null;
   @Input() seatLimit?: number; // New property to limit seat selection
+
+  @Output() selectedSeatsChange = new EventEmitter<Chair[]>(); // Emits selected chair objects
 
   constructor(private layoutImportService: LayoutExportImportService) {
     // Ensure we're in viewer mode when this component is used
@@ -88,6 +95,31 @@ export class EventViewerComponent implements OnInit, OnChanges {
     this.loadDesignIfProvided();
     this.setReservedSeatsIfProvided();
     this.setSeatLimitIfProvided();
+    this.setupSelectionReaction();
+  }
+
+  ngOnDestroy(): void {
+    // Clean up the reaction when component is destroyed
+    if (this.selectionReactionDisposer) {
+      this.selectionReactionDisposer();
+    }
+  }
+
+  private setupSelectionReaction(): void {
+    // Set up a reaction to emit selected chairs when selection changes
+    this.selectionReactionDisposer = reaction(
+      () => this.viewerStore.selectedSeatsForReservation.slice(), // Observe the selection array
+      (selectedSeatIds) => {
+        const selectedChairs = this.getSelectedChairObjects(selectedSeatIds);
+        this.selectedSeatsChange.emit(selectedChairs);
+      }
+    );
+  }
+
+  private getSelectedChairObjects(seatIds: string[]): Chair[] {
+    return seatIds
+      .map(id => rootStore.chairStore.chairs.get(id))
+      .filter((chair): chair is Chair => chair !== undefined);
   }
 
   ngOnChanges(changes: SimpleChanges): void {

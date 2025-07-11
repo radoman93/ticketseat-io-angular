@@ -9,6 +9,9 @@ export * from './app/components/event-viewer/event-viewer.component';
 // Export the design data interface for proper typing
 export type { LayoutExportData } from './app/services/layout-export-import.service';
 
+// Export Chair model for typing selected seats output
+export type { Chair } from './app/models/chair.model';
+
 // Export MobX stores for advanced usage
 export { layoutStore } from './app/stores/layout.store';
 export { default as viewerStore } from './app/stores/viewer.store';
