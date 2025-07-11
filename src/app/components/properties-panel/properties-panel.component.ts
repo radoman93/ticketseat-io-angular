@@ -7,7 +7,7 @@ import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { HistoryStore } from '../../stores/history.store';
 import { DeleteObjectCommand } from '../../commands/delete-object.command';
-import { PolygonProperties, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, LineProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
 import { UpdateObjectCommand } from '../../commands/update-object.command';
 
 @Component({
@@ -56,10 +56,6 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
             if (freshItem.chairLabelVisible === undefined) {
               this.updateProperty('chairLabelVisible', true);
             }
-          } else if (freshItem.type === 'polygon') {
-            if (freshItem.labelVisible === undefined) {
-              this.updateProperty('labelVisible', true);
-            }
           }
         }
       }
@@ -97,16 +93,6 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   @computed
   get segmentedSeatingRowProperties(): SeatingRowProperties {
     return this.selectedItem as SeatingRowProperties;
-  }
-
-  @computed
-  get lineProperties(): LineProperties {
-    return this.selectedItem as LineProperties;
-  }
-
-  @computed
-  get polygonProperties(): PolygonProperties {
-    return this.selectedItem as PolygonProperties;
   }
 
   @action
@@ -270,18 +256,5 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     if (!this.selectedItem) return;
     const currentRotation = (this.selectedItem as any).rotation || 0;
     this.updateProperty('rotation', currentRotation - 15);
-  }
-
-  // Line
-  @action incrementLineThickness(): void {
-    if (!this.lineProperties || !this.lineProperties.thickness) return;
-    const newValue = Math.min(10, this.lineProperties.thickness + 1);
-    this.updateProperty('thickness', newValue);
-  }
-
-  @action decrementLineThickness(): void {
-    if (!this.lineProperties || !this.lineProperties.thickness) return;
-    const newValue = Math.max(1, this.lineProperties.thickness - 1);
-    this.updateProperty('thickness', newValue);
   }
 }

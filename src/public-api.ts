@@ -39,7 +39,7 @@ export * from './app/components/reservation-panel/reservation-panel.component';
 export * from './app/components/notifications/notifications.component';
 
 // Store exports
-export * from './app/stores/drag.store';
+// export * from './app/stores/drag.store';
 export * from './app/stores/history.store';
 
 // Store index for convenience

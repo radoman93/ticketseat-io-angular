@@ -26,13 +26,19 @@ export interface SeatingRowElement extends LayoutElement {
   seatRadius?: number;
 }
 
-export interface PolygonElement extends LayoutElement {
-  type: ElementType.POLYGON;
-  points: {x: number, y: number}[];
+export interface SegmentedSeatingRowElement extends LayoutElement {
+  type: ElementType.SEGMENTED_SEATING_ROW;
+  segments: SegmentProperties[];
 }
 
-export interface LineElement extends LayoutElement {
-  type: ElementType.LINE;
-  points: {x: number, y: number}[];
-  thickness?: number;
+export interface SegmentProperties {
+  id: string;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  seats: number;
+  chairs: any[];
 }
+
+export type TableElement = RoundTableElement | RectangleTableElement | SeatingRowElement | SegmentedSeatingRowElement;

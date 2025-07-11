@@ -3,9 +3,7 @@ import { LayoutData, ElementType } from '../models/layout.model';
 import { 
   RoundTableElement, 
   RectangleTableElement,
-  SeatingRowElement,
-  PolygonElement, 
-  LineElement 
+  SeatingRowElement
 } from '../models/elements.model';
 
 @Injectable({
@@ -67,18 +65,6 @@ export class LayoutValidatorService {
         if (!element.length) errors.push('Seating row missing length');
         if (!element.seats) errors.push('Seating row missing seats count');
         if (!element.spacing) errors.push('Seating row missing spacing');
-        break;
-      case ElementType.POLYGON:
-        if (!element.points || !Array.isArray(element.points)) 
-          errors.push('Polygon missing points array');
-        else if (element.points.length < 3)
-          errors.push('Polygon must have at least 3 points');
-        break;
-      case ElementType.LINE:
-        if (!element.points || !Array.isArray(element.points)) 
-          errors.push('Line missing points array');
-        else if (element.points.length < 2)
-          errors.push('Line must have at least 2 points');
         break;
       default:
         errors.push(`Unknown element type: ${element.type}`);

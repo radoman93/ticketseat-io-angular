@@ -10,7 +10,7 @@
            [class.draggable]="!viewerStore.isViewerMode && toolStore.activeTool !== ToolType.RoundTable"
            [class.dragging]="!viewerStore.isViewerMode && dragStore.isDragging && dragStore.draggedItem?.id === table.id">
         <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode -->
-        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow' && table.type !== 'line'" 
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow'" 
              class="selection-indicator table-selection"
              [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
              [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
@@ -87,23 +87,6 @@
           </div>
         </app-segmented-seating-row>
         
-        <!-- Line -->
-        <app-line
-          *ngIf="table.type === 'line'"
-          [line]="$any(table)"
-          [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
-          (select)="selectTable($event.line, $event.event)">
-        </app-line>
-        
-        <!-- Polygon -->
-        <app-polygon
-          *ngIf="table.type === 'polygon'"
-          [polygon]="$any(table)"
-          [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
-          [isPolygonClosed]="$any(table).closed || false"
-          (select)="selectTable($event.polygon, $event.event)">
-        </app-polygon>
-        
         <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
         <app-round-table 
           *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
@@ -141,27 +124,8 @@
       </div>
       
       <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
-      <div *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow || toolStore.activeTool === ToolType.Line || toolStore.activeTool === ToolType.Polygon)" 
+      <div *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)" 
            class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
-
-      <!-- Preview line (semi-transparent) - Hidden in viewer mode -->
-      <app-line
-        *ngIf="!viewerStore.isViewerMode && previewLine && toolStore.activeTool === ToolType.Line"
-        [line]="previewLine"
-        [isSelected]="false"
-        class="opacity-70 preview-line pointer-events-none">
-      </app-line>
-
-      <!-- Preview polygon (semi-transparent) - Hidden in viewer mode -->
-      <app-polygon
-        *ngIf="!viewerStore.isViewerMode && previewPolygon && toolStore.activeTool === ToolType.Polygon"
-        [polygon]="previewPolygon"
-        [isSelected]="false"
-        [isPolygonClosed]="previewPolygon.closed || false"
-        [isPreview]="true"
-        class="opacity-70 preview-polygon pointer-events-none fixed-preview"
-        style="z-index: 100;">
-      </app-polygon>
     </div>
 </div>
 

@@ -10,7 +10,7 @@ export { gridStore } from './grid.store';
 export { toolStore } from './tool.store';
 export { selectionStore } from './selection.store';
 export { layoutStore } from './layout.store';
-export { dragStore } from './drag.store';
+// export { dragStore } from './drag.store';
 export { default as viewerStore } from './viewer.store';
 export { chairStore } from './chair.store';
 export { HistoryStore } from './history.store';
