@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { LayoutData, ElementType } from '../models/layout.model';
-import { 
-  RoundTableElement, 
+import {
+  RoundTableElement,
   RectangleTableElement,
   SeatingRowElement
 } from '../models/elements.model';
@@ -10,20 +10,20 @@ import {
   providedIn: 'root'
 })
 export class LayoutValidatorService {
-  
+
   validateLayout(layout: any): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     // Basic structure validation
     if (!layout) {
       errors.push('Layout data is empty');
       return { valid: false, errors };
     }
-    
+
     if (!layout.version) errors.push('Layout version is missing');
     if (!layout.name) errors.push('Layout name is missing');
     if (!Array.isArray(layout.elements)) errors.push('Layout elements must be an array');
-    
+
     // Validate each element
     if (layout.elements && Array.isArray(layout.elements)) {
       layout.elements.forEach((element, index) => {
@@ -33,20 +33,20 @@ export class LayoutValidatorService {
         }
       });
     }
-    
+
     return { valid: errors.length === 0, errors };
   }
-  
+
   private validateElement(element: any): string[] {
     const errors: string[] = [];
-    
+
     // Check common required properties
     if (!element.id) errors.push('Missing id');
     if (!element.type) errors.push('Missing type');
     if (element.x === undefined) errors.push('Missing x coordinate');
     if (element.y === undefined) errors.push('Missing y coordinate');
     if (element.rotation === undefined) errors.push('Missing rotation');
-    
+
     // Type-specific validation
     switch (element.type) {
       case ElementType.ROUND_TABLE:
@@ -69,7 +69,7 @@ export class LayoutValidatorService {
       default:
         errors.push(`Unknown element type: ${element.type}`);
     }
-    
+
     return errors;
   }
 }

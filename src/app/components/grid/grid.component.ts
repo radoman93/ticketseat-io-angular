@@ -44,7 +44,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   selectionStore = selectionStore;
   layoutStore = layoutStore;
   // dragStore = dragStore;
-  
+
   // Temporary stub for dragStore
   dragStore = {
     isDragging: false,
@@ -53,10 +53,10 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     justEndedDragging: false,
     startMouseX: 0,
     startMouseY: 0,
-    prepareForDragging: (item: any, x: number, y: number) => {},
-    startDragging: () => {},
-    updateDragPosition: (x: number, y: number) => {},
-    endDragging: (historyStore: any) => {},
+    prepareForDragging: (item: any, x: number, y: number) => { },
+    startDragging: () => { },
+    updateDragPosition: (x: number, y: number) => { },
+    endDragging: (historyStore: any) => { },
   };
   viewerStore = viewerStore;
 

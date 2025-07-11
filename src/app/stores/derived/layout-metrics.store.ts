@@ -85,7 +85,7 @@ export class LayoutMetricsStore {
     const standingCapacity = layoutStore.elements
       .filter(e => e.type === 'standingArea')
       .reduce((sum, area) => sum + (area['capacity'] || 0), 0);
-    
+
     return tableSeats + standingCapacity;
   }
 
@@ -94,13 +94,13 @@ export class LayoutMetricsStore {
    */
   get tableTypeCounts() {
     const counts: { [type: string]: number } = {};
-    
+
     layoutStore.elements
       .filter(e => e.type.includes('Table') || e.type === 'seatingRow')
       .forEach(element => {
         counts[element.type] = (counts[element.type] || 0) + 1;
       });
-    
+
     return counts;
   }
 
@@ -111,12 +111,12 @@ export class LayoutMetricsStore {
     if (layoutStore.elements.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }
-    
+
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
-    
+
     layoutStore.elements.forEach(element => {
       // Handle different element types
       if (element.type.includes('Table')) {
@@ -148,7 +148,7 @@ export class LayoutMetricsStore {
         maxY = Math.max(maxY, element.y + (element['height'] || 0));
       }
     });
-    
+
     return {
       x: minX,
       y: minY,
@@ -171,7 +171,7 @@ export class LayoutMetricsStore {
   get density() {
     const box = this.boundingBox;
     const area = box.width * box.height;
-    
+
     if (area === 0) return 0;
     return this.totalCapacity / area;
   }
@@ -241,16 +241,16 @@ export class LayoutMetricsStore {
    */
   get boundingBoxTables(): { minX: number, minY: number, maxX: number, maxY: number, width: number, height: number } {
     const tables = layoutStore.elements.filter(e => e.type.includes('Table') || e.type === 'seatingRow');
-    
+
     if (tables.length === 0) {
       return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 };
     }
-    
+
     let minX = Number.MAX_VALUE;
     let minY = Number.MAX_VALUE;
     let maxX = Number.MIN_VALUE;
     let maxY = Number.MIN_VALUE;
-    
+
     tables.forEach(table => {
       if (table.type === 'roundTable') {
         const radius = (table as RoundTableProperties).radius || 0;
@@ -274,17 +274,17 @@ export class LayoutMetricsStore {
         maxY = Math.max(maxY, Math.max(seatingRow.y, seatingRow.endY) + 20);
       }
     });
-    
-    return { 
-      minX, 
-      minY, 
-      maxX, 
+
+    return {
+      minX,
+      minY,
+      maxX,
       maxY,
       width: maxX - minX,
       height: maxY - minY
     };
   }
-  
+
   /**
    * Calculate distribution of tables across the layout (in quadrants)
    */
@@ -293,7 +293,7 @@ export class LayoutMetricsStore {
     const bb = this.boundingBoxTables;
     const centerX = (bb.minX + bb.maxX) / 2;
     const centerY = (bb.minY + bb.maxY) / 2;
-    
+
     return {
       topLeft: elements.filter(t => t.x <= centerX && t.y <= centerY).length,
       topRight: elements.filter(t => t.x > centerX && t.y <= centerY).length,
@@ -301,7 +301,7 @@ export class LayoutMetricsStore {
       bottomRight: elements.filter(t => t.x > centerX && t.y > centerY).length
     };
   }
-  
+
   /**
    * Calculate the total area occupied by all tables (approx)
    */
@@ -328,39 +328,39 @@ export class LayoutMetricsStore {
         return sum;
       }, 0);
   }
-  
+
   /**
    * Calculate percentage of empty space within the bounding box
    */
   get emptySpacePercentage(): number {
     const bb = this.boundingBoxTables;
     const totalBoundingArea = bb.width * bb.height;
-    
+
     if (totalBoundingArea === 0) return 0;
-    
+
     const occupiedArea = this.totalArea;
     return Math.max(0, Math.min(100, ((totalBoundingArea - occupiedArea) / totalBoundingArea) * 100));
   }
-  
+
   /**
    * Find tables that are potentially too close to each other
    */
   getCloseProximityTables(proximityThreshold: number = 10): TableElement[][] {
     const elements = layoutStore.elements.filter(e => e.type.includes('Table') || e.type === 'seatingRow');
     const result: TableElement[][] = [];
-    
+
     // Check each pair of elements
     for (let i = 0; i < elements.length; i++) {
       for (let j = i + 1; j < elements.length; j++) {
         const table1 = elements[i];
         const table2 = elements[j];
-        
+
         // Calculate distance between element centers
         const distance = Math.sqrt(
-          Math.pow(table1.x - table2.x, 2) + 
+          Math.pow(table1.x - table2.x, 2) +
           Math.pow(table1.y - table2.y, 2)
         );
-        
+
         // For different element types, calculate effective radius
         const getEffectiveRadius = (element: TableElement): number => {
           if (element.type === 'roundTable') {
@@ -378,7 +378,7 @@ export class LayoutMetricsStore {
           }
           return 0;
         };
-        
+
         // Check if elements are too close (considering their effective radii)
         const minDistance = getEffectiveRadius(table1) + getEffectiveRadius(table2) + proximityThreshold;
         if (distance < minDistance) {
@@ -386,7 +386,7 @@ export class LayoutMetricsStore {
         }
       }
     }
-    
+
     return result;
   }
 }

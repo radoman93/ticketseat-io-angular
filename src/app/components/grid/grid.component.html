@@ -1,132 +1,91 @@
-<div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun (click)="handleCanvasClick()">
-    <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
+<div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun
+  (click)="handleCanvasClick()">
+  <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
 
-    <!-- Display all tables with position adjusted for pan offset and zoom -->
-    <div class="table-container" [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'">
-      <!-- Tables from MobX store -->
-      <div *ngFor="let table of layoutStore.elements" 
-           (mousedown)="selectTable(table, $event)"
-           class="selection-container"
-           [class.draggable]="!viewerStore.isViewerMode && toolStore.activeTool !== ToolType.RoundTable"
-           [class.dragging]="!viewerStore.isViewerMode && dragStore.isDragging && dragStore.draggedItem?.id === table.id">
-        <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode -->
-        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow'" 
-             class="selection-indicator table-selection"
-             [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
-             [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
-             [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
-             [style.transform-origin]="'center center'"
-             [style.left]="table.x + 'px'"
-             [style.top]="table.y + 'px'">
-        </div>
-        
-        <!-- Round Table -->
-        <app-round-table 
-          *ngIf="table.type === 'roundTable'"
-          [tableData]="$any(table)"
-          [x]="table.x" 
-          [y]="table.y" 
-          [radius]="$any(table).radius" 
-          [seats]="$any(table).seats"
-          [openSpaces]="$any(table).openSpaces" 
-          [name]="table.name"
-          [rotation]="table.rotation || 0"
-          [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
-          [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true"
-          [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true">
-        </app-round-table>
-        
-        <!-- Rectangle Table -->
-        <app-rectangle-table 
-          *ngIf="table.type === 'rectangleTable'"
-          [tableData]="$any(table)"
-          [x]="table.x" 
-          [y]="table.y" 
-          [width]="$any(table).width" 
-          [height]="$any(table).height"
-          [upChairs]="$any(table).upChairs"
-          [downChairs]="$any(table).downChairs"
-          [leftChairs]="$any(table).leftChairs"
-          [rightChairs]="$any(table).rightChairs" 
-          [name]="table.name"
-          [rotation]="table.rotation || 0"
-          [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
-          [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true"
-          [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true">
-        </app-rectangle-table>
-        
-        <!-- Seating Row -->
-        <app-seating-row 
-          *ngIf="table.type === 'seatingRow'"
-          [seatingRowData]="$any(table)"
-          [x]="table.x" 
-          [y]="table.y" 
-          [endX]="$any(table).endX"
-          [endY]="$any(table).endY"
-          [seatCount]="$any(table).seatCount"
-          [seatSpacing]="$any(table).seatSpacing"
-          [name]="table.name"
-          [rotation]="table.rotation || 0"
-          [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
-          [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
-          [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
-        </app-seating-row>
-        
-        <!-- Segmented Seating Row -->
-        <app-segmented-seating-row
-          *ngIf="table.type === 'segmentedSeatingRow'"
-          [seatingRowData]="$any(table)"
-          [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
-          [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
-          [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true"
-          #segmentedRow>
-          <!-- Selection indicator for segmented seating row - Hidden in viewer mode -->
-          <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)" 
-               class="selection-indicator table-selection"
-               [ngStyle]="segmentedRow.getSelectionStyles()">
-          </div>
-        </app-segmented-seating-row>
-        
-        <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
-        <app-round-table 
-          *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
-          [x]="previewTable.x" 
-          [y]="previewTable.y" 
-          [radius]="$any(previewTable).radius" 
-          [seats]="$any(previewTable).seats" 
-          [name]="previewTable.name || 'Table'"
-          class="opacity-70 preview-table">
-        </app-round-table>
-        
-        <app-rectangle-table 
-          *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RectangleTable"
-          [x]="previewTable.x" 
-          [y]="previewTable.y" 
-          [width]="$any(previewTable).width" 
-          [height]="$any(previewTable).height"
-          [upChairs]="$any(previewTable).upChairs"
-          [downChairs]="$any(previewTable).downChairs"
-          [leftChairs]="$any(previewTable).leftChairs"
-          [rightChairs]="$any(previewTable).rightChairs"
-          [name]="previewTable.name || 'Table'"
-          class="opacity-70 preview-table">
-        </app-rectangle-table>
-        
-        <!-- Use Segmented Seating Row for both SeatingRow and SegmentedSeatingRow tools - Hidden in viewer mode -->
-        <app-segmented-seating-row
-          *ngIf="!viewerStore.isViewerMode && previewTable && (toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
-          [seatingRowData]="$any(previewTable)"
-          [isPreview]="true"
-          [previewSegment]="previewSegment"
-          [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1"
-          class="opacity-70 preview-table">
-        </app-segmented-seating-row>
+  <!-- Display all tables with position adjusted for pan offset and zoom -->
+  <div class="table-container"
+    [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'">
+    <!-- Tables from MobX store -->
+    <div *ngFor="let table of layoutStore.elements" (mousedown)="selectTable(table, $event)" class="selection-container"
+      [class.draggable]="!viewerStore.isViewerMode && toolStore.activeTool !== ToolType.RoundTable"
+      [class.dragging]="!viewerStore.isViewerMode && dragStore.isDragging && dragStore.draggedItem?.id === table.id">
+      <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode -->
+      <div
+        *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow'"
+        class="selection-indicator table-selection"
+        [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
+        [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
+        [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
+        [style.transform-origin]="'center center'" [style.left]="table.x + 'px'" [style.top]="table.y + 'px'">
       </div>
-      
-      <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
-      <div *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)" 
-           class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
+
+      <!-- Round Table -->
+      <app-round-table *ngIf="table.type === 'roundTable'" [tableData]="$any(table)" [x]="table.x" [y]="table.y"
+        [radius]="$any(table).radius" [seats]="$any(table).seats" [openSpaces]="$any(table).openSpaces"
+        [name]="table.name" [rotation]="table.rotation || 0"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true"
+        [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true">
+      </app-round-table>
+
+      <!-- Rectangle Table -->
+      <app-rectangle-table *ngIf="table.type === 'rectangleTable'" [tableData]="$any(table)" [x]="table.x" [y]="table.y"
+        [width]="$any(table).width" [height]="$any(table).height" [upChairs]="$any(table).upChairs"
+        [downChairs]="$any(table).downChairs" [leftChairs]="$any(table).leftChairs"
+        [rightChairs]="$any(table).rightChairs" [name]="table.name" [rotation]="table.rotation || 0"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [tableLabelVisible]="table['tableLabelVisible'] !== undefined ? table['tableLabelVisible'] : true"
+        [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true">
+      </app-rectangle-table>
+
+      <!-- Seating Row -->
+      <app-seating-row *ngIf="table.type === 'seatingRow'" [seatingRowData]="$any(table)" [x]="table.x" [y]="table.y"
+        [endX]="$any(table).endX" [endY]="$any(table).endY" [seatCount]="$any(table).seatCount"
+        [seatSpacing]="$any(table).seatSpacing" [name]="table.name" [rotation]="table.rotation || 0"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
+        [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
+      </app-seating-row>
+
+      <!-- Segmented Seating Row -->
+      <app-segmented-seating-row *ngIf="table.type === 'segmentedSeatingRow'" [seatingRowData]="$any(table)"
+        [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
+        [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true" #segmentedRow>
+        <!-- Selection indicator for segmented seating row - Hidden in viewer mode -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+          class="selection-indicator table-selection" [ngStyle]="segmentedRow.getSelectionStyles()">
+        </div>
+      </app-segmented-seating-row>
+
+      <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
+      <app-round-table *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
+        [x]="previewTable.x" [y]="previewTable.y" [radius]="$any(previewTable).radius"
+        [seats]="$any(previewTable).seats" [name]="previewTable.name || 'Table'" class="opacity-70 preview-table">
+      </app-round-table>
+
+      <app-rectangle-table
+        *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RectangleTable"
+        [x]="previewTable.x" [y]="previewTable.y" [width]="$any(previewTable).width"
+        [height]="$any(previewTable).height" [upChairs]="$any(previewTable).upChairs"
+        [downChairs]="$any(previewTable).downChairs" [leftChairs]="$any(previewTable).leftChairs"
+        [rightChairs]="$any(previewTable).rightChairs" [name]="previewTable.name || 'Table'"
+        class="opacity-70 preview-table">
+      </app-rectangle-table>
+
+      <!-- Use Segmented Seating Row for both SeatingRow and SegmentedSeatingRow tools - Hidden in viewer mode -->
+      <app-segmented-seating-row
+        *ngIf="!viewerStore.isViewerMode && previewTable && (toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
+        [seatingRowData]="$any(previewTable)" [isPreview]="true" [previewSegment]="previewSegment"
+        [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1" class="opacity-70 preview-table">
+      </app-segmented-seating-row>
     </div>
+
+    <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
+    <div
+      *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
+      class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
+  </div>
 </div>
 
 <!-- Zoom and coordinate controls -->
@@ -135,7 +94,7 @@
   <div class="bg-white rounded-md p-2 text-xs shadow-lg" *mobxAutorun>
     X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
   </div>
-  
+
   <!-- Zoom controls -->
   <div class="flex items-center bg-white rounded-md shadow-lg">
     <button (click)="store.adjustZoom(-5)" class="btn btn-sm btn-ghost">-</button>
