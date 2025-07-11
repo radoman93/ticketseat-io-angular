@@ -288,8 +288,13 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
-    // Disable all table manipulation and creation in viewer mode
+    // Allow panning in viewer mode, but disable table manipulation and creation
     if (this.viewerStore.isViewerMode) {
+      if (event.button === 1 || event.button === 0) {
+        // Middle mouse button OR left mouse button for panning in viewer mode
+        this.store.startPanning(event.clientX, event.clientY);
+        event.preventDefault();
+      }
       return;
     }
 
@@ -423,67 +428,70 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.store.setMousePosition(event.clientX, event.clientY);
 
     if (this.store.isPanning) {
-      // Handle panning
+      // Handle panning (allowed in both editor and viewer modes)
       this.store.pan(event.clientX, event.clientY);
       this.drawGrid();
-    } else if (this.dragStore.isDragging) {
-      // Handle dragging an existing item
-      this.dragStore.updateDragPosition(event.clientX, event.clientY);
-    } else if (this.dragStore.potentialDragItem) {
-      // If we have a potential drag item, check if we should start dragging
-      const dx = event.clientX - this.dragStore.startMouseX;
-      const dy = event.clientY - this.dragStore.startMouseY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    } else if (!this.viewerStore.isViewerMode) {
+      // Only handle dragging and preview updates in editor mode
+      if (this.dragStore.isDragging) {
+        // Handle dragging an existing item
+        this.dragStore.updateDragPosition(event.clientX, event.clientY);
+      } else if (this.dragStore.potentialDragItem) {
+        // If we have a potential drag item, check if we should start dragging
+        const dx = event.clientX - this.dragStore.startMouseX;
+        const dy = event.clientY - this.dragStore.startMouseY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance > 5) { // Start dragging if mouse moved more than 5px
-        this.dragStore.startDragging();
-      }
-    } else if (this.previewTable) {
-      // Update position of preview object when in add mode
-      const gridCoords = this.getGridCoordinates(event);
-      const x = gridCoords.x;
-      const y = gridCoords.y;
+        if (distance > 5) { // Start dragging if mouse moved more than 5px
+          this.dragStore.startDragging();
+        }
+      } else if (this.previewTable) {
+        // Update position of preview object when in add mode
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
 
-      // Always update preview position for non-creating mode
-      if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow) {
-        this.previewTable.x = x;
-        this.previewTable.y = y;
-      }
+        // Always update preview position for non-creating mode
+        if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow) {
+          this.previewTable.x = x;
+          this.previewTable.y = y;
+        }
 
-      if (this.isCreatingRegularRow && this.previewSegment) {
-        // Update the end point of the regular row being created
-        this.activeSegmentEndX = x;
-        this.activeSegmentEndY = y;
+        if (this.isCreatingRegularRow && this.previewSegment) {
+          // Update the end point of the regular row being created
+          this.activeSegmentEndX = x;
+          this.activeSegmentEndY = y;
 
-        // Update the preview segment with the new end position
-        const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
-          this.previewSegment,
-          x,
-          y
-        );
+          // Update the preview segment with the new end position
+          const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
+            this.previewSegment,
+            x,
+            y
+          );
 
-        // Apply updates to preview segment
-        this.previewSegment = {
-          ...this.previewSegment,
-          ...updatedSegment
-        };
-      } else if (this.isCreatingSegmentedRow && this.previewSegment) {
-        // Update the end point of the current segment being created
-        this.activeSegmentEndX = x;
-        this.activeSegmentEndY = y;
+          // Apply updates to preview segment
+          this.previewSegment = {
+            ...this.previewSegment,
+            ...updatedSegment
+          };
+        } else if (this.isCreatingSegmentedRow && this.previewSegment) {
+          // Update the end point of the current segment being created
+          this.activeSegmentEndX = x;
+          this.activeSegmentEndY = y;
 
-        // Update the preview segment with the new end position
-        const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
-          this.previewSegment,
-          x,
-          y
-        );
+          // Update the preview segment with the new end position
+          const updatedSegment = this.segmentedSeatingRowService.updateSegmentEndPosition(
+            this.previewSegment,
+            x,
+            y
+          );
 
-        // Apply updates to preview segment
-        this.previewSegment = {
-          ...this.previewSegment,
-          ...updatedSegment
-        };
+          // Apply updates to preview segment
+          this.previewSegment = {
+            ...this.previewSegment,
+            ...updatedSegment
+          };
+        }
       }
     }
   }
@@ -848,6 +856,17 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.segmentedRowSegments = [];
   }
 
+  // Handle wheel events for zoom in viewer mode
+  @HostListener('wheel', ['$event'])
+  onWheel(event: WheelEvent): void {
+    if (this.viewerStore.isViewerMode) {
+      // Allow zooming in viewer mode
+      event.preventDefault();
+      const zoomAmount = event.deltaY > 0 ? -5 : 5;
+      this.store.adjustZoom(zoomAmount);
+    }
+  }
+
   // Helper method to convert viewport coordinates to grid coordinates
   private getGridCoordinates(event: MouseEvent): { x: number, y: number } {
     if (!this.gridContainerRef) {
@@ -868,4 +887,4 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
     return { x, y };
   }
-} 
+}

@@ -841,6 +841,37 @@ interface Chair {
 }
 ```
 
+### Panning and Zooming
+
+The EventViewer supports interactive navigation:
+
+**Panning:**
+- Click and drag anywhere on the layout to pan around
+- Works with both left mouse button and middle mouse button
+- Visual feedback with grab/grabbing cursor
+- Smooth panning with immediate updates
+
+**Zooming:**
+- Use scroll wheel to zoom in and out
+- Zoom range: 10% to 200%
+- Zoom level is maintained across interactions
+- Works in combination with panning
+
+**Usage Tips:**
+- For large layouts, use panning to navigate to different sections
+- Zoom in to see seat details more clearly
+- Zoom out to get an overview of the entire layout
+- Panning and zooming work seamlessly with seat selection
+
+```typescript
+// The viewer provides visual cues for navigation
+<app-event-viewer 
+  [design]="layoutData"
+  [seatLimit]="4">
+  <!-- Users will see "Drag to pan view, scroll to zoom" in the instructions -->
+</app-event-viewer>
+```
+
 ### Features
 
 - **Read-only Layout Display**: Shows venue layouts without editing capabilities
@@ -848,6 +879,7 @@ interface Chair {
 - **Seat Limit**: Optional limit on how many seats can be selected
 - **Pre-Reserved Seats**: Seats with IDs in `reservedIds` are marked as unavailable (red) and cannot be selected
 - **Event Emitter**: Emits selected chair objects back to parent component
+- **Panning & Zooming**: Click and drag to pan around the layout, scroll wheel to zoom in/out
 - **Reservation Interface**: Clean UI for seat selection and customer information
 - **Real-time Updates**: Immediate visual feedback for seat selection
 - **Green Theme**: User-friendly green color scheme

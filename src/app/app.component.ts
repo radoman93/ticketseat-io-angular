@@ -30,6 +30,9 @@ export class AppComponent {
   // Custom reserved seats input
   customReservedSeats = '';
 
+  // Seat limit value for testing
+  seatLimitValue: number = 0;
+
   // Sample layout data
   sampleLayout: LayoutExportData | null = null;
 

@@ -16,7 +16,7 @@ export class ViewerStore {
   preReservedSeats: string[] = []; // External reserved seat IDs
   customerInfo: { name: string; email?: string; phone?: string } = { name: '' };
   notifications: Notification[] = [];
-  seatLimit: number | null = null; // Maximum number of seats that can be selected
+  seatLimit: number | null = 0; // 0 means unlimited, null means no limit set (same as 0)
 
   constructor() {
     makeAutoObservable(this, {
@@ -57,12 +57,12 @@ export class ViewerStore {
   }
 
   get isSeatLimitReached(): boolean {
-    if (this.seatLimit === null) return false;
+    if (this.seatLimit === null || this.seatLimit === 0) return false;
     return this.selectedSeatsCount >= this.seatLimit;
   }
 
   get remainingSeats(): number {
-    if (this.seatLimit === null) return Infinity;
+    if (this.seatLimit === null || this.seatLimit === 0) return Infinity;
     return Math.max(0, this.seatLimit - this.selectedSeatsCount);
   }
 
@@ -98,8 +98,8 @@ export class ViewerStore {
   setSeatLimit(limit: number | null): void {
     this.seatLimit = limit;
 
-    // If setting a limit and current selection exceeds it, truncate selection
-    if (limit !== null && this.selectedSeatsForReservation.length > limit) {
+    // If setting a limit > 0 and current selection exceeds it, truncate selection
+    if (limit !== null && limit > 0 && this.selectedSeatsForReservation.length > limit) {
       // Keep only the first 'limit' number of selected seats
       this.selectedSeatsForReservation = this.selectedSeatsForReservation.slice(0, limit);
       this.addNotification({
@@ -121,8 +121,8 @@ export class ViewerStore {
       return; // Already selected
     }
 
-    // Check seat limit before adding
-    if (this.seatLimit !== null && this.selectedSeatsCount >= this.seatLimit) {
+    // Check seat limit before adding (only if limit > 0)
+    if (this.seatLimit !== null && this.seatLimit > 0 && this.selectedSeatsCount >= this.seatLimit) {
       this.showSeatLimitReachedFeedback();
       return;
     }

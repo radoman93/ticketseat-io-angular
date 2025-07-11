@@ -1,4 +1,6 @@
 <div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun
+  [class.cursor-grab]="viewerStore.isViewerMode"
+  [class.cursor-grabbing]="viewerStore.isViewerMode && store.isPanning"
   (click)="handleCanvasClick()">
   <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
 

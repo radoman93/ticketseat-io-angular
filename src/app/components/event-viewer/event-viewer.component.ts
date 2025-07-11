@@ -31,6 +31,7 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
         <div class="flex items-center gap-2">
           <div class="w-2 h-2 rounded-full bg-green-500"></div>
           <span class="text-sm text-green-700 font-medium">Seat Selection & Reservation</span>
+          <span class="text-xs text-green-600 ml-2">• Drag to pan view</span>
         </div>
         
         <!-- Selected Seats Summary -->
@@ -67,6 +68,14 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
   styles: [`
     .viewer-mode {
       background-color: #f0fdf4; /* Very light green background */
+    }
+    
+    .viewer-mode .table-container {
+      cursor: grab;
+    }
+    
+    .viewer-mode .table-container:active {
+      cursor: grabbing;
     }
     
     :host {
@@ -168,30 +177,37 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private setSeatLimitIfProvided(): void {
-    if (this.seatLimit !== undefined && this.seatLimit > 0) {
+    if (this.seatLimit !== undefined) {
       this.viewerStore.setSeatLimit(this.seatLimit);
-      console.log('Seat limit set to:', this.seatLimit);
+      if (this.seatLimit === 0) {
+        console.log('Seat limit set to unlimited (0)');
+      } else {
+        console.log('Seat limit set to:', this.seatLimit);
+      }
     } else {
-      // Clear seat limit if not provided or invalid
-      this.viewerStore.setSeatLimit(null);
+      // Default to unlimited (0) if not provided
+      this.viewerStore.setSeatLimit(0);
+      console.log('Seat limit defaulted to unlimited (0)');
     }
   }
 
   getSelectionInstructions(): string {
     if (this.viewerStore.selectedSeatsCount === 0) {
-      const limitText = this.viewerStore.seatLimit
+      const limitText = this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0
         ? ` (max ${this.viewerStore.seatLimit})`
         : '';
-      return `Click on available seats to select them for reservation${limitText}`;
+      return `Click on available seats to select them for reservation${limitText}. Drag to pan view, scroll to zoom.`;
     }
 
-    const remainingText = this.viewerStore.seatLimit
+    const remainingText = this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0
       ? ` (${this.viewerStore.remainingSeats} remaining)`
       : '';
-    return `Ready to reserve ${this.viewerStore.selectedSeatsCount} seat(s)${remainingText}`;
+    return `Ready to reserve ${this.viewerStore.selectedSeatsCount} seat(s)${remainingText}. Drag to pan view, scroll to zoom.`;
   }
 
   getSeatLimitDisplay(): string {
-    return this.viewerStore.seatLimit ? ` / ${this.viewerStore.seatLimit}` : '';
+    return this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0 
+      ? ` / ${this.viewerStore.seatLimit}` 
+      : '';
   }
 }

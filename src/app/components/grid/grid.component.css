@@ -72,6 +72,31 @@
   pointer-events: none;
 }
 
+/* Cursor styles for viewer mode */
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grabbing {
+  cursor: grabbing;
+}
+
+.cursor-grab .table-container {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.cursor-grabbing .table-container {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
 /* Draggable element styles */
 .draggable {
   cursor: grab;
@@ -112,4 +137,4 @@
     touch-action: none;
     transform: none !important;
     transition: none !important;
-} 
+}
