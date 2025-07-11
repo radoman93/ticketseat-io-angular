@@ -1,6 +1,7 @@
 .preview-table ::ng-deep .table-circle {
   border-style: dashed;
-  border-color: #3b82f6; /* blue-500 */
+  border-color: #3b82f6;
+  /* blue-500 */
 }
 
 .preview-table ::ng-deep .seat-circle {
@@ -42,26 +43,26 @@
 
 /* Highlight effect for selected elements */
 .selected ::ng-deep .table-circle {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); /* blue-500 with alpha */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  /* blue-500 with alpha */
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .table-selection {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 8px,
-      rgba(59, 130, 246, 0.05) 8px,
-      rgba(59, 130, 246, 0.05) 16px
-    );
+    background-image: repeating-linear-gradient(-45deg,
+        transparent,
+        transparent 8px,
+        rgba(59, 130, 246, 0.05) 8px,
+        rgba(59, 130, 246, 0.05) 16px);
     background-size: 24px 24px;
     animation: moveStripes 3s linear infinite;
   }
-  
+
   @keyframes moveStripes {
     0% {
       background-position: 0 0;
     }
+
     100% {
       background-position: 24px 0;
     }
@@ -113,28 +114,29 @@
 }
 
 .table-wrapper.preview {
-    opacity: 0.5;
-    border-style: dashed;
+  opacity: 0.5;
+  border-style: dashed;
 }
 
 .table-boundary {
-    /* Styles for the main table circle */
-    transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+  /* Styles for the main table circle */
+  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .table-boundary.selected {
-    box-shadow: 0 0 0 3px #3b82f6, 0 0 0 5px rgba(59, 130, 246, 0.3); /* Tailwind blue-500 */
+  box-shadow: 0 0 0 3px #3b82f6, 0 0 0 5px rgba(59, 130, 246, 0.3);
+  /* Tailwind blue-500 */
 }
 
 .seat {
-    /* Styles for the seats */
-    transition: background-color 0.2s ease-in-out;
+  /* Styles for the seats */
+  transition: background-color 0.2s ease-in-out;
 }
 
 .fixed-preview {
-    position: absolute;
-    pointer-events: none;
-    touch-action: none;
-    transform: none !important;
-    transition: none !important;
+  position: absolute;
+  pointer-events: none;
+  touch-action: none;
+  transform: none !important;
+  transition: none !important;
 }

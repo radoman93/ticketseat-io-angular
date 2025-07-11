@@ -206,8 +206,8 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   getSeatLimitDisplay(): string {
-    return this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0 
-      ? ` / ${this.viewerStore.seatLimit}` 
+    return this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0
+      ? ` / ${this.viewerStore.seatLimit}`
       : '';
   }
 }

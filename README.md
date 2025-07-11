@@ -53,12 +53,6 @@ Then install normally:
 npm install @radoman93/ticketseat-io-angular
 ```
 
-### From NPM (if published)
-
-```bash
-npm install ticketseat-io-angular
-```
-
 ### Peer Dependencies
 
 Make sure you have the following peer dependencies installed:
@@ -189,52 +183,6 @@ import { EventEditorComponent } from 'ticketseat-io-angular';
   `
 })
 export class AdminDashboardComponent {}
-```
-
-### End User - Seat Selection & Reservation
-
-Use this component for end users to view layouts and make reservations:
-
-```typescript
-import { Component } from '@angular/core';
-import { EventViewerComponent } from 'ticketseat-io-angular';
-
-@Component({
-  selector: 'app-booking',
-  standalone: true,
-  imports: [EventViewerComponent],
-  template: `
-    <div class="h-screen w-screen">
-    <app-event-editor [design]="myLayout"></app-event-editor>
-  `
-})
-export class AppComponent {
-  myLayout: LayoutExportData = {
-    "meta": {
-      "version": "1.0",
-      "name": "Wedding Reception",
-      "created": "2025-01-01T12:00:00.000Z",
-      "creator": "TicketSeats v1.0"
-    },
-    "settings": {
-      "gridSize": 50,
-      "showGrid": true,
-      "showGuides": true
-    },
-    "elements": [
-      {
-        "id": "table-1",
-        "type": "roundTable",
-        "x": 300,
-        "y": 200,
-        "radius": 60,
-        "seats": 8,
-        "name": "Head Table",
-        "rotation": 0
-      }
-    ]
-  };
-}
 ```
 
 ### Complete Example with Multiple Elements
@@ -391,7 +339,8 @@ export class AppComponent {
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `design` | `LayoutExportData \| string \| null` | `undefined` | Initial design to load. Can be a JSON object, string, or null |
+| `design` | `LayoutExportData \| string \| null` | `undefined` | Initial design to load. 
+Can be a JSON object, string, or null |
 
 #### LayoutExportData Interface
 
@@ -410,6 +359,31 @@ interface LayoutExportData {
     showGuides: boolean;
   };
   elements: ElementType[];
+}
+
+interface ElementType {
+  id: string;
+  type: 'roundTable' | 'rectangleTable' | 'seatingRow' | 'segmentedSeatingRow';
+  x: number;
+  y: number;
+  rotation: number;
+  name: string;
+  chairs: Chair[];
+  // Additional properties vary by element type
+}
+
+interface Chair {
+  id: string;
+  tableId: string;
+  label: string;
+  price: number;
+  position: {
+    angle: number;
+    distance: number;
+  };
+  isSelected?: boolean;
+  reservationStatus?: 'free' | 'reserved' | 'selected-for-reservation';
+  reservedBy?: string;
 }
 ```
 
@@ -518,24 +492,7 @@ The library now exports layouts with nested chair objects included in each eleme
 
 ## Advanced Usage
 
-### Accessing MobX Stores
 
-```typescript
-import { 
-  layoutStore, 
-  selectionStore, 
-  viewerStore 
-} from 'ticketseat-io-angular';
-
-// Access layout data
-const elements = layoutStore.elements;
-
-// Check current selection
-const hasSelection = selectionStore.hasSelection;
-
-// Check current mode
-const isEditorMode = viewerStore.isEditorMode;
-```
 
 ### Dynamic Layout Loading
 
@@ -615,24 +572,6 @@ This feature makes it easy to:
 - Create real-time collaborative editing features
 - Track changes for undo/redo functionality
 
-## Examples
-
-For complete examples and advanced usage patterns, see the [USAGE_EXAMPLE.md](./USAGE_EXAMPLE.md) file.
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest) 
-- Safari (latest)
-- Edge (latest)
-
-## Contributing
-
-We welcome contributions! Please see our contributing guidelines for more details.
-
-## License
-
-MIT License - see LICENSE file for details.
 
 ## EventViewerComponent
 
@@ -671,7 +610,7 @@ The `EventViewerComponent` provides a read-only layout viewing experience optimi
 |----------|------|-------------|
 | `design` | `LayoutExportData \| string \| null` | Layout data to display (JSON object or JSON string) |
 | `reservedIds` | `string[] \| null` | Array of seat IDs that are already reserved externally |
-| `seatLimit` | `number \| undefined` | Maximum number of seats a user can select (optional) |
+| `seatLimit` | `number \| undefined` | Maximum number of seats a user can select. 0 = unlimited (default), null/undefined = unlimited |
 
 ### Events
 
@@ -700,9 +639,10 @@ import { EventViewerComponent, Chair } from '@radoman93/ticketseat-io-angular';
             <input 
               type="number" 
               [(ngModel)]="seatLimit" 
-              min="1" 
+              min="0" 
               max="10"
-              class="w-20 px-2 py-1 border rounded">
+              placeholder="0 = unlimited"
+              class="w-32 px-2 py-1 border rounded">
           </label>
           <button 
             (click)="clearSelection()"
@@ -741,7 +681,7 @@ export class BookingComponent {
     'table-1-chair-2',
     'seating-row-1-chair-5'
   ];
-  seatLimit: number = 4;
+  seatLimit: number = 0; // 0 = unlimited
   selectedSeats: Chair[] = [];
 
   async ngOnInit() {
@@ -790,21 +730,31 @@ export class BookingComponent {
 
 ### Seat Limit Feature
 
-The seat limit feature restricts how many seats a user can select:
+The seat limit feature controls how many seats a user can select:
 
 ```typescript
-// Limit to 2 seats
-<app-event-viewer [design]="layout" [seatLimit]="2"></app-event-viewer>
+// Unlimited seats (default behavior)
+<app-event-viewer [design]="layout"></app-event-viewer>
+<app-event-viewer [design]="layout" [seatLimit]="0"></app-event-viewer>
+
+// Limited to specific number
+<app-event-viewer [design]="layout" [seatLimit]="4"></app-event-viewer>
 
 // Dynamic seat limit
 <app-event-viewer [design]="layout" [seatLimit]="userTicketCount"></app-event-viewer>
 ```
 
+**Seat Limit Values:**
+- **0 or undefined**: Unlimited seats (default behavior)
+- **Positive number**: Maximum seats that can be selected
+- Visual feedback shows selected/total when limit is set
+
 **Seat Limit Behavior:**
-- Users cannot select more seats than the limit
+- Users cannot select more seats than the limit (when > 0)
 - Visual feedback shows remaining seats (e.g., "2 / 4 seats selected")
 - Warning notifications when trying to exceed the limit
 - If limit is reduced, excess selections are automatically removed
+- When set to 0, no limit indicators are shown
 
 ### Event Emitter Feature
 
@@ -916,78 +866,3 @@ export class BookingComponent {
 </app-event-viewer>
 ```
 
-## Troubleshooting
-
-### Icons Not Loading
-
-If toolbar icons are not displaying:
-
-1. **Check Assets Setup**: Ensure you've copied the assets folder or configured angular.json correctly
-   ```bash
-   # Verify assets exist in your project
-   ls -la src/assets/icons/toolbar/
-   ```
-
-2. **Verify Build Output**: Check that assets are included in your build
-   ```bash
-   # After build, check dist folder
-   ls -la dist/assets/icons/toolbar/
-   ```
-
-3. **Console Errors**: Check browser console for 404 errors on icon requests
-
-4. **Configure Custom Path**: If using a custom asset path, make sure to configure the TICKETSEAT_ASSET_BASE_PATH provider
-   ```typescript
-   import { TICKETSEAT_ASSET_BASE_PATH } from '@radoman93/ticketseat-io-angular';
-   
-   // In your main.ts or app.config.ts
-   providers: [
-     {
-       provide: TICKETSEAT_ASSET_BASE_PATH,
-       useValue: 'your-custom-path'
-     }
-   ]
-   ```
-
-5. **Path Issues**: The library expects icons at `{basePath}/icons/toolbar/` relative to your app root
-
-### Styling Issues
-
-1. **Import Order**: Make sure the library CSS is imported after your base styles
-2. **Tailwind Conflicts**: If using Tailwind, ensure proper purge/content configuration
-3. **Missing Styles**: Verify the CSS file is actually being loaded in your application
-
-### Build Errors
-
-1. **Peer Dependencies**: Ensure all peer dependencies are installed
-2. **Angular Version**: Make sure you're using a compatible Angular version (19+)
-3. **Module Resolution**: Check that your bundler can resolve the library modules
-
-### Performance Issues
-
-1. **Large Layouts**: For layouts with many elements, consider virtualization
-2. **Memory Usage**: Clear unused layout data when navigating away
-3. **Event Listeners**: The library properly cleans up event listeners on destroy
-
-## Testing the Layout Updates Feature
-
-To test the real-time layout update functionality:
-
-1. Run the development server:
-   ```bash
-   npm run start
-   ```
-
-2. Navigate to the example page:
-   ```
-   http://localhost:4200/examples/editor-with-updates
-   ```
-
-3. Try the following actions to see real-time updates:
-   - Add a round or rectangle table
-   - Move elements around
-   - Add or remove chairs
-   - Modify element properties
-   - Change grid settings
-
-The debug panel on the right will show the latest layout data in real-time, demonstrating how the `layoutUpdated` event emits changes to the parent application.
