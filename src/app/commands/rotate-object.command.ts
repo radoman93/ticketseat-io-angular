@@ -1,14 +1,14 @@
 import { Command } from '../models/command.interface';
 import { layoutStore, LayoutStore } from '../stores/layout.store';
-import { SeatingRowProperties, SegmentProperties } from '../services/selection.service';
+import { SeatingRowProperties } from '../services/selection.service';
 
 export class RotateObjectCommand implements Command {
   description = 'Rotate Object';
 
   constructor(
     private readonly targetId: string,
-    private readonly oldState: { rotation: number, segments?: SegmentProperties[] },
-    private readonly newState: { rotation: number, segments?: SegmentProperties[] },
+    private readonly oldState: { rotation: number },
+    private readonly newState: { rotation: number },
     private lStore: LayoutStore = layoutStore
   ) {}
 

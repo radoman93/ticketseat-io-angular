@@ -17,10 +17,10 @@ import viewerStore from '../../stores/viewer.store';
 export class SeatingRowComponent implements OnInit, OnChanges {
   @Input() x: number = 0;
   @Input() y: number = 0;
-  @Input() endX: number = 100;
+  @Input() endX: number = 150;
   @Input() endY: number = 0;
   @Input() seatCount: number = 5;
-  @Input() seatSpacing: number = 35;
+  @Input() seatSpacing: number = 30;
   @Input() name: string = 'Row';
   @Input() seatingRowData!: SeatingRowProperties;
   @Input() isSelected!: boolean;
@@ -32,10 +32,10 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   // Internal observable properties that sync with inputs
   public _x: number = 0;
   public _y: number = 0;
-  public _endX: number = 100;
+  public _endX: number = 150;
   public _endY: number = 0;
   public _seatCount: number = 5;
-  public _seatSpacing: number = 35;
+  public _seatSpacing: number = 30;
   public _name: string = 'Row';
   public _seatingRowData: SeatingRowProperties | null = null;
   public _isSelected: boolean = false;
@@ -56,7 +56,6 @@ export class SeatingRowComponent implements OnInit, OnChanges {
       chairStyles: computed,
       rowLength: computed,
       rowAngle: computed,
-      isEffectivePreview: computed,
       // Internal observable properties
       _x: observable,
       _y: observable,
@@ -72,6 +71,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
       _chairLabelVisible: observable,
       _rowLabelVisible: observable,
       // Actions
+      syncInputs: action,
       // Exclude @Input properties from being observable to prevent MobX strict mode warnings
       x: false,
       y: false,
@@ -96,24 +96,13 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   ngOnInit() {
     this.syncInputs();
     
-    console.log('🔄 Seating row ngOnInit called. SeatingRowData:', this._seatingRowData, 'isPreview:', this._isPreview);
-    
     // Generate chairs for this seating row if they don't exist and this is not a preview
     if (this._seatingRowData && this._seatingRowData.id && !this._isPreview) {
       const existingChairs = this.store.chairStore.getChairsByTable(this._seatingRowData.id);
-      console.log('📋 Existing chairs for seating row', this._seatingRowData.id, ':', existingChairs);
       
       if (existingChairs.length === 0) {
-        console.log('🪑 Generating chairs for seating row:', this._seatingRowData.id);
         this.generateChairsForSeatingRow();
-        console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
-    } else {
-      console.log('❌ Not generating chairs for seating row. Conditions:', {
-        hasSeatingRowData: !!this._seatingRowData,
-        hasId: this._seatingRowData?.id,
-        isPreview: this._isPreview
-      });
     }
   }
 
@@ -144,7 +133,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
       return {
         left: `${this._seatingRowData.x}px`,
         top: `${this._seatingRowData.y}px`,
-        transform: `rotate(${this._rotation || this._seatingRowData.rotation || 0}deg)`,
+        transform: `rotate(${this.rowAngle}deg)`,
         transformOrigin: '0 0'
       };
     }
@@ -152,7 +141,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     return {
       left: `${this._x}px`,
       top: `${this._y}px`,
-      transform: `rotate(${this._rotation}deg)`,
+      transform: `rotate(${this.rowAngle}deg)`,
       transformOrigin: '0 0'
     };
   }
@@ -185,25 +174,17 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     
     const chairsArray = [];
     
-    console.log('🪑 Building chair styles for seating row:');
-    console.log('  - seatingRowData:', this._seatingRowData);
-    console.log('  - isPreview:', this.isEffectivePreview);
-    console.log('  - seatCount:', effectiveSeatCount);
-    console.log('  - seatSpacing:', effectiveSeatSpacing);
-    
-    // Handle special case for zero seats
     if (effectiveSeatCount <= 0) {
       return [];
     }
     
-    // Calculate seat positions with consistent spacing
+    // Calculate seat positions along the row
     for (let i = 0; i < effectiveSeatCount; i++) {
-      // Position seats with exact spacing
       let x = i * effectiveSeatSpacing;
       
-      // In preview mode, only center if it's a single chair
-      if (this.isEffectivePreview && effectiveSeatCount === 1) {
-        x = -2.5; // Center the single preview chair
+      // In preview mode, center single chair
+      if (this._isPreview && effectiveSeatCount === 1) {
+        x = -2.5;
       }
       
       const y = 0; // All seats are on the same line (rotation handled by container)
@@ -218,48 +199,11 @@ export class SeatingRowComponent implements OnInit, OnChanges {
         isSelected: chair ? chair.isSelected : false,
         chair: chair,
         index: i,
-        isPreview: this.isEffectivePreview
+        isPreview: this._isPreview
       });
     }
     
-    console.log('📋 Final seating row chairsArray:', chairsArray);
     return chairsArray;
-  }
-
-  getLabelLeftPosition(): number {
-    const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
-    const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
-    const labelPosition = this._seatingRowData?.labelPosition || 'left';
-    
-    // Calculate total row width (along the local x-axis)
-    const totalRowWidth = (effectiveSeatCount - 1) * effectiveSeatSpacing;
-    
-    switch (labelPosition) {
-      case 'left':
-        // Position label to the left of the first seat
-        return -60; // Fixed position to the left
-      case 'center':
-        // Position label at the center of the row
-        return totalRowWidth / 2 - 20; // Center minus half label width estimate
-      case 'right':
-        // Position label to the right of the last seat
-        return totalRowWidth + 30; // Position to the right of last seat
-      default:
-        return -60; // Default to left
-    }
-  }
-
-  getRowWidth(): number {
-    const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
-    const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
-    
-    // Use exact chair spacing for consistent width
-    if (effectiveSeatCount <= 1) {
-      return 20; // Just the chair width for a single seat
-    }
-    
-    // Calculate the distance from first to last chair and add chair width
-    return (effectiveSeatCount - 1) * effectiveSeatSpacing + 5; // Add 5px for the chair display
   }
 
   private generateChairsForSeatingRow(): void {
@@ -275,8 +219,8 @@ export class SeatingRowComponent implements OnInit, OnChanges {
         label: (i + 1).toString(),
         price: 0,
         position: {
-          angle: 0, // Not used for seating rows
-          distance: 0 // Not used for seating rows
+          angle: this.rowAngle,
+          distance: 0
         },
         isSelected: false
       };
@@ -286,28 +230,21 @@ export class SeatingRowComponent implements OnInit, OnChanges {
 
   onChairClick(event: Event, chair: any): void {
     event.stopPropagation();
-    if (this.isEffectivePreview || !chair || !chair.chair) return;
+    if (this._isPreview || !chair || !chair.chair) return;
 
-    console.log('Chair clicked:', chair);
     this.selectChair(chair.chair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
   }
 
   onChairMouseDown(event: Event, chair: any): void {
     event.stopPropagation();
-    if (this.isEffectivePreview || !chair || !chair.chair) return;
+    if (this._isPreview || !chair || !chair.chair) return;
     
     // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
     if (this.viewerStore.isViewerMode) {
-      return; // Don't handle mousedown in viewer mode
+      return;
     }
 
-    console.log('Chair mousedown:', chair);
     this.selectChair(chair.chair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
-  }
-
-  onChairHover(chair: any): void {
-    if (this.isEffectivePreview || !chair) return;
-    // Can add hover effects here if needed
   }
 
   getChairClasses(chair: any): string {
@@ -315,7 +252,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
 
     const baseClasses = 'w-5 h-5 transition-all duration-200';
 
-    if (this.isEffectivePreview) {
+    if (this._isPreview) {
       return `${baseClasses} bg-blue-300 border border-blue-400`;
     }
     
@@ -402,9 +339,8 @@ export class SeatingRowComponent implements OnInit, OnChanges {
 
     // Set panel position if click coordinates provided
     if (clickX !== undefined && clickY !== undefined) {
-      // Add offset to position panel next to the chair, not over it
       const offsetX = clickX + 20;
-      const offsetY = clickY - 100; // Position above the click
+      const offsetY = clickY - 100;
       this.store.chairStore.setPanelPosition(offsetX, offsetY);
     }
 
@@ -414,9 +350,4 @@ export class SeatingRowComponent implements OnInit, OnChanges {
       this.store.chairStore.selectChair(chair.id);
     }
   }
-
-  // Helper getter to simplify HTML templates
-  get isEffectivePreview(): boolean {
-    return this._isPreview || (this._seatingRowData ? !!this._seatingRowData.isPreview : false);
-  }
-} 
+}

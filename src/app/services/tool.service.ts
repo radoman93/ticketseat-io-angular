@@ -6,8 +6,7 @@ export enum ToolType {
   Select = 'select',
   RoundTable = 'roundTable',
   RectangleTable = 'rectangleTable',
-  SeatingRow = 'seatingRow',
-  SegmentedSeatingRow = 'segmentedSeatingRow'
+  SeatingRow = 'seatingRow'
 }
 
 @Injectable({

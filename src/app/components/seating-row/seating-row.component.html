@@ -1,64 +1,36 @@
 <div class="absolute" *mobxAutorun [ngStyle]="seatingRowStyles">
   
-  <!-- Row line (visual indicator) - only visible when not in preview mode -->
-  <div class="absolute h-0.5 transition-all duration-200"
-       *ngIf="!isEffectivePreview"
-       [class]="'bg-green-400 opacity-50'"
-       [style.width.px]="getRowWidth()"
-       [style.left.px]="0"
-       [style.top.px]="-1">
+  <!-- Row label -->
+  <div *ngIf="rowLabelVisible" 
+       class="absolute -left-12 -top-3 text-sm font-bold text-gray-700 whitespace-nowrap">
+    {{ name }}
   </div>
   
-  <!-- Preview line (visual indicator) - only visible in preview mode -->
-  <div class="absolute h-0.5 transition-all duration-200"
-       *ngIf="isEffectivePreview"
-       [class]="'bg-blue-400 opacity-70'"
-       [style.width.px]="getRowWidth()"
-       [style.left.px]="0"
-       [style.top.px]="-1">
-  </div>
-  
-  <!-- Seating Row Chairs -->
+  <!-- Chairs positioned along the row -->
   <div class="absolute w-full h-full left-0 top-0">
-    <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5" 
+    <div class="absolute -top-2.5 left-0" 
          *ngFor="let chair of chairStyles; let i = index" 
          [style.transform]="chair.transform">
-      <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
-           [class]="getChairClasses(chair)"
+      <div class="chair-rectangle rounded transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+           [ngClass]="getChairClasses(chair)"
            (click)="onChairClick($event, chair)"
            (mousedown)="onChairMouseDown($event, chair)"
-           (mouseenter)="onChairHover(chair)"
            [title]="getSeatTitle(chair)">
         <span *ngIf="chairLabelVisible" 
               [class]="getSeatLabelClasses(chair)">
           {{ chair.label }}
         </span>
         <!-- Selection glow effect for editor mode -->
-        <div *ngIf="chair.isSelected && !isEffectivePreview && viewerStore.isEditorMode" 
-             class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
-        <div *ngIf="chair.isSelected && !isEffectivePreview && viewerStore.isEditorMode" 
-             class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
+        <div *ngIf="chair.isSelected && !viewerStore.isViewerMode" 
+             class="absolute inset-0 rounded bg-blue-400 opacity-40 animate-ping z-0"></div>
+        <div *ngIf="chair.isSelected && !viewerStore.isViewerMode" 
+             class="absolute -inset-2 rounded bg-blue-400/40 blur-sm animate-pulse z-0"></div>
         <!-- Selection glow effect for viewer mode -->
         <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
-             class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
+             class="absolute inset-0 rounded bg-green-400 opacity-50 animate-ping z-0"></div>
         <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
-             class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
-      </div>
-      
-      <!-- Preview info display - positioned next to the last chair -->
-      <div *ngIf="isEffectivePreview && i === chairStyles.length - 1"
-           class="absolute text-xs text-blue-600 font-medium whitespace-nowrap bg-white/90 px-2 py-1 rounded shadow-lg"
-           style="left: 20px; top: -8px;">
-        {{ chairStyles.length }} seats
+             class="absolute -inset-3 rounded bg-green-400/40 blur-md animate-pulse z-0"></div>
       </div>
     </div>
   </div>
-  
-  <!-- Row label -->
-  <div *ngIf="((seatingRowData.name || name) && !isEffectivePreview) && rowLabelVisible"
-       class="absolute text-xs text-gray-600 font-medium whitespace-nowrap"
-       [style.left.px]="getLabelLeftPosition()"
-       [style.top.px]="-12">
-    {{ seatingRowData.name || name }}
-  </div>
-</div> 
+</div>

@@ -49,7 +49,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
             if (freshItem.chairLabelVisible === undefined) {
               this.updateProperty('chairLabelVisible', true);
             }
-          } else if (freshItem.type === 'seatingRow' || freshItem.type === 'segmentedSeatingRow') {
+          } else if (freshItem.type === 'seatingRow') {
             if (freshItem.rowLabelVisible === undefined) {
               this.updateProperty('rowLabelVisible', true);
             }
@@ -90,10 +90,6 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     return this.selectedItem as SeatingRowProperties;
   }
 
-  @computed
-  get segmentedSeatingRowProperties(): SeatingRowProperties {
-    return this.selectedItem as SeatingRowProperties;
-  }
 
   @action
   updateProperty(property: string, value: any): void {
