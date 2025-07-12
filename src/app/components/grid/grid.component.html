@@ -15,10 +15,12 @@
       <div
         *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
         class="selection-indicator table-selection"
-        [style.width]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).width + 80) + 'px'"
-        [style.height]="(table.type === 'roundTable' ? $any(table).radius * 2 + 80 : table.type === 'seatingRow' ? 'auto' : $any(table).height + 80) + 'px'"
-        [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
-        [style.transform-origin]="'center center'" [style.left]="table.x + 'px'" [style.top]="table.y + 'px'">
+        [style.width]="getSelectionWidth(table) + 'px'"
+        [style.height]="getSelectionHeight(table) + 'px'"
+        [style.transform]="getSelectionTransform(table)"
+        [style.transform-origin]="getSelectionTransformOrigin(table)" 
+        [style.left]="getSelectionLeft(table) + 'px'" 
+        [style.top]="getSelectionTop(table) + 'px'">
       </div>
 
       <!-- Round Table -->
@@ -44,7 +46,7 @@
       <app-seating-row *ngIf="table.type === 'seatingRow'" [seatingRowData]="$any(table)" [x]="table.x" [y]="table.y"
         [endX]="$any(table).endX" [endY]="$any(table).endY" [seatCount]="$any(table).seatCount"
         [seatSpacing]="$any(table).seatSpacing" [name]="table.name" [rotation]="table.rotation || 0"
-        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
         [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
         [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
       </app-seating-row>

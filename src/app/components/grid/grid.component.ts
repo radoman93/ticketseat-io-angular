@@ -452,4 +452,63 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     this.drawingCurrentY = 0;
     this.previewTable = null;
   }
+
+  // Helper methods for selection indicator dimensions
+  getSelectionWidth(table: any): number {
+    if (table.type === 'roundTable') {
+      return table.radius * 2 + 80;
+    } else if (table.type === 'seatingRow') {
+      // Calculate based on seat count and spacing, plus label area
+      const seatCount = table.seatCount || 5;
+      const seatSpacing = table.seatSpacing || 30;
+      const rowLength = (seatCount - 1) * seatSpacing + 20; // Actual row length
+      return rowLength + 80; // Add equal padding on both sides
+    } else {
+      return table.width + 80;
+    }
+  }
+
+  getSelectionHeight(table: any): number {
+    if (table.type === 'roundTable') {
+      return table.radius * 2 + 80;
+    } else if (table.type === 'seatingRow') {
+      return 60; // Smaller height for single row
+    } else {
+      return table.height + 80;
+    }
+  }
+
+  getSelectionTransform(table: any): string {
+    if (table.type === 'seatingRow') {
+      // For seating rows, don't center - position from top-left
+      return `rotate(${table.rotation || 0}deg)`;
+    } else {
+      // For round and rectangle tables, center and rotate
+      return `translate(-50%, -50%) rotate(${table.rotation || 0}deg)`;
+    }
+  }
+
+  getSelectionTransformOrigin(table: any): string {
+    if (table.type === 'seatingRow') {
+      return '50px 40px'; // Transform origin from left edge + padding
+    } else {
+      return 'center center';
+    }
+  }
+
+  getSelectionLeft(table: any): number {
+    if (table.type === 'seatingRow') {
+      return table.x - 60; // Position to include label area with more padding
+    } else {
+      return table.x;
+    }
+  }
+
+  getSelectionTop(table: any): number {
+    if (table.type === 'seatingRow') {
+      return table.y - 30; // Center vertically on the row
+    } else {
+      return table.y;
+    }
+  }
 }
