@@ -602,6 +602,13 @@ The `EventViewerComponent` provides a read-only layout viewing experience optimi
   [reservedIds]="preReservedSeats"
   (selectedSeatsChange)="onSelectedSeatsChange($event)">
 </app-event-viewer>
+
+// Hide reservation panel (for custom UI)
+<app-event-viewer 
+  [design]="layoutData"
+  [showReservationPanel]="false"
+  (selectedSeatsChange)="onSelectedSeatsChange($event)">
+</app-event-viewer>
 ```
 
 ### Properties
@@ -611,6 +618,7 @@ The `EventViewerComponent` provides a read-only layout viewing experience optimi
 | `design` | `LayoutExportData \| string \| null` | Layout data to display (JSON object or JSON string) |
 | `reservedIds` | `string[] \| null` | Array of seat IDs that are already reserved externally |
 | `seatLimit` | `number \| undefined` | Maximum number of seats a user can select. 0 = unlimited (default), null/undefined = unlimited |
+| `showReservationPanel` | `boolean` | Show/hide the reservation panel. Default: `true` |
 
 ### Events
 

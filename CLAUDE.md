@@ -166,3 +166,5 @@ Present the refined version of the instruction using the format 'Refined: [refin
 State the perspective you'll adopt using the format 'Perspective: [chosen perspective]'.
 Execute the refined instruction from the chosen perspective and present the result using the format 'Execution: [answer]'.
 
+Everytime you are in think mode i want you to make TASK.md with plan made in thinking mode. Every plan you make I want you to include clear implementation and development roadmap including tasks and subtasks so we can debug everystep of implementation.
+

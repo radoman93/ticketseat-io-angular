@@ -107,8 +107,8 @@
 
     <!-- Viewer Mode -->
     <div *ngIf="!showEditor" class="h-screen">
-      <app-event-viewer [design]="sampleLayout" [seatLimit]="seatLimitValue" [reservedIds]="preReservedSeats"
-        (selectedSeatsChange)="onSelectedSeatsChange($event)">
+      <app-event-viewer [design]="sampleLayout" [showReservationPanel]="true" [seatLimit]="seatLimitValue"
+        [reservedIds]="preReservedSeats" (selectedSeatsChange)="onSelectedSeatsChange($event)">
       </app-event-viewer>
     </div>
   </main>
