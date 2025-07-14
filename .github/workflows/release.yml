@@ -61,16 +61,31 @@ jobs:
       id: bump
       run: |
         cd dist
+        
+        # Function to check if version exists in registry
+        version_exists() {
+          npm view "@${{ github.repository_owner }}/ticketseat-io-angular@$1" version &>/dev/null
+          return $?
+        }
+        
+        # Get initial version bump
         NEW_VERSION=$(npm version ${{ steps.version.outputs.bump }} --no-git-tag-version)
-        # Remove the 'v' prefix if present for consistency
         NEW_VERSION=${NEW_VERSION#v}
+        
+        # If version exists, keep incrementing patch number until we find an available version
+        while version_exists "$NEW_VERSION"; do
+          echo "Version $NEW_VERSION already exists, trying next patch version..."
+          NEW_VERSION=$(npm version patch --no-git-tag-version)
+          NEW_VERSION=${NEW_VERSION#v}
+        done
+        
         echo "new_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
         echo "New version: ${NEW_VERSION}"
 
     - name: Update main package.json version
       run: |
         DIST_VERSION=$(node -p "require('./dist/package.json').version")
-        npm version $DIST_VERSION --no-git-tag-version
+        npm version $DIST_VERSION --no-git-tag-version --allow-same-version
 
     - name: Commit version bump
       run: |
@@ -79,18 +94,22 @@ jobs:
         git add package.json
         git commit -m "chore: bump version to v${{ steps.bump.outputs.new_version }}" || exit 0
 
-    - name: Create and push Git tag
+    - name: Create Git tag
+      id: tag
       run: |
-        # Check if tag exists
-        if ! git rev-parse "v${{ steps.bump.outputs.new_version }}" >/dev/null 2>&1; then
-          # Tag doesn't exist, create and push it
-          git tag "v${{ steps.bump.outputs.new_version }}"
-          git push origin "v${{ steps.bump.outputs.new_version }}"
+        NEW_VERSION=${{ steps.bump.outputs.new_version }}
+        TAG="v${NEW_VERSION}"
+        
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "Tag $TAG already exists, skipping tag creation"
         else
-          echo "Tag v${{ steps.bump.outputs.new_version }} already exists, skipping tag creation"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          echo "Created and pushed tag: $TAG"
         fi
-        # Always push the version bump commit
-        git push origin HEAD:${{ github.ref_name }}
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
     - name: Check if release exists
       id: check_release
@@ -107,41 +126,20 @@ jobs:
     - name: Publish to GitHub Packages
       run: |
         cd dist
-        # Check if the package version already exists
-        if ! npm view "@${{ github.repository_owner }}/ticketseat-io-angular@${{ steps.bump.outputs.new_version }}" version &>/dev/null; then
-          npm publish
-        else
-          echo "Package version ${{ steps.bump.outputs.new_version }} already exists in registry, skipping publish"
-        fi
+        echo "Publishing version ${{ steps.bump.outputs.new_version }}"
+        echo "registry=https://npm.pkg.github.com/@${{ github.repository_owner }}" > .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+        npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create GitHub Release
-      if: steps.check_release.outputs.exists == 'false'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
+        name: Release ${{ steps.bump.outputs.new_version }}
         tag_name: v${{ steps.bump.outputs.new_version }}
-        release_name: Release v${{ steps.bump.outputs.new_version }}
-        body: |
-          ## Changes in v${{ steps.bump.outputs.new_version }}
-          
-          - Auto-generated release from commit: ${{ github.sha }}
-          - Package published to GitHub Packages
-          
-          ### Installation
-          
-          ```bash
-          npm install @radoman93/ticketseat-io-angular@${{ steps.bump.outputs.new_version }} --registry=https://npm.pkg.github.com
-          ```
-          
-          ### Styling Setup
-          
-          Don't forget to include the CSS file in your project:
-          
-          ```css
-          @import '@radoman93/ticketseat-io-angular/styles.css';
-          ```
         draft: false
         prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
