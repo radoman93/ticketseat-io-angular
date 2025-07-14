@@ -95,7 +95,7 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   @Input() design?: LayoutExportData | string | null;
   @Input() reservedIds?: string[] | null;
   @Input() seatLimit?: number; // New property to limit seat selection
-  @Input() showReservationPanel: boolean = true; // Control reservation panel visibility
+  @Input() showReservationPanel: boolean = false; // Control reservation panel visibility
 
   @Output() selectedSeatsChange = new EventEmitter<Chair[]>(); // Emits selected chair objects
 
