@@ -39,27 +39,20 @@ jobs:
     - name: Determine next version
       id: version
       run: |
-        # Fetch all tags from the remote
+        # Fetch all tags from the remote to ensure we have the latest ones
         git fetch --tags
         
-        # Get the latest semver tag
-        LATEST_TAG=$(git tag -l --sort=-v:refname "v*.*.*" | head -n 1)
-        
+        # Get the latest semver tag. If no tags are found, default to 0.0.0 so the first version will be 0.1.0.
+        LATEST_TAG=$(git tag -l "v*.*.*" | sort -V | tail -n 1)
         if [ -z "$LATEST_TAG" ]; then
-          echo "No semver tag found, starting with v0.1.0"
-          LATEST_TAG="v0.1.0"
-          # As it is the first release, we will create a tag and a release for it.
-          # This is a special case.
-          git tag $LATEST_TAG
-          git push origin $LATEST_TAG
+          LATEST_TAG="v0.0.0"
         fi
-        
         echo "Latest tag: $LATEST_TAG"
         
-        # Get the last commit message
+        # Get the last commit message to determine the bump type
         COMMIT_MSG=$(git log -1 --pretty=%B)
         
-        # Determine version bump type
+        # Determine version bump type based on conventional commit messages
         if [[ $COMMIT_MSG =~ ^(feat|feature)(\(.+\))?!: ]] || [[ $COMMIT_MSG =~ BREAKING\ CHANGE ]]; then
           BUMP_TYPE="major"
         elif [[ $COMMIT_MSG =~ ^feat(\(.+\))?: ]]; then
@@ -67,29 +60,38 @@ jobs:
         else
           BUMP_TYPE="patch"
         fi
-        
         echo "Version bump type: $BUMP_TYPE"
         
-        # Use npm to calculate the next version
-        # Strip 'v' prefix for npm version command
+        # Calculate the next version using a simple bash script
         CURRENT_VERSION=${LATEST_TAG#v}
-        # Create a temporary package.json to use npm's version bumping
-        echo "{\"version\": \"$CURRENT_VERSION\"}" > temp_package.json
-        NEW_VERSION=$(npm --no-git-tag-version version $BUMP_TYPE)
-        rm temp_package.json
+        IFS='.' read -r -a V <<< "$CURRENT_VERSION"
+        MAJOR=${V[0]}
+        MINOR=${V[1]}
+        PATCH=${V[2]}
         
-        # Remove 'v' prefix from new version
-        NEW_VERSION=${NEW_VERSION#v}
+        case $BUMP_TYPE in
+          "major")
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          "minor")
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          "patch")
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
         
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
         echo "Next version: $NEW_VERSION"
 
     - name: Update package.json versions
       run: |
-        # Update root package.json
         npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version --allow-same-version
-        
-        # Update dist/package.json
         cd dist
         npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version --allow-same-version
         cd ..
@@ -98,7 +100,8 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add package.json dist/package.json
+        # Only commit the root package.json, not the one in dist
+        git add package.json
         git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }}"
 
     - name: Create and push Git tag
