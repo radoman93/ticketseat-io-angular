@@ -70,6 +70,7 @@ export class AppComponent {
   }
 
   onSelectedSeatsChange(selectedChairs: Chair[]): void {
+    console.log('Selected seats changed:', selectedChairs);
   }
 
   private createSampleLayout(): void {

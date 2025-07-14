@@ -23,7 +23,8 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
   template: `
     <div class="flex flex-col h-screen viewer-mode" *mobxAutorun>
       <!-- Viewer Header -->
-      <div class="flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-green-50 relative z-10">
+       
+      <div *ngIf="showReservationPanel" class="flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-green-50 relative z-10">
         <!-- Logo -->
         <div class="text-lg font-bold text-green-600">TicketSeats Viewer</div>
         
@@ -62,7 +63,9 @@ import { LayoutExportImportService, LayoutExportData } from '../../services/layo
       </div>
       
       <!-- Notifications -->
+       <div class="h-full" *ngIf="showReservationPanel">
       <app-notifications></app-notifications>
+      <div></div>
     </div>
   `,
   styles: [`
