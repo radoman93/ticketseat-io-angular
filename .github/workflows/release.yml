@@ -62,22 +62,38 @@ jobs:
       run: |
         cd dist
         
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "Current version: $CURRENT_VERSION"
+        
         # Function to check if version exists in registry
         version_exists() {
           npm view "@${{ github.repository_owner }}/ticketseat-io-angular@$1" version &>/dev/null
           return $?
         }
         
-        # Get initial version bump
-        NEW_VERSION=$(npm version ${{ steps.version.outputs.bump }} --no-git-tag-version)
-        NEW_VERSION=${NEW_VERSION#v}
+        # Function to increment patch version
+        increment_patch() {
+          local ver=$1
+          local major=$(echo $ver | cut -d. -f1)
+          local minor=$(echo $ver | cut -d. -f2)
+          local patch=$(echo $ver | cut -d. -f3)
+          echo "$major.$minor.$((patch + 1))"
+        }
         
-        # If version exists, keep incrementing patch number until we find an available version
+        # Start with the next patch version
+        NEW_VERSION=$(increment_patch $CURRENT_VERSION)
+        
+        # Keep incrementing until we find an available version
         while version_exists "$NEW_VERSION"; do
-          echo "Version $NEW_VERSION already exists, trying next patch version..."
-          NEW_VERSION=$(npm version patch --no-git-tag-version)
-          NEW_VERSION=${NEW_VERSION#v}
+          echo "Version $NEW_VERSION exists, trying next version..."
+          NEW_VERSION=$(increment_patch $NEW_VERSION)
         done
+        
+        echo "Found available version: $NEW_VERSION"
+        
+        # Update package.json with new version
+        npm version $NEW_VERSION --no-git-tag-version --allow-same-version
         
         echo "new_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
         echo "New version: ${NEW_VERSION}"
@@ -126,10 +142,36 @@ jobs:
     - name: Publish to GitHub Packages
       run: |
         cd dist
+        
+        # Verify the version doesn't exist one final time
+        if npm view "@${{ github.repository_owner }}/ticketseat-io-angular@${{ steps.bump.outputs.new_version }}" version &>/dev/null; then
+          echo "Error: Version ${{ steps.bump.outputs.new_version }} already exists in registry"
+          exit 1
+        fi
+        
         echo "Publishing version ${{ steps.bump.outputs.new_version }}"
-        echo "registry=https://npm.pkg.github.com/@${{ github.repository_owner }}" > .npmrc
+        echo "@${{ github.repository_owner }}:registry=https://npm.pkg.github.com" > .npmrc
         echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-        npm publish
+        
+        # Attempt to publish with retry logic
+        MAX_RETRIES=3
+        RETRY_COUNT=0
+        
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if npm publish --access public; then
+            echo "Successfully published version ${{ steps.bump.outputs.new_version }}"
+            exit 0
+          else
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "Publish failed, retrying in 5 seconds... (Attempt $RETRY_COUNT of $MAX_RETRIES)"
+              sleep 5
+            fi
+          fi
+        done
+        
+        echo "Failed to publish after $MAX_RETRIES attempts"
+        exit 1
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
