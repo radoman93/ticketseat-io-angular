@@ -13,18 +13,18 @@ export class SegmentedSeatingRowService {
     const dx = segment.endX - segment.startX;
     const dy = segment.endY - segment.startY;
     const totalDistance = Math.sqrt(dx * dx + dy * dy);
-    
+
     if (totalDistance === 0) {
       return { x: segment.startX, y: segment.startY };
     }
-    
+
     // Normalize direction vector
     const normalizedDx = dx / totalDistance;
     const normalizedDy = dy / totalDistance;
-    
+
     // Calculate actual distance based on seat count and spacing
     const actualDistance = (segment.seatCount - 1) * segment.seatSpacing;
-    
+
     return {
       x: segment.startX + normalizedDx * actualDistance,
       y: segment.startY + normalizedDy * actualDistance
@@ -38,20 +38,20 @@ export class SegmentedSeatingRowService {
   calculateNextSegmentStartPosition(segment: SegmentProperties): { x: number, y: number } {
     // Get the end position (last chair position)
     const endPos = this.calculateSegmentEndPosition(segment);
-    
+
     // Calculate the direction vector of the segment
     const dx = segment.endX - segment.startX;
     const dy = segment.endY - segment.startY;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
+
     if (distance === 0) {
       return endPos;
     }
-    
+
     // Normalize the direction vector
     const dirX = dx / distance;
     const dirY = dy / distance;
-    
+
     // For proper segment chaining, we want the exact position of the last chair
     // without any additional offset, as we'll be skipping this position when
     // creating chairs for the new segment
@@ -84,16 +84,16 @@ export class SegmentedSeatingRowService {
     const dy = endY - startY;
     const totalDistance = Math.sqrt(dx * dx + dy * dy);
     const rotation = Math.atan2(dy, dx) * (180 / Math.PI);
-    
+
     // Calculate how many seats would fit with the given spacing
     // For very short segments, ensure at least 1 seat
     const seatCount = Math.max(1, Math.round(totalDistance / seatSpacing) + 1);
-    
+
     // Adjust end position to match exact seat spacing
     const normalizedDx = totalDistance > 0 ? dx / totalDistance : 0;
     const normalizedDy = totalDistance > 0 ? dy / totalDistance : 0;
     const exactDistance = (seatCount - 1) * seatSpacing;
-    
+
     const adjustedEndX = startX + normalizedDx * exactDistance;
     const adjustedEndY = startY + normalizedDy * exactDistance;
 
@@ -122,16 +122,16 @@ export class SegmentedSeatingRowService {
     const dy = mouseY - segment.startY;
     const totalDistance = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-    
+
     // Calculate how many seats would fit with the given spacing
     // For very short segments, ensure at least 1 seat
     const seatCount = Math.max(1, Math.round(totalDistance / segment.seatSpacing) + 1);
-    
+
     // Calculate the end position based on the exact number of seats and spacing
     const exactDistance = (seatCount - 1) * segment.seatSpacing;
     const normalizedDx = totalDistance > 0 ? dx / totalDistance : 0;
     const normalizedDy = totalDistance > 0 ? dy / totalDistance : 0;
-    
+
     return {
       endX: segment.startX + (normalizedDx * exactDistance),
       endY: segment.startY + (normalizedDy * exactDistance),
@@ -156,7 +156,7 @@ export class SegmentedSeatingRowService {
     // The first segment has all its chairs
     // Each subsequent segment has (seatCount - 1) chairs to account for the overlap
     let totalSeats = segments[0].seatCount;
-    
+
     // Add remaining segments (minus their first chair)
     for (let i = 1; i < segments.length; i++) {
       totalSeats += segments[i].seatCount - 1;
@@ -189,7 +189,7 @@ export class SegmentedSeatingRowService {
     const dx = segment.endX - segment.startX;
     const dy = segment.endY - segment.startY;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
+
     if (distance < segment.seatSpacing && segment.seatCount > 1) {
       errors.push('Segment is too short for the specified seat count and spacing');
     }
@@ -236,7 +236,9 @@ export class SegmentedSeatingRowService {
     }
 
     const firstSegment = seatingRow.segments[0];
-    
+
+    // Create a regular seating row based on the first segment
+
     return {
       ...seatingRow,
       x: firstSegment.startX,

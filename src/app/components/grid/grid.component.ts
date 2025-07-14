@@ -276,6 +276,70 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.drawGrid();
   }
 
+  // Calculate selection indicator width for different table types
+  getSelectionWidth(table: any): number {
+    if (table.type === 'roundTable') {
+      return table.radius * 2 + 80;
+    } else if (table.type === 'seatingRow') {
+      // Calculate width based on actual element positions including label
+      const chairWidth = 20;
+      const padding = 40; // Padding on each side
+      const labelOffset = 60; // Row label is positioned 60px to the left
+      
+      // Calculate the full width from row label to last chair
+      // Row label starts at -60 from table.x
+      // Last chair ends at table.x + (seatCount - 1) * seatSpacing + chairWidth
+      const labelToFirstChair = labelOffset;
+      const chairsWidth = (table.seatCount - 1) * table.seatSpacing + chairWidth;
+      
+      // Total width: label offset + chairs width + padding on both sides
+      return labelToFirstChair + chairsWidth + (padding * 2);
+    } else {
+      return table.width + 80;
+    }
+  }
+
+  // Calculate selection indicator height for different table types
+  getSelectionHeight(table: any): number {
+    if (table.type === 'roundTable') {
+      return table.radius * 2 + 80;
+    } else if (table.type === 'seatingRow') {
+      return 60;
+    } else {
+      return table.height + 80;
+    }
+  }
+
+  // Calculate selection indicator left position
+  getSelectionLeft(table: any): number {
+    if (table.type === 'seatingRow') {
+      // For seating rows, calculate the center position of where the selection box should be
+      // Row label is at table.x - 60
+      // First chair is at table.x
+      // Last chair is at table.x + (seatCount - 1) * seatSpacing
+      // Chair width is approximately 20px
+      const chairWidth = 20;
+      const padding = 40;
+      const labelOffset = 60; // Row label is positioned 60px to the left
+      
+      const rowLabelX = table.x - labelOffset;
+      const lastChairX = table.x + (table.seatCount - 1) * table.seatSpacing;
+      
+      // Selection box should start before the row label and end after last chair
+      const selectionStartX = rowLabelX - padding;
+      const selectionEndX = lastChairX + chairWidth + padding;
+      
+      // Return the center position (because transform translate(-50%, -50%) will center it)
+      return (selectionStartX + selectionEndX) / 2;
+    }
+    return table.x;
+  }
+
+  // Calculate selection indicator top position
+  getSelectionTop(table: any): number {
+    return table.y;
+  }
+
   ngOnDestroy() {
     // Unregister the callback when component is destroyed
     this.store.unregisterRedrawCallback(this.drawGrid.bind(this));
@@ -333,7 +397,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             35 // Default seat spacing
           );
 
-          console.log('Starting regular row drawing mode at', x, y);
         } else {
           // Second click: finish the row
           this.finalizeRegularRow();
@@ -365,7 +428,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             35 // Default seat spacing
           );
 
-          console.log('Starting new segmented row with first segment at', x, y);
         } else {
           // Continue with a new segment in the existing row
           // The previous segment end becomes this segment's start
@@ -389,9 +451,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
               35 // Default seat spacing
             );
 
-            console.log('Starting new segment in existing row from',
-              this.activeSegmentStartX, this.activeSegmentStartY,
-              'to', x, y);
           } else {
             console.error('Expected segments array not to be empty');
           }
@@ -469,11 +528,24 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             y
           );
 
+
           // Apply updates to preview segment
           this.previewSegment = {
             ...this.previewSegment,
             ...updatedSegment
           };
+
+          // Sync the updated seat count back to previewTable for mouseup handler
+          if (this.previewTable && this.previewTable.type === 'seatingRow') {
+            this.previewTable = {
+              ...this.previewTable,
+              seatCount: this.previewSegment.seatCount,
+              endX: this.previewSegment.endX,
+              endY: this.previewSegment.endY,
+              rotation: this.previewSegment.rotation
+            };
+          }
+
         } else if (this.isCreatingSegmentedRow && this.previewSegment) {
           // Update the end point of the current segment being created
           this.activeSegmentEndX = x;
@@ -523,13 +595,25 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.layoutStore.addElement(newTable);
     } else if (this.toolStore.activeTool === ToolType.SeatingRow && this.previewTable) {
       // Create a new seating row at the preview position
+
+      const seatingRowData = this.previewTable as SeatingRowProperties;
+
+      // Safety validation: ensure seatCount > 0
+      if (!seatingRowData.seatCount || seatingRowData.seatCount <= 0) {
+        console.warn('Cannot create seating row with 0 or invalid seat count:', seatingRowData.seatCount);
+        return;
+      }
+
       const newRow: SeatingRowProperties = {
-        ...this.previewTable as SeatingRowProperties,
-        id: `row-${Date.now()}`,
+        ...seatingRowData,
+        id: `seating-row-${Date.now()}`,
         chairLabelVisible: true,
         rowLabelVisible: true
       };
       this.layoutStore.addElement(newRow);
+
+      // Deselect tool after creating seating row
+      this.toolStore.setActiveTool(ToolType.None);
     } else if (event.button === 1) {
       // End panning on middle mouse release
       this.store.stopPanning();
@@ -634,11 +718,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Finalize and add the segmented seating row to the layout
   private finalizeSegmentedSeatingRow(): void {
     if (this.segmentedRowSegments.length === 0) {
-      console.log('No segments to finalize');
       return;
     }
 
-    console.log('Finalizing segmented seating row with', this.segmentedRowSegments.length, 'segments');
 
     // Calculate metrics for the final row
     const metrics = this.segmentedSeatingRowService.calculateSegmentedRowMetrics(this.segmentedRowSegments);
@@ -676,7 +758,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   // Cancel segmented seating row creation
   private cancelSegmentedSeatingRow(): void {
-    console.log('Canceling segmented seating row creation');
     this.resetSegmentedSeatingRowState();
   }
 
@@ -826,31 +907,53 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   // Handle regular seating row completion
   private finalizeRegularRow(): void {
-    console.log('Finalizing regular seating row');
+
 
     if (this.previewSegment) {
-      // Add the current segment to our segments array
-      this.segmentedRowSegments.push(this.previewSegment);
+      // Calculate the seat count based on the segment length and spacing
+      const segmentLength = Math.sqrt(
+        Math.pow(this.activeSegmentEndX - this.activeSegmentStartX, 2) +
+        Math.pow(this.activeSegmentEndY - this.activeSegmentStartY, 2)
+      );
+      const seatCount = Math.max(1, Math.floor(segmentLength / this.previewSegment.seatSpacing) + 1);
 
-      // Complete the regular row immediately
-      this.finalizeSegmentedSeatingRow();
+      // Create the regular seating row
+      const newSeatingRow = {
+        id: this.segmentedRowId,
+        type: 'seatingRow',
+        x: this.activeSegmentStartX,
+        y: this.activeSegmentStartY,
+        endX: this.activeSegmentEndX,
+        endY: this.activeSegmentEndY,
+        seatCount: seatCount,
+        seatSpacing: this.previewSegment.seatSpacing,
+        name: `Row ${this.layoutStore.elements.length + 1}`,
+        rotation: this.previewSegment.rotation,
+        chairLabelVisible: true,
+        rowLabelVisible: true
+      };
+
+      // Add to layout and history
+      const addCmd = new AddObjectCommand(newSeatingRow);
+      this.historyStore.executeCommand(addCmd);
 
       // Reset regular row state
       this.isCreatingRegularRow = false;
       this.previewSegment = null;
       this.segmentedRowSegments = [];
+
+      // Deselect tool after finalizing
+      this.toolStore.setActiveTool(ToolType.None);
     }
   }
 
   // Handle regular seating row completion
   private finalizeSegmentedSeatingRowAsRegular(): void {
-    console.log('Finalizing regular seating row');
     this.finalizeSegmentedSeatingRow();
   }
 
   // Handle regular row creation cancellation
   private cancelRegularRow(): void {
-    console.log('Canceling regular seating row creation');
     this.isCreatingRegularRow = false;
     this.previewSegment = null;
     this.segmentedRowSegments = [];

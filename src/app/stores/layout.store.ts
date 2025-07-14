@@ -37,6 +37,7 @@ export class LayoutStore {
     }
 
     this.elements.push(newElement);
+
     this.lastAddedId = newElement.id;
     return newElement;
   });

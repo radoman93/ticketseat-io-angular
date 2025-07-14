@@ -28,7 +28,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   @Input() rotation: number = 0;
   @Input() chairLabelVisible: boolean = true;
   @Input() rowLabelVisible: boolean = true;
-  
+
   // Internal observable properties that sync with inputs
   public _x: number = 0;
   public _y: number = 0;
@@ -43,12 +43,12 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   public _rotation: number = 0;
   public _chairLabelVisible: boolean = true;
   public _rowLabelVisible: boolean = true;
-  
+
   store = rootStore;
   viewerStore = viewerStore;
-  
+
   @HostBinding('class') @Input() class: string = '';
-  
+
   constructor() {
     makeAutoObservable(this, {
       // Computed properties
@@ -95,25 +95,16 @@ export class SeatingRowComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     this.syncInputs();
-    
-    console.log('🔄 Seating row ngOnInit called. SeatingRowData:', this._seatingRowData, 'isPreview:', this._isPreview);
-    
+
+
     // Generate chairs for this seating row if they don't exist and this is not a preview
     if (this._seatingRowData && this._seatingRowData.id && !this._isPreview) {
       const existingChairs = this.store.chairStore.getChairsByTable(this._seatingRowData.id);
-      console.log('📋 Existing chairs for seating row', this._seatingRowData.id, ':', existingChairs);
-      
+
       if (existingChairs.length === 0) {
-        console.log('🪑 Generating chairs for seating row:', this._seatingRowData.id);
         this.generateChairsForSeatingRow();
-        console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
     } else {
-      console.log('❌ Not generating chairs for seating row. Conditions:', {
-        hasSeatingRowData: !!this._seatingRowData,
-        hasId: this._seatingRowData?.id,
-        isPreview: this._isPreview
-      });
     }
   }
 
@@ -148,7 +139,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
         transformOrigin: '0 0'
       };
     }
-    
+
     return {
       left: `${this._x}px`,
       top: `${this._y}px`,
@@ -162,7 +153,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     const effectiveY = this._seatingRowData ? this._seatingRowData.y : this._y;
     const effectiveEndX = this._seatingRowData ? this._seatingRowData.endX : this._endX;
     const effectiveEndY = this._seatingRowData ? this._seatingRowData.endY : this._endY;
-    
+
     const dx = effectiveEndX - effectiveX;
     const dy = effectiveEndY - effectiveY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -173,7 +164,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     const effectiveY = this._seatingRowData ? this._seatingRowData.y : this._y;
     const effectiveEndX = this._seatingRowData ? this._seatingRowData.endX : this._endX;
     const effectiveEndY = this._seatingRowData ? this._seatingRowData.endY : this._endY;
-    
+
     const dx = effectiveEndX - effectiveX;
     const dy = effectiveEndY - effectiveY;
     return Math.atan2(dy, dx) * (180 / Math.PI);
@@ -182,35 +173,30 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   get chairStyles() {
     const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
     const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
-    
+
     const chairsArray = [];
-    
-    console.log('🪑 Building chair styles for seating row:');
-    console.log('  - seatingRowData:', this._seatingRowData);
-    console.log('  - isPreview:', this.isEffectivePreview);
-    console.log('  - seatCount:', effectiveSeatCount);
-    console.log('  - seatSpacing:', effectiveSeatSpacing);
-    
+
+
     // Handle special case for zero seats
     if (effectiveSeatCount <= 0) {
       return [];
     }
-    
+
     // Calculate seat positions with consistent spacing
     for (let i = 0; i < effectiveSeatCount; i++) {
       // Position seats with exact spacing
       let x = i * effectiveSeatSpacing;
-      
+
       // In preview mode, only center if it's a single chair
       if (this.isEffectivePreview && effectiveSeatCount === 1) {
         x = -2.5; // Center the single preview chair
       }
-      
+
       const y = 0; // All seats are on the same line (rotation handled by container)
-      
+
       const chairId = `${this._seatingRowData ? this._seatingRowData.id : 'preview'}-chair-${i}`;
       const chair = this._seatingRowData ? this.store.chairStore.chairs.get(chairId) : null;
-      
+
       chairsArray.push({
         id: chairId,
         transform: `translate(${x}px, ${y}px)`,
@@ -221,8 +207,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
         isPreview: this.isEffectivePreview
       });
     }
-    
-    console.log('📋 Final seating row chairsArray:', chairsArray);
+
     return chairsArray;
   }
 
@@ -230,10 +215,10 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
     const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
     const labelPosition = this._seatingRowData?.labelPosition || 'left';
-    
+
     // Calculate total row width (along the local x-axis)
     const totalRowWidth = (effectiveSeatCount - 1) * effectiveSeatSpacing;
-    
+
     switch (labelPosition) {
       case 'left':
         // Position label to the left of the first seat
@@ -252,21 +237,22 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   getRowWidth(): number {
     const effectiveSeatCount = this._seatingRowData ? this._seatingRowData.seatCount : this._seatCount;
     const effectiveSeatSpacing = this._seatingRowData ? this._seatingRowData.seatSpacing : this._seatSpacing;
-    
+
     // Use exact chair spacing for consistent width
     if (effectiveSeatCount <= 1) {
       return 20; // Just the chair width for a single seat
     }
-    
+
     // Calculate the distance from first to last chair and add chair width
     return (effectiveSeatCount - 1) * effectiveSeatSpacing + 5; // Add 5px for the chair display
   }
 
   private generateChairsForSeatingRow(): void {
     if (!this._seatingRowData) return;
-    
+
     const totalChairs = this._seatingRowData.seatCount;
-    
+
+
     // Generate chairs for the seating row
     for (let i = 0; i < totalChairs; i++) {
       const chair: Chair = {
@@ -288,20 +274,18 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     event.stopPropagation();
     if (this.isEffectivePreview || !chair || !chair.chair) return;
 
-    console.log('Chair clicked:', chair);
     this.selectChair(chair.chair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
   }
 
   onChairMouseDown(event: Event, chair: any): void {
     event.stopPropagation();
     if (this.isEffectivePreview || !chair || !chair.chair) return;
-    
+
     // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
     if (this.viewerStore.isViewerMode) {
       return; // Don't handle mousedown in viewer mode
     }
 
-    console.log('Chair mousedown:', chair);
     this.selectChair(chair.chair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
   }
 
@@ -318,11 +302,11 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     if (this.isEffectivePreview) {
       return `${baseClasses} bg-blue-300 border border-blue-400`;
     }
-    
+
     // In viewer mode, show reservation status
     if (this.viewerStore.isViewerMode && chair.chair) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
-      
+
       if (reservationStatus === 'pre-reserved') {
         return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
       } else if (reservationStatus === 'reserved') {
@@ -333,10 +317,10 @@ export class SeatingRowComponent implements OnInit, OnChanges {
         return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
       }
     }
-    
+
     // In editor mode, show selection status
     if (chair.isSelected) {
-        return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
+      return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
     }
 
     return `${baseClasses} bg-blue-200 border border-blue-300 hover:bg-blue-300 hover:scale-105 cursor-pointer`;
@@ -344,7 +328,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
 
   getSeatTitle(chair: any): string {
     if (!chair || !chair.chair) return `Seat ${chair?.label || ''}`;
-    
+
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
       if (reservationStatus === 'pre-reserved') {
@@ -357,13 +341,13 @@ export class SeatingRowComponent implements OnInit, OnChanges {
         return `Seat ${chair.label} - Available (Price: $${chair.chair.price})`;
       }
     }
-    
+
     return `Chair ${chair.label} (ID: ${chair.id})`;
   }
 
   getSeatLabelClasses(chair: any): string {
     if (!chair || !chair.chair) return 'text-xs text-gray-700';
-    
+
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair.chair);
       if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
@@ -371,7 +355,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
       }
       return 'text-xs text-gray-700';
     }
-    
+
     return chair.isSelected ? 'text-xs text-white font-bold drop-shadow-sm' : 'text-xs text-gray-700';
   }
 
@@ -379,13 +363,13 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     // Handle viewer mode seat selection for reservations
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
-      
+
       // Don't allow selection of pre-reserved or already reserved seats
       if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved') {
         this.viewerStore.showReservedSeatFeedback();
         return;
       }
-      
+
       // Toggle seat selection for reservation
       if (this.viewerStore.isSeatSelectedForReservation(chair.id)) {
         this.viewerStore.deselectSeatForReservation(chair.id);
@@ -394,10 +378,10 @@ export class SeatingRowComponent implements OnInit, OnChanges {
       }
       return;
     }
-    
+
     // Handle editor mode selection
     if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
-        this.store.chairStore.deselectChair();
+      this.store.chairStore.deselectChair();
     }
 
     // Set panel position if click coordinates provided

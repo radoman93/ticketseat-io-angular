@@ -159,7 +159,6 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
 
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
-        console.log('Design loaded successfully in viewer:', designData.meta.name);
       } catch (error) {
         console.error('Failed to load design in viewer:', error);
       }
@@ -169,7 +168,6 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   private setReservedSeatsIfProvided(): void {
     if (this.reservedIds && Array.isArray(this.reservedIds)) {
       this.viewerStore.setPreReservedSeats(this.reservedIds);
-      console.log('Pre-reserved seats set:', this.reservedIds);
     } else {
       // Clear pre-reserved seats if no IDs provided
       this.viewerStore.setPreReservedSeats([]);
@@ -180,14 +178,11 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
     if (this.seatLimit !== undefined) {
       this.viewerStore.setSeatLimit(this.seatLimit);
       if (this.seatLimit === 0) {
-        console.log('Seat limit set to unlimited (0)');
       } else {
-        console.log('Seat limit set to:', this.seatLimit);
       }
     } else {
       // Default to unlimited (0) if not provided
       this.viewerStore.setSeatLimit(0);
-      console.log('Seat limit defaulted to unlimited (0)');
     }
   }
 

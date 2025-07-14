@@ -23,5 +23,4 @@ export const appConfig: ApplicationConfig = {
 // Check if we're in development mode
 if (!environment.production) {
   // Enable MobX development tools in non-production
-  console.log('Development mode: Enabling MobX strict mode and dev tools');
 }

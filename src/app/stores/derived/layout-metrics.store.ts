@@ -45,7 +45,6 @@ export class LayoutMetricsStore {
     reaction(
       () => this.metrics,
       (metrics) => {
-        console.log('Layout metrics updated:', metrics);
         // Can trigger other side effects here when metrics change
       }
     );

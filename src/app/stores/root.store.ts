@@ -69,7 +69,6 @@ export class RootStore {
   
   // Helper method to reset application state
   resetState = action('resetState', () => {
-    console.log('RootStore: Resetting application state');
     this.selectionStore.deselectItem();
     this.toolStore.setActiveTool('select' as any); // Use 'select' instead of 'none'
     this.layoutStore.clearAll();

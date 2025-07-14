@@ -82,12 +82,10 @@ export class SelectionService {
   constructor() { }
 
   selectItem(item: Selectable): void {
-    console.log('SelectionService: selectItem called with', item);
     selectionStore.selectItem(item);
   }
 
   deselectItem(): void {
-    console.log('SelectionService: deselectItem called');
     selectionStore.deselectItem();
   }
 

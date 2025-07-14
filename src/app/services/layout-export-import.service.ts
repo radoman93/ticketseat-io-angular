@@ -122,7 +122,6 @@ export class LayoutExportImportService {
     // Handle backward compatibility: check if the old format (with separate chairs array) is used
     if ('chairs' in data && data.chairs && Array.isArray(data.chairs)) {
       // Old format: chairs are in a separate array
-      console.log('Importing old format with separate chairs array');
 
       // Group chairs by their parent element for the old format
       const chairsByElement = new Map<string, Chair[]>();
@@ -158,7 +157,6 @@ export class LayoutExportImportService {
       });
     } else {
       // New format: chairs are nested within elements
-      console.log('Importing new format with nested chairs');
 
       data.elements.forEach((element: any) => {
         if (mode === 'merge') {

@@ -85,7 +85,6 @@ export class DragStore {
             return;
         }
 
-        // console.log('Starting to drag item:', this.potentialDragItem.id);
 
         // Clear previous dragged item reference
         this.draggedItem = null;
@@ -164,7 +163,7 @@ export class DragStore {
     endDragging = action('endDragging', (historyStore: HistoryStore) => {
         if (!this.isDragging || !this.draggedItem) return;
 
-        // console.log('Finished dragging item:', this.draggedItem?.id);
+        // ('Finished dragging item:', this.draggedItem?.id);
 
         let oldPosition: { x: number, y: number };
         let newPosition: { x: number, y: number };

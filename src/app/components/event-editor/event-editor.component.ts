@@ -89,7 +89,6 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
 
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
-        console.log('Design loaded successfully in editor:', designData.meta.name);
       } catch (error) {
         console.error('Failed to load design in editor:', error);
       }

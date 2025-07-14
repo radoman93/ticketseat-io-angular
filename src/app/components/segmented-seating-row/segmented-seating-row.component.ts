@@ -313,7 +313,6 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       this.selectChair(actualChair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
     } else {
       console.warn('[SegmentedSeatingRowComponent] Chair not found in store with ID:', chairData.id);
-      console.log('[SegmentedSeatingRowComponent] Available chairs:', Array.from(this.store.chairStore.chairs.keys()));
     }
   }
 
@@ -426,7 +425,6 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       this.store.chairStore.deselectChair();
     } else {
       this.store.chairStore.selectChair(chair.id);
-      console.log('Selected chair:', chair.id);
     }
   }
   

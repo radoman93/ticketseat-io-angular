@@ -27,7 +27,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
   @Input() rotation: number = 0;
   @Input() tableLabelVisible: boolean = true;
   @Input() chairLabelVisible: boolean = true;
-  
+
   // Internal observable properties that sync with inputs
   public _x: number = 0;
   public _y: number = 0;
@@ -41,12 +41,12 @@ export class RoundTableComponent implements OnInit, OnChanges {
   public _rotation: number = 0;
   public _tableLabelVisible: boolean = true;
   public _chairLabelVisible: boolean = true;
-  
+
   store = rootStore;
   viewerStore = viewerStore;
-  
+
   @HostBinding('class') @Input() class: string = '';
-  
+
   constructor() {
     makeAutoObservable(this, {
       // Computed properties
@@ -89,8 +89,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
   // Handle table click for selecting the table
   handleTableClick(event: MouseEvent): void {
     event.stopPropagation();
-    console.log('🔵 Table clicked, selecting table:', this._tableData);
-    
+
     if (this._tableData && this._tableData.id) {
       this.store.selectionStore.selectItem(this._tableData);
     }
@@ -98,22 +97,20 @@ export class RoundTableComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     this.syncInputs();
-    
-    console.log('🔄 Round table ngOnInit called. TableData:', this._tableData, 'isPreview:', this._isPreview);
+
     this.generateChairsIfNeeded();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     this.syncInputs();
-    
+
     // Check if properties that affect chair generation have changed
-    const seatCountChanged = changes['seats'] || (changes['tableData'] && 
+    const seatCountChanged = changes['seats'] || (changes['tableData'] &&
       changes['tableData'].previousValue?.seats !== changes['tableData'].currentValue?.seats);
-    const radiusChanged = changes['radius'] || (changes['tableData'] && 
+    const radiusChanged = changes['radius'] || (changes['tableData'] &&
       changes['tableData'].previousValue?.radius !== changes['tableData'].currentValue?.radius);
-    
+
     if (seatCountChanged || radiusChanged) {
-      console.log('🔄 Chair-affecting properties changed, regenerating chairs');
       this.generateChairsIfNeeded(true); // Force regeneration
     }
   }
@@ -138,34 +135,26 @@ export class RoundTableComponent implements OnInit, OnChanges {
     // Generate chairs for this table if they don't exist and this is not a preview
     if (this._tableData && this._tableData.id && !this._isPreview) {
       const existingChairs = this.store.chairStore.getChairsByTable(this._tableData.id);
-      console.log('📋 Existing chairs for table', this._tableData.id, ':', existingChairs);
-      
-      const needsRegeneration = forceRegenerate || 
-        existingChairs.length === 0 || 
+
+      const needsRegeneration = forceRegenerate ||
+        existingChairs.length === 0 ||
         existingChairs.length !== this._tableData.seats;
-      
+
       if (needsRegeneration) {
-        console.log('🪑 Generating/regenerating chairs for table:', this._tableData.id);
-        
+
         // Remove existing chairs first
         existingChairs.forEach(chair => {
           this.store.chairStore.removeChair(chair.id);
         });
-        
+
         // Generate new chairs
         this.store.chairStore.generateChairsForTable(
-          this._tableData.id, 
-          this._tableData.seats, 
+          this._tableData.id,
+          this._tableData.seats,
           this._tableData.radius
         );
-        console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
     } else {
-      console.log('❌ Not generating chairs. Conditions:', {
-        hasTableData: !!this._tableData,
-        hasId: this._tableData?.id,
-        isPreview: this._isPreview
-      });
     }
   }
 
@@ -179,7 +168,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
         transform: `translate(-50%, -50%) rotate(${this._rotation || this._tableData.rotation || 0}deg)`
       };
     }
-    
+
     return {
       left: `${this._x}px`,
       top: `${this._y}px`,
@@ -194,41 +183,30 @@ export class RoundTableComponent implements OnInit, OnChanges {
     const effectiveOpenSpaces = this._tableData ? this._tableData.openSpaces : this._openSpaces;
     const effectiveRadius = this._tableData ? this._tableData.radius : this._radius;
     const totalPositions = effectiveSeats + effectiveOpenSpaces;
-    
+
     const seatsArray = [];
     if (totalPositions === 0) {
       return [];
     }
 
     const angleStep = 360 / totalPositions;
-    const distanceToItemCenter = effectiveRadius + 20; 
-    
-    console.log('🪑 Building seat styles for table:');
-    console.log('  - tableData:', this._tableData);
-    console.log('  - tableData?.id:', this._tableData?.id);
-    console.log('  - isPreview:', this._isPreview);
-    console.log('  - effectiveSeats:', effectiveSeats);
-    console.log('  - chairs in store:', this.store.chairStore.chairs.size);
-    
+    const distanceToItemCenter = effectiveRadius + 20;
+
+
     for (let i = 0; i < totalPositions; i++) {
       const angleDegrees = angleStep * i;
       const angleRadians = angleDegrees * Math.PI / 180;
-      
+
       const x = Math.cos(angleRadians) * distanceToItemCenter;
       const y = Math.sin(angleRadians) * distanceToItemCenter;
-      
+
       const isSeat = i < effectiveSeats;
       const isOpenSpace = i >= effectiveSeats;
-      
+
       const chairId = `${this._tableData ? this._tableData.id : 'preview'}-chair-${i}`;
       const chair = this._tableData ? this.store.chairStore.chairs.get(chairId) : null;
-      
-      console.log(`  Seat ${i}: chairId=${chairId}, chair found=${!!chair}, isOpenSpace=${isOpenSpace}`);
-      if (this._tableData) {
-        console.log(`    Looking for chair with ID: ${chairId}`);
-        console.log(`    All chair IDs in store:`, Array.from(this.store.chairStore.chairs.keys()));
-      }
-      
+
+
       seatsArray.push({
         id: chairId,
         transform: `translate(${x}px, ${y}px)`,
@@ -238,63 +216,56 @@ export class RoundTableComponent implements OnInit, OnChanges {
         chair: chair
       });
     }
-    
-    console.log('📋 Final seatsArray:', seatsArray);
+
     return seatsArray;
   }
 
   onChairClick(event: Event, seat: any): void {
-    console.log('🪑 CHAIR CLICK DETECTED!', event, seat);
     event.stopPropagation();
-    
+
     if (!seat.isOpenSpace && seat.chair) {
-      console.log('✅ Chair found, selecting:', seat.chair);
-      
+
       // Calculate click position for panel positioning
       const mouseEvent = event as MouseEvent;
       const clickX = mouseEvent.clientX;
       const clickY = mouseEvent.clientY;
-      
+
       this.selectChair(seat.chair, clickX, clickY);
     } else {
-      console.log('❌ No chair found or open space. Seat chair:', seat.chair, 'isOpenSpace:', seat.isOpenSpace);
     }
   }
 
   onChairMouseDown(event: Event, seat: any): void {
-    console.log('🖱️ Chair mousedown:', seat.label);
     event.stopPropagation();
-    
+
     // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
     if (this.viewerStore.isViewerMode) {
       return; // Don't handle mousedown in viewer mode
     }
-    
+
     if (!seat.isOpenSpace && seat.chair) {
-      console.log('✅ Chair found on mousedown, selecting:', seat.chair);
-      
+
       // Calculate click position for panel positioning
       const mouseEvent = event as MouseEvent;
       const clickX = mouseEvent.clientX;
       const clickY = mouseEvent.clientY;
-      
+
       this.selectChair(seat.chair, clickX, clickY);
     }
   }
 
   onChairHover(seat: any): void {
-    console.log('👆 Chair hover:', seat.label);
   }
 
   getSeatClasses(seat: any): string {
     if (!seat.chair) return 'w-5 h-5 bg-gray-200 border border-gray-400';
-    
+
     const baseClasses = 'w-5 h-5 transition-all duration-200';
-    
+
     // In viewer mode, show reservation status
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
-      
+
       if (reservationStatus === 'pre-reserved') {
         return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
       } else if (reservationStatus === 'reserved') {
@@ -305,18 +276,18 @@ export class RoundTableComponent implements OnInit, OnChanges {
         return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
       }
     }
-    
+
     // In editor mode, show selection status
     if (seat.isSelected) {
       return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
     }
-    
+
     return `${baseClasses} bg-blue-200 border border-blue-300 hover:bg-blue-300 hover:scale-105 cursor-pointer`;
   }
 
   getSeatTitle(seat: any): string {
     if (!seat.chair) return `Seat ${seat.label}`;
-    
+
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
       if (reservationStatus === 'pre-reserved') {
@@ -329,13 +300,13 @@ export class RoundTableComponent implements OnInit, OnChanges {
         return `Seat ${seat.label} - Available (Price: $${seat.chair.price})`;
       }
     }
-    
+
     return `Chair ${seat.label} (ID: ${seat.id})`;
   }
 
   getSeatLabelClasses(seat: any): string {
     if (!seat.chair) return 'text-xs text-gray-700';
-    
+
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
       if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
@@ -343,7 +314,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
       }
       return 'text-xs text-gray-700';
     }
-    
+
     return seat.isSelected ? 'text-xs text-white font-bold' : 'text-xs text-gray-700';
   }
 
@@ -351,13 +322,13 @@ export class RoundTableComponent implements OnInit, OnChanges {
     // Handle viewer mode seat selection for reservations
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chair);
-      
+
       // Don't allow selection of pre-reserved or already reserved seats
       if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved') {
         this.viewerStore.showReservedSeatFeedback();
         return;
       }
-      
+
       // Toggle seat selection for reservation
       if (this.viewerStore.isSeatSelectedForReservation(chair.id)) {
         this.viewerStore.deselectSeatForReservation(chair.id);
@@ -366,12 +337,12 @@ export class RoundTableComponent implements OnInit, OnChanges {
       }
       return;
     }
-    
+
     // Handle editor mode selection
     if (this.store.chairStore.selectedChairId && this.store.chairStore.selectedChairId !== chair.id) {
       this.store.chairStore.deselectChair();
     }
-    
+
     // Set panel position if click coordinates provided
     if (clickX !== undefined && clickY !== undefined) {
       // Add offset to position panel next to the chair, not over it
@@ -379,7 +350,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
       const offsetY = clickY - 100; // Position above the click
       this.store.chairStore.setPanelPosition(offsetX, offsetY);
     }
-    
+
     if (chair.isSelected) {
       this.store.chairStore.deselectChair();
     } else {

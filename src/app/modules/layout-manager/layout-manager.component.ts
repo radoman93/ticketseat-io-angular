@@ -47,11 +47,10 @@ import { LayoutOptionsComponent } from './layout-options/layout-options.componen
 })
 export class LayoutManagerComponent {
   @Output() closeModal = new EventEmitter<void>();
-  
-  constructor() {}
-  
+
+  constructor() { }
+
   onLoadLayout(layoutId: string): void {
-    console.log('Loading layout', layoutId);
     try {
       persistenceManager.loadLayout(layoutId);
       this.closeModal.emit();
@@ -59,18 +58,16 @@ export class LayoutManagerComponent {
       console.error('Failed to load layout', error);
     }
   }
-  
+
   onDeleteLayout(layoutId: string): void {
-    console.log('Deleting layout', layoutId);
     try {
       persistenceManager.deleteLayout(layoutId);
     } catch (error) {
       console.error('Failed to delete layout', error);
     }
   }
-  
+
   onSaveLayout(name: string): void {
-    console.log('Saving layout', name);
     try {
       persistenceManager.saveLayout(name);
       this.closeModal.emit();
@@ -78,9 +75,8 @@ export class LayoutManagerComponent {
       console.error('Failed to save layout', error);
     }
   }
-  
+
   onExportLayout(): void {
-    console.log('Exporting layout');
     try {
       persistenceManager.exportToFile();
       this.closeModal.emit();
@@ -88,9 +84,8 @@ export class LayoutManagerComponent {
       console.error('Failed to export layout', error);
     }
   }
-  
+
   onImportLayout(file: File): void {
-    console.log('Importing layout', file);
     const reader = new FileReader();
     reader.onload = (e) => {
       try {

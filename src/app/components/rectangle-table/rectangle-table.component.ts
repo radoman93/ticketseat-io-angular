@@ -102,7 +102,6 @@ export class RectangleTableComponent implements OnInit, OnChanges {
   ngOnInit() {
     this.syncInputs();
     
-    console.log('🔄 Rectangle table ngOnInit called. TableData:', this._tableData, 'isPreview:', this._isPreview);
     this.generateChairsIfNeeded();
   }
 
@@ -115,7 +114,6 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       (changes['tableData'] && this.hasChairCountChanged(changes['tableData'].previousValue, changes['tableData'].currentValue));
     
     if (chairCountChanged) {
-      console.log('🔄 Chair-affecting properties changed, regenerating chairs');
       this.generateChairsIfNeeded(true); // Force regeneration
     }
   }
@@ -151,14 +149,12 @@ export class RectangleTableComponent implements OnInit, OnChanges {
     // Generate chairs for this rectangle table if they don't exist and this is not a preview
     if (this._tableData && this._tableData.id && !this._isPreview) {
       const existingChairs = this.store.chairStore.getChairsByTable(this._tableData.id);
-      console.log('📋 Existing chairs for rectangle table', this._tableData.id, ':', existingChairs);
       
       const needsRegeneration = forceRegenerate || 
         existingChairs.length === 0 || 
         existingChairs.length !== this.totalChairs;
       
       if (needsRegeneration) {
-        console.log('🪑 Generating/regenerating chairs for rectangle table:', this._tableData.id);
         
         // Remove existing chairs first
         existingChairs.forEach(chair => {
@@ -167,14 +163,8 @@ export class RectangleTableComponent implements OnInit, OnChanges {
         
         // Generate new chairs
         this.generateChairsForRectangleTable();
-        console.log('✅ Chairs generated. Total chairs in store:', this.store.chairStore.chairs.size);
       }
     } else {
-      console.log('❌ Not generating chairs for rectangle table. Conditions:', {
-        hasTableData: !!this._tableData,
-        hasId: this._tableData?.id,
-        isPreview: this._isPreview
-      });
     }
   }
 
@@ -218,10 +208,6 @@ export class RectangleTableComponent implements OnInit, OnChanges {
     const chairOffset = 25; // Distance from table edge
     let chairIndex = 0;
     
-    console.log('🪑 Building chair styles for rectangle table:');
-    console.log('  - tableData:', this._tableData);
-    console.log('  - isPreview:', this._isPreview);
-    console.log('  - up/down/left/right chairs:', effectiveUpChairs, effectiveDownChairs, effectiveLeftChairs, effectiveRightChairs);
     
     // Top chairs (up)
     for (let i = 0; i < effectiveUpChairs; i++) {
@@ -303,7 +289,6 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       chairIndex++;
     }
     
-    console.log('📋 Final rectangle chairsArray:', chairsArray);
     return chairsArray;
   }
 
@@ -342,11 +327,9 @@ export class RectangleTableComponent implements OnInit, OnChanges {
   }
 
   onChairClick(event: Event, chair: any): void {
-    console.log('🪑 RECTANGLE CHAIR CLICK DETECTED!', event, chair);
     event.stopPropagation();
     
     if (chair.chair) {
-      console.log('✅ Rectangle chair found, selecting:', chair.chair);
       
       // Calculate click position for panel positioning
       const mouseEvent = event as MouseEvent;
@@ -355,12 +338,10 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       
       this.selectChair(chair.chair, clickX, clickY);
     } else {
-      console.log('❌ No rectangle chair found. Chair:', chair.chair);
     }
   }
 
   onChairMouseDown(event: Event, chair: any): void {
-    console.log('🖱️ Rectangle chair mousedown:', chair.label);
     event.stopPropagation();
     
     // Only handle mousedown in editor mode to avoid conflicts with click events in viewer mode
@@ -369,7 +350,6 @@ export class RectangleTableComponent implements OnInit, OnChanges {
     }
     
     if (chair.chair) {
-      console.log('✅ Rectangle chair found on mousedown, selecting:', chair.chair);
       
       // Calculate click position for panel positioning
       const mouseEvent = event as MouseEvent;
