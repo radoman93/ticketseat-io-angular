@@ -11,7 +11,7 @@ import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowP
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
-// import { dragStore } from '../../stores/drag.store';
+import { dragStore } from '../../stores/drag.store';
 import { rootStore } from '../../stores/root.store';
 import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
@@ -43,21 +43,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   toolStore = toolStore;
   selectionStore = selectionStore;
   layoutStore = layoutStore;
-  // dragStore = dragStore;
-
-  // Temporary stub for dragStore
-  dragStore = {
-    isDragging: false,
-    potentialDragItem: null as any,
-    draggedItem: null as any,
-    justEndedDragging: false,
-    startMouseX: 0,
-    startMouseY: 0,
-    prepareForDragging: (item: any, x: number, y: number) => { },
-    startDragging: () => { },
-    updateDragPosition: (x: number, y: number) => { },
-    endDragging: (historyStore: any) => { },
-  };
+  dragStore = dragStore;
   viewerStore = viewerStore;
 
   // Make enum available in template

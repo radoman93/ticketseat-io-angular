@@ -4,7 +4,8 @@ import { gridStore } from './grid.store';
 import { selectionStore } from './selection.store';
 import { MoveObjectCommand } from '../commands/move-object.command';
 import { HistoryStore } from './history.store';
-import { TableElement, SegmentProperties } from '../models/elements.model';
+import { SegmentProperties } from '../models/elements.model';
+import { TableElement } from './layout.store';
 
 export class DragStore {
     // Track dragging state
