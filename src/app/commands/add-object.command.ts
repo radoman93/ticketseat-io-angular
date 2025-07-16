@@ -21,4 +21,8 @@ export class AddObjectCommand implements Command {
     this.lStore.deleteElement(this.elementToAdd.id);
     this.sStore.deselectItem();
   }
+
+  redo(): void {
+    this.execute();
+  }
 } 

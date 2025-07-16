@@ -5,9 +5,13 @@ import { RoundTableComponent } from '../round-table/round-table.component';
 import { RectangleTableComponent } from '../rectangle-table/rectangle-table.component';
 import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
+import { LineComponent } from '../line/line.component';
+import { PolygonComponent } from '../polygon/polygon.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
 import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
+import { LineElement, PolygonElement } from '../../models/elements.model';
+import { ElementType } from '../../models/layout.model';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
@@ -20,7 +24,7 @@ import { SegmentedSeatingRowService } from '../../services/segmented-seating-row
 import viewerStore from '../../stores/viewer.store';
 
 // Use union type for table positions  
-type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties;
+type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement;
 
 @Component({
   selector: 'app-grid',
@@ -30,6 +34,8 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
     RectangleTableComponent,
     SeatingRowComponent,
     SegmentedSeatingRowComponent,
+    LineComponent,
+    PolygonComponent,
     CommonModule
   ],
   standalone: true,
@@ -54,6 +60,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   // MobX reaction disposer for tool changes
   private toolChangeDisposer: IReactionDisposer | null = null;
+  private previousTool: ToolType = ToolType.None;
 
   // Segmented seating row state (used for both regular and segmented rows)
   isCreatingSegmentedRow: boolean = false;
@@ -65,6 +72,16 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   activeSegmentEndY: number = 0;
   segmentedRowSegments: SegmentProperties[] = [];
   previewSegment: SegmentProperties | null = null;
+
+  // Line drawing state
+  isDrawingLine: boolean = false;
+  lineStartX: number = 0;
+  lineStartY: number = 0;
+
+  // Polygon drawing state
+  isDrawingPolygon: boolean = false;
+  polygonPoints: Array<{x: number, y: number}> = [];
+  isHoveringStartPoint: boolean = false;
 
   constructor(
     private historyStore: HistoryStore,
@@ -79,6 +96,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     // Use MobX autorun to react to tool changes
     this.toolChangeDisposer = autorun(() => {
       const activeTool = this.toolStore.activeTool;
+      
+      // Only reset state when actually switching tools
+      if (this.previousTool !== activeTool) {
 
       if (activeTool === ToolType.RoundTable) {
         // Initialize preview round table when entering add mode
@@ -168,9 +188,33 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
           totalSegments: 0,
           totalSeats: 0
         };
+      } else if (activeTool === ToolType.Line) {
+        // Initialize line drawing state
+        this.isDrawingLine = false;
+        this.lineStartX = 0;
+        this.lineStartY = 0;
+        this.previewTable = null;
+      } else if (activeTool === ToolType.Polygon) {
+        // Initialize polygon drawing state
+        this.isDrawingPolygon = false;
+        this.polygonPoints = [];
+        this.isHoveringStartPoint = false;
+        this.previewTable = null;
       } else {
         this.previewTable = null;
         this.previewSegment = null;
+        // Reset line drawing state when switching tools
+        this.isDrawingLine = false;
+        this.lineStartX = 0;
+        this.lineStartY = 0;
+        // Reset polygon drawing state when switching tools
+        this.isDrawingPolygon = false;
+        this.polygonPoints = [];
+        this.isHoveringStartPoint = false;
+      }
+      
+      // Update previous tool
+      this.previousTool = activeTool;
       }
     });
 
@@ -271,15 +315,28 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const chairWidth = 20;
       const padding = 40; // Padding on each side
       const labelOffset = 60; // Row label is positioned 60px to the left
-      
+
       // Calculate the full width from row label to last chair
       // Row label starts at -60 from table.x
       // Last chair ends at table.x + (seatCount - 1) * seatSpacing + chairWidth
       const labelToFirstChair = labelOffset;
       const chairsWidth = (table.seatCount - 1) * table.seatSpacing + chairWidth;
-      
+
       // Total width: label offset + chairs width + padding on both sides
       return labelToFirstChair + chairsWidth + (padding * 2);
+    } else if (table.type === 'line') {
+      // For lines, calculate width based on line endpoints
+      const dx = Math.abs(table.endX - table.startX);
+      const padding = 40; // Padding on each side
+      return Math.max(dx + padding, 60); // Minimum width of 60px
+    } else if (table.type === 'polygon') {
+      // For polygons, calculate width based on bounding box
+      const points = table.points;
+      if (points.length === 0) return 60;
+      const minX = Math.min(...points.map((p: any) => p.x));
+      const maxX = Math.max(...points.map((p: any) => p.x));
+      const padding = 40; // Padding on each side
+      return Math.max(maxX - minX + padding, 60); // Minimum width of 60px
     } else {
       return table.width + 80;
     }
@@ -291,6 +348,19 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       return table.radius * 2 + 80;
     } else if (table.type === 'seatingRow') {
       return 60;
+    } else if (table.type === 'line') {
+      // For lines, calculate height based on line endpoints
+      const dy = Math.abs(table.endY - table.startY);
+      const padding = 40; // Padding on each side
+      return Math.max(dy + padding, 60); // Minimum height of 60px
+    } else if (table.type === 'polygon') {
+      // For polygons, calculate height based on bounding box
+      const points = table.points;
+      if (points.length === 0) return 60;
+      const minY = Math.min(...points.map((p: any) => p.y));
+      const maxY = Math.max(...points.map((p: any) => p.y));
+      const padding = 40; // Padding on each side
+      return Math.max(maxY - minY + padding, 60); // Minimum height of 60px
     } else {
       return table.height + 80;
     }
@@ -307,22 +377,43 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       const chairWidth = 20;
       const padding = 40;
       const labelOffset = 60; // Row label is positioned 60px to the left
-      
+
       const rowLabelX = table.x - labelOffset;
       const lastChairX = table.x + (table.seatCount - 1) * table.seatSpacing;
-      
+
       // Selection box should start before the row label and end after last chair
       const selectionStartX = rowLabelX - padding;
       const selectionEndX = lastChairX + chairWidth + padding;
-      
+
       // Return the center position (because transform translate(-50%, -50%) will center it)
       return (selectionStartX + selectionEndX) / 2;
+    } else if (table.type === 'line') {
+      // For lines, return the center point between start and end X coordinates
+      return (table.startX + table.endX) / 2;
+    } else if (table.type === 'polygon') {
+      // For polygons, return the center point of the bounding box
+      const points = table.points;
+      if (points.length === 0) return table.x;
+      const minX = Math.min(...points.map((p: any) => p.x));
+      const maxX = Math.max(...points.map((p: any) => p.x));
+      return (minX + maxX) / 2;
     }
     return table.x;
   }
 
   // Calculate selection indicator top position
   getSelectionTop(table: any): number {
+    if (table.type === 'line') {
+      // For lines, return the center point between start and end Y coordinates
+      return (table.startY + table.endY) / 2;
+    } else if (table.type === 'polygon') {
+      // For polygons, return the center point of the bounding box
+      const points = table.points;
+      if (points.length === 0) return table.y;
+      const minY = Math.min(...points.map((p: any) => p.y));
+      const maxY = Math.max(...points.map((p: any) => p.y));
+      return (minY + maxY) / 2;
+    }
     return table.y;
   }
 
@@ -443,6 +534,90 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         }
 
         event.preventDefault();
+      } else if (activeTool === ToolType.Line) {
+        // Handle line drawing with two clicks
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
+
+        if (!this.isDrawingLine) {
+          // First click: start drawing the line
+          this.isDrawingLine = true;
+          this.lineStartX = x;
+          this.lineStartY = y;
+
+          // Create preview line
+          this.previewTable = {
+            id: `line-preview-${Date.now()}`,
+            type: 'line',
+            x: x,
+            y: y,
+            startX: x,
+            startY: y,
+            endX: x,
+            endY: y,
+            thickness: 2,
+            color: '#000000',
+            name: 'Line Preview'
+          } as LineElement;
+
+        } else {
+          // Second click: finish the line
+          this.finalizeLine();
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+      } else if (activeTool === ToolType.Polygon) {
+        // Handle polygon drawing with multi-click
+        const gridCoords = this.getGridCoordinates(event);
+        const x = gridCoords.x;
+        const y = gridCoords.y;
+
+        if (!this.isDrawingPolygon) {
+          // First click: start drawing the polygon
+          this.isDrawingPolygon = true;
+          this.polygonPoints = [{x, y}];
+
+          // Create preview polygon
+          this.previewTable = {
+            id: `polygon-preview-${Date.now()}`,
+            type: 'polygon',
+            x: x,
+            y: y,
+            rotation: 0,
+            points: [{x, y}],
+            fillColor: '#0000ff',
+            fillOpacity: 0.3,
+            borderColor: '#000000',
+            borderThickness: 2,
+            showBorder: true,
+            name: 'Polygon Preview'
+          } as PolygonElement;
+
+        } else {
+          // Check if clicking near starting point to close polygon
+          const startPoint = this.polygonPoints[0];
+          const distanceToStart = Math.sqrt(
+            Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2)
+          );
+
+          if (distanceToStart <= 10 && this.polygonPoints.length >= 3) {
+            // Close the polygon
+            this.finalizePolygon();
+          } else {
+            // Add new point to polygon
+            this.polygonPoints.push({x, y});
+            
+            // Update preview polygon
+            if (this.previewTable && this.previewTable.type === 'polygon') {
+              (this.previewTable as PolygonElement).points = [...this.polygonPoints];
+            }
+          }
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
       } else if ((activeTool === ToolType.RoundTable || activeTool === ToolType.RectangleTable) && this.previewTable) {
         // We're in add mode for round/rectangle tables, add a new table
         const gridCoords = this.getGridCoordinates(event);
@@ -497,9 +672,45 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         const y = gridCoords.y;
 
         // Always update preview position for non-creating mode
-        if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow) {
+        if (!this.isCreatingSegmentedRow && !this.isCreatingRegularRow && !this.isDrawingLine && !this.isDrawingPolygon) {
           this.previewTable.x = x;
           this.previewTable.y = y;
+
+          // For line tool, also update the line coordinates to show preview
+          if (this.previewTable.type === 'line') {
+            const previewLine = this.previewTable as LineElement;
+            previewLine.startX = x;
+            previewLine.startY = y;
+            previewLine.endX = x + 100; // Default length for preview
+            previewLine.endY = y;
+          }
+        }
+
+        // Handle line drawing preview (after first click)
+        if (this.isDrawingLine && this.previewTable && this.previewTable.type === 'line') {
+          // Update the end point of the line being drawn
+          const linePreview = this.previewTable as LineElement;
+          linePreview.endX = x;
+          linePreview.endY = y;
+        }
+
+        // Handle polygon drawing preview (after first click)
+        if (this.isDrawingPolygon && this.previewTable && this.previewTable.type === 'polygon') {
+          // Check if hovering near starting point
+          if (this.polygonPoints.length >= 3) {
+            const startPoint = this.polygonPoints[0];
+            const distanceToStart = Math.sqrt(
+              Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2)
+            );
+            this.isHoveringStartPoint = distanceToStart <= 10;
+          } else {
+            this.isHoveringStartPoint = false;
+          }
+
+          // Update the preview polygon with current mouse position as next point
+          const polygonPreview = this.previewTable as PolygonElement;
+          const previewPoints = [...this.polygonPoints, {x, y}];
+          polygonPreview.points = previewPoints;
         }
 
         if (this.isCreatingRegularRow && this.previewSegment) {
@@ -698,6 +909,9 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     } else if (this.isCreatingRegularRow) {
       // Cancel regular row creation
       this.cancelRegularRow();
+    } else if (this.isDrawingLine) {
+      // Cancel line drawing
+      this.cancelLineDrawing();
     }
   }
 
@@ -798,7 +1012,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     }
 
     // Prevent starting a drag if we're in table add mode
-    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow) {
+    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow || this.toolStore.activeTool === ToolType.Line || this.toolStore.activeTool === ToolType.Polygon) {
       return;
     }
 
@@ -827,6 +1041,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   // Handle canvas click to deselect
   handleCanvasClick(): void {
+    // Don't deselect if we're drawing a line
+    if (this.isDrawingLine) {
+      return;
+    }
+
     // Only deselect if we're not in the middle of a drag operation
     // and not immediately after completing a drag
     if (!this.dragStore.isDragging && !this.dragStore.justEndedDragging) {
@@ -848,7 +1067,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Delete the currently selected table
   deleteSelectedTable(): boolean {
     const selectedItem = this.selectionStore.selectedItem;
-    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable' || selectedItem.type === 'seatingRow')) {
+    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable' || selectedItem.type === 'seatingRow' || selectedItem.type === 'line')) {
       this.layoutStore.deleteElement(selectedItem.id);
       this.selectionStore.deselectItem();
       return true;
@@ -884,6 +1103,18 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
         this.activeSegmentStartY = 0;
         this.activeSegmentEndX = 0;
         this.activeSegmentEndY = 0;
+      } else if (this.isDrawingPolygon) {
+        // Cancel polygon drawing
+        this.isDrawingPolygon = false;
+        this.polygonPoints = [];
+        this.isHoveringStartPoint = false;
+        this.previewTable = null;
+        event.preventDefault();
+      } else if (this.isDrawingLine) {
+        // Cancel line drawing
+        this.isDrawingLine = false;
+        this.previewTable = null;
+        event.preventDefault();
       }
       if (this.toolStore.activeTool !== ToolType.None) {
         this.toolStore.setActiveTool(ToolType.None);
@@ -945,6 +1176,87 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     this.segmentedRowSegments = [];
   }
 
+  // Handle line drawing cancellation
+  private cancelLineDrawing(): void {
+    this.isDrawingLine = false;
+    this.lineStartX = 0;
+    this.lineStartY = 0;
+    this.previewTable = null;
+    // Reset tool to None
+    this.toolStore.setActiveTool(ToolType.None);
+  }
+
+  // Finalize and add the line to the layout
+  private finalizeLine(): void {
+    if (this.previewTable && this.previewTable.type === 'line') {
+      const linePreview = this.previewTable as LineElement;
+
+      // Create the line element
+      const newLine: LineElement = {
+        id: `line-${Date.now()}`,
+        type: ElementType.LINE,
+        x: this.lineStartX,
+        y: this.lineStartY,
+        startX: this.lineStartX,
+        startY: this.lineStartY,
+        endX: linePreview.endX,
+        endY: linePreview.endY,
+        thickness: 2,
+        color: '#000000',
+        rotation: 0,
+        name: `Line ${this.layoutStore.elements.length + 1}`
+      };
+
+      // Add to layout and history
+      const addCmd = new AddObjectCommand(newLine);
+      this.historyStore.executeCommand(addCmd);
+
+      // Reset drawing state
+      this.isDrawingLine = false;
+      this.previewTable = null;
+      this.toolStore.setActiveTool(ToolType.None);
+    }
+  }
+
+  private finalizePolygon(): void {
+    if (this.previewTable && this.previewTable.type === 'polygon' && this.polygonPoints.length >= 3) {
+      // Calculate bounding box center for x, y position
+      const minX = Math.min(...this.polygonPoints.map(p => p.x));
+      const maxX = Math.max(...this.polygonPoints.map(p => p.x));
+      const minY = Math.min(...this.polygonPoints.map(p => p.y));
+      const maxY = Math.max(...this.polygonPoints.map(p => p.y));
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      // Create the polygon element
+      const newPolygon: PolygonElement = {
+        id: `polygon-${Date.now()}`,
+        type: ElementType.POLYGON,
+        x: centerX,
+        y: centerY,
+        rotation: 0,
+        points: [...this.polygonPoints],
+        fillColor: '#0000ff',
+        fillOpacity: 0.3,
+        borderColor: '#000000',
+        borderThickness: 2,
+        showBorder: true,
+        name: `Polygon ${this.layoutStore.elements.length + 1}`
+      };
+
+      // Add to layout and history
+      const addCmd = new AddObjectCommand(newPolygon);
+      this.historyStore.executeCommand(addCmd);
+
+      // Reset drawing state
+      this.isDrawingPolygon = false;
+      this.polygonPoints = [];
+      this.isHoveringStartPoint = false;
+      this.previewTable = null;
+      this.toolStore.setActiveTool(ToolType.None);
+    }
+  }
+
   // Handle wheel events for zoom in viewer mode
   @HostListener('wheel', ['$event'])
   onWheel(event: WheelEvent): void {
@@ -955,6 +1267,25 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       this.store.adjustZoom(zoomAmount);
     }
   }
+
+
+  // Helper methods for line preview
+  getLinePreviewLength(): number {
+    if (!this.previewTable || this.previewTable.type !== 'line') return 0;
+    const line = this.previewTable as any;
+    const dx = line.endX - line.startX;
+    const dy = line.endY - line.startY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  getLinePreviewAngle(): number {
+    if (!this.previewTable || this.previewTable.type !== 'line') return 0;
+    const line = this.previewTable as any;
+    const dx = line.endX - line.startX;
+    const dy = line.endY - line.startY;
+    return Math.atan2(dy, dx) * (180 / Math.PI);
+  }
+
 
   // Helper method to convert viewport coordinates to grid coordinates
   private getGridCoordinates(event: MouseEvent): { x: number, y: number } {

@@ -49,6 +49,11 @@ export class LayoutExportImportService {
 
     // Create elements with their chairs nested
     const elementsWithChairs = layoutStore.elements.map(element => {
+      // Lines and polygons don't have chairs, so only add chairs for table elements
+      if (element.type === 'line' || element.type === 'polygon') {
+        return { ...element };
+      }
+      
       const elementChairs = chairsByElement.get(element.id) || [];
       return {
         ...element,
@@ -149,11 +154,13 @@ export class LayoutExportImportService {
         // Add element to layout
         layoutStore.addElement(element);
 
-        // Add chairs to chair store
-        const elementChairs = chairsByElement.get(element.id) || [];
-        elementChairs.forEach(chair => {
-          rootStore.chairStore.addChair(chair);
-        });
+        // Add chairs to chair store (only for elements that have chairs)
+        if (element.type !== 'line' && element.type !== 'polygon') {
+          const elementChairs = chairsByElement.get(element.id) || [];
+          elementChairs.forEach(chair => {
+            rootStore.chairStore.addChair(chair);
+          });
+        }
       });
     } else {
       // New format: chairs are nested within elements
@@ -173,7 +180,7 @@ export class LayoutExportImportService {
           }
         }
 
-        // Extract chairs before adding element
+        // Extract chairs before adding element (lines don't have chairs)
         const chairs = element.chairs || [];
 
         // Remove chairs from element object before adding to layout
@@ -182,10 +189,12 @@ export class LayoutExportImportService {
         // Add element to layout
         layoutStore.addElement(elementWithoutChairs);
 
-        // Add chairs to chair store
-        chairs.forEach((chair: Chair) => {
-          rootStore.chairStore.addChair(chair);
-        });
+        // Add chairs to chair store (only for elements that have chairs)
+        if (element.type !== 'line' && element.type !== 'polygon') {
+          chairs.forEach((chair: Chair) => {
+            rootStore.chairStore.addChair(chair);
+          });
+        }
       });
     }
   }
@@ -234,6 +243,8 @@ export class LayoutExportImportService {
     elementCount: number;
     tableCount: number;
     rowCount: number;
+    lineCount: number;
+    polygonCount: number;
   } {
     const tableCount = data.elements.filter(el =>
       el.type === 'roundTable' || el.type === 'rectangleTable'
@@ -243,13 +254,23 @@ export class LayoutExportImportService {
       el.type === 'seatingRow' || el.type === 'segmentedSeatingRow'
     ).length;
 
+    const lineCount = data.elements.filter(el =>
+      el.type === 'line'
+    ).length;
+
+    const polygonCount = data.elements.filter(el =>
+      el.type === 'polygon'
+    ).length;
+
     return {
       name: data.meta.name,
       description: data.meta.description,
       created: data.meta.created,
       elementCount: data.elements.length,
       tableCount,
-      rowCount
+      rowCount,
+      lineCount,
+      polygonCount
     };
   }
 } 

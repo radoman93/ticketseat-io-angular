@@ -12,7 +12,7 @@
       [class.dragging]="!viewerStore.isViewerMode && dragStore.isDragging && dragStore.draggedItem?.id === table.id">
       <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode -->
       <div
-        *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow'"
+        *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow' && table.type !== 'line'"
         class="selection-indicator table-selection" [style.width.px]="getSelectionWidth(table)"
         [style.height.px]="getSelectionHeight(table)"
         [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
@@ -59,6 +59,44 @@
         </div>
       </app-segmented-seating-row>
 
+      <!-- Line -->
+      <app-line *ngIf="table.type === 'line'" [lineData]="$any(table)"
+        [startX]="$any(table).startX" [startY]="$any(table).startY"
+        [endX]="$any(table).endX" [endY]="$any(table).endY"
+        [thickness]="$any(table).thickness" [color]="$any(table).color"
+        [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)">
+        <!-- Selection indicator for line - Hidden in viewer mode -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+          class="selection-indicator table-selection" 
+          [style.width.px]="getSelectionWidth(table)"
+          [style.height.px]="getSelectionHeight(table)"
+          [style.transform]="'translate(-50%, -50%)'"
+          [style.transform-origin]="'center center'" 
+          [style.left]="getSelectionLeft(table) + 'px'" 
+          [style.top]="getSelectionTop(table) + 'px'">
+        </div>
+      </app-line>
+
+      <!-- Polygon -->
+      <app-polygon *ngIf="table.type === 'polygon'" [polygonData]="$any(table)"
+        [points]="$any(table).points" [fillColor]="$any(table).fillColor"
+        [fillOpacity]="$any(table).fillOpacity" [borderColor]="$any(table).borderColor"
+        [borderThickness]="$any(table).borderThickness" [showBorder]="$any(table).showBorder"
+        [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)">
+        <!-- Selection indicator for polygon - Hidden in viewer mode -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+          class="selection-indicator table-selection" 
+          [style.width.px]="getSelectionWidth(table)"
+          [style.height.px]="getSelectionHeight(table)"
+          [style.transform]="'translate(-50%, -50%)'"
+          [style.transform-origin]="'center center'" 
+          [style.left]="getSelectionLeft(table) + 'px'" 
+          [style.top]="getSelectionTop(table) + 'px'">
+        </div>
+      </app-polygon>
+
       <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
       <app-round-table *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
         [x]="previewTable.x" [y]="previewTable.y" [radius]="$any(previewTable).radius"
@@ -80,11 +118,97 @@
         [seatingRowData]="$any(previewTable)" [isPreview]="true" [previewSegment]="previewSegment"
         [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1" class="opacity-70 preview-table">
       </app-segmented-seating-row>
+
+      <!-- Line Preview (when drawing) - Hidden in viewer mode -->
+      <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Line && isDrawingLine && previewTable.type === 'line'"
+           class="absolute pointer-events-none opacity-70">
+        <!-- Simple CSS-based line preview -->
+        <div class="absolute bg-gray-800"
+             [style.left.px]="$any(previewTable).startX"
+             [style.top.px]="$any(previewTable).startY"
+             [style.width.px]="getLinePreviewLength()"
+             [style.height.px]="2"
+             [style.transform]="'rotate(' + getLinePreviewAngle() + 'deg)'"
+             [style.transform-origin]="'0 50%'">
+        </div>
+        <!-- Start point -->
+        <div class="absolute w-2 h-2 bg-gray-800 rounded-full"
+             [style.left.px]="$any(previewTable).startX"
+             [style.top.px]="$any(previewTable).startY"
+             [style.transform]="'translate(-50%, -50%)'">
+        </div>
+        <!-- End point -->
+        <div class="absolute w-2 h-2 bg-gray-800 rounded-full"
+             [style.left.px]="$any(previewTable).endX"
+             [style.top.px]="$any(previewTable).endY"
+             [style.transform]="'translate(-50%, -50%)'">
+        </div>
+      </div>
+
+      <!-- Polygon Preview (when drawing) - Hidden in viewer mode -->
+      <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Polygon && isDrawingPolygon && previewTable.type === 'polygon'"
+           class="absolute pointer-events-none opacity-70">
+        
+        
+        <!-- SVG for polygon lines with simplified approach -->
+        <svg class="absolute pointer-events-none" 
+             style="overflow: visible; width: 100vw; height: 100vh; top: 0; left: 0; position: fixed;">
+          
+          <!-- Lines connecting existing vertices (permanent lines) -->
+          <g *ngFor="let point of polygonPoints; let i = index">
+            <line *ngIf="i > 0"
+                  [attr.x1]="polygonPoints[i-1].x"
+                  [attr.y1]="polygonPoints[i-1].y"
+                  [attr.x2]="point.x"
+                  [attr.y2]="point.y"
+                  stroke="#000000"
+                  stroke-width="3"
+                  fill="none"
+                  opacity="0.8">
+            </line>
+          </g>
+          
+          <!-- Preview line from last vertex to mouse cursor -->
+          <line *ngIf="polygonPoints.length > 0 && $any(previewTable).points.length > polygonPoints.length"
+                [attr.x1]="polygonPoints[polygonPoints.length - 1].x"
+                [attr.y1]="polygonPoints[polygonPoints.length - 1].y"
+                [attr.x2]="$any(previewTable).points[$any(previewTable).points.length - 1].x"
+                [attr.y2]="$any(previewTable).points[$any(previewTable).points.length - 1].y"
+                stroke="#666666"
+                stroke-width="2"
+                stroke-dasharray="5,5"
+                fill="none"
+                opacity="0.6">
+          </line>
+          
+          <!-- Vertex indicators as SVG circles -->
+          <circle *ngFor="let point of polygonPoints; let i = index" 
+                  [attr.cx]="point.x"
+                  [attr.cy]="point.y"
+                  r="4"
+                  fill="#374151"
+                  stroke="#ffffff"
+                  stroke-width="2">
+          </circle>
+          
+          <!-- Starting point indicator (red circle, larger when hovering) -->
+          <circle *ngIf="polygonPoints.length > 0" 
+                  [attr.cx]="polygonPoints[0].x"
+                  [attr.cy]="polygonPoints[0].y"
+                  [attr.r]="isHoveringStartPoint ? 8 : 6"
+                  fill="#ef4444"
+                  stroke="#ffffff"
+                  stroke-width="2"
+                  [attr.opacity]="isHoveringStartPoint ? 1 : 0.9">
+          </circle>
+        </svg>
+      </div>
+
     </div>
 
     <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
     <div
-      *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
+      *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow || toolStore.activeTool === ToolType.Line || toolStore.activeTool === ToolType.Polygon)"
       class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
   </div>
 </div>

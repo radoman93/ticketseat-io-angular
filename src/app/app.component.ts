@@ -655,6 +655,42 @@ export class AppComponent {
               "reservationStatus": "free"
             }
           ]
+        },
+        {
+          "id": "line-1",
+          "type": "line",
+          "x": 300,
+          "y": 250,
+          "rotation": 0,
+          "startX": 300,
+          "startY": 250,
+          "endX": 500,
+          "endY": 300,
+          "thickness": 3,
+          "color": "#ff0000",
+          "name": "Sample Line",
+          "label": "Sample Line"
+        },
+        {
+          "id": "polygon-1",
+          "type": "polygon",
+          "x": 200,
+          "y": 400,
+          "rotation": 0,
+          "points": [
+            {"x": 200, "y": 400},
+            {"x": 300, "y": 380},
+            {"x": 350, "y": 450},
+            {"x": 280, "y": 500},
+            {"x": 150, "y": 480}
+          ],
+          "fillColor": "#0000ff",
+          "fillOpacity": 0.3,
+          "borderColor": "#000080",
+          "borderThickness": 2,
+          "showBorder": true,
+          "name": "Sample Polygon",
+          "label": "Sample Polygon"
         }
       ]
     }

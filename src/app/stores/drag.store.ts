@@ -17,6 +17,10 @@ export class DragStore {
     startMouseY = 0;
     startElementX = 0;
     startElementY = 0;
+    
+    // Store original line dimensions for lines
+    originalLineEndX = 0;
+    originalLineEndY = 0;
 
     // Store original points for cancel functionality (legacy for future extensibility)
     originalPoints: { x: number, y: number }[] = [];
@@ -54,10 +58,24 @@ export class DragStore {
         mouseX: number,
         mouseY: number
     ) => {
-        // For all items, check for x and y properties
-        if (!item || !('x' in item) || !('y' in item)) {
-            console.warn('Cannot prepare drag for item without position properties:', item);
+        // Check if item has appropriate position properties
+        if (!item) {
+            console.warn('Cannot prepare drag for null item');
             return;
+        }
+
+        // For lines, check for startX/startY properties
+        if (item.type === 'line') {
+            if (!('startX' in item) || !('startY' in item)) {
+                console.warn('Cannot prepare drag for line without startX/startY properties:', item);
+                return;
+            }
+        } else {
+            // For other items, check for x and y properties
+            if (!('x' in item) || !('y' in item)) {
+                console.warn('Cannot prepare drag for item without position properties:', item);
+                return;
+            }
         }
 
         // Store the potential drag item
@@ -66,8 +84,21 @@ export class DragStore {
         // Store initial positions
         this.startMouseX = mouseX;
         this.startMouseY = mouseY;
-        this.startElementX = item['x'];
-        this.startElementY = item['y'];
+        
+        if (item.type === 'line') {
+            this.startElementX = item['startX'];
+            this.startElementY = item['startY'];
+            this.originalLineEndX = item['endX'];
+            this.originalLineEndY = item['endY'];
+        } else if (item.type === 'polygon') {
+            this.startElementX = item['x'];
+            this.startElementY = item['y'];
+            // Store original points for polygon dragging
+            this.originalPoints = [...(item['points'] || [])];
+        } else {
+            this.startElementX = item['x'];
+            this.startElementY = item['y'];
+        }
     });
 
     /**
@@ -80,12 +111,23 @@ export class DragStore {
             return;
         }
 
-        // Check if item has x/y position properties
-        if (!('x' in this.potentialDragItem) || !('y' in this.potentialDragItem)) {
-            console.warn('Cannot drag item without position properties');
-            return;
+        // Check if item has appropriate position properties
+        if (this.potentialDragItem.type === 'line') {
+            if (!('startX' in this.potentialDragItem) || !('startY' in this.potentialDragItem)) {
+                console.warn('Cannot drag line without startX/startY properties');
+                return;
+            }
+        } else if (this.potentialDragItem.type === 'polygon') {
+            if (!('x' in this.potentialDragItem) || !('y' in this.potentialDragItem) || !('points' in this.potentialDragItem)) {
+                console.warn('Cannot drag polygon without position or points properties');
+                return;
+            }
+        } else {
+            if (!('x' in this.potentialDragItem) || !('y' in this.potentialDragItem)) {
+                console.warn('Cannot drag item without position properties');
+                return;
+            }
         }
-
 
         // Clear previous dragged item reference
         this.draggedItem = null;
@@ -118,7 +160,30 @@ export class DragStore {
         const canvasDy = dy / zoomFactor;
 
         // Handle different item types
-        if (this.draggedItem.type === 'segmentedSeatingRow') {
+        if (this.draggedItem.type === 'line') {
+            // For lines, move both start and end points by the same delta
+            const deltaToEnd = {
+                x: this.originalLineEndX - this.startElementX,
+                y: this.originalLineEndY - this.startElementY
+            };
+            
+            // Calculate new positions
+            const newStartX = this.startElementX + canvasDx;
+            const newStartY = this.startElementY + canvasDy;
+            const newEndX = newStartX + deltaToEnd.x;
+            const newEndY = newStartY + deltaToEnd.y;
+
+            const update = { 
+                x: newStartX, // Keep x/y for compatibility with selection system
+                y: newStartY,
+                startX: newStartX, 
+                startY: newStartY, 
+                endX: newEndX, 
+                endY: newEndY 
+            };
+            Object.assign(this.draggedItem, update);
+            layoutStore.updateElement(this.draggedItem.id, update);
+        } else if (this.draggedItem.type === 'segmentedSeatingRow') {
             // Calculate new position
             const newX = this.startElementX + canvasDx;
             const newY = this.startElementY + canvasDy;
@@ -147,6 +212,29 @@ export class DragStore {
 
                 layoutStore.updateElement(this.draggedItem.id, update);
             }
+        } else if (this.draggedItem.type === 'polygon') {
+            // For polygons, move all vertices by the same delta
+            const newX = this.startElementX + canvasDx;
+            const newY = this.startElementY + canvasDy;
+            
+            // Calculate the delta from the current center to the new center
+            const deltaX = newX - this.draggedItem['x'];
+            const deltaY = newY - this.draggedItem['y'];
+            
+            // Move all points by the same delta
+            const currentPoints = this.draggedItem['points'] || [];
+            const newPoints = currentPoints.map((point: {x: number, y: number}) => ({
+                x: point.x + deltaX,
+                y: point.y + deltaY
+            }));
+            
+            const update = { 
+                x: newX, 
+                y: newY, 
+                points: newPoints 
+            };
+            Object.assign(this.draggedItem, update);
+            layoutStore.updateElement(this.draggedItem.id, update);
         } else {
             // For all other items (roundTable, rectangleTable, seatingRow), update x and y
             const newX = this.startElementX + canvasDx;
@@ -166,17 +254,58 @@ export class DragStore {
 
         // ('Finished dragging item:', this.draggedItem?.id);
 
-        let oldPosition: { x: number, y: number };
-        let newPosition: { x: number, y: number };
+        if (this.draggedItem.type === 'line') {
+            // For lines, include all coordinate properties
+            const oldPosition = {
+                x: this.startElementX,
+                y: this.startElementY,
+                startX: this.startElementX,
+                startY: this.startElementY,
+                endX: this.originalLineEndX,
+                endY: this.originalLineEndY
+            };
+            const newPosition = {
+                x: this.draggedItem['startX'],
+                y: this.draggedItem['startY'],
+                startX: this.draggedItem['startX'],
+                startY: this.draggedItem['startY'],
+                endX: this.draggedItem['endX'],
+                endY: this.draggedItem['endY']
+            };
 
-        // For regular items with x/y properties
-        oldPosition = { x: this.startElementX, y: this.startElementY };
-        newPosition = { x: this.draggedItem['x'], y: this.draggedItem['y'] };
+            // Only create a command if the position actually changed
+            if (oldPosition.startX !== newPosition.startX || oldPosition.startY !== newPosition.startY) {
+                const command = new MoveObjectCommand(this.draggedItem.id, oldPosition, newPosition);
+                historyStore.executeCommand(command);
+            }
+        } else if (this.draggedItem.type === 'polygon') {
+            // For polygons, include both position and points
+            const oldPosition = { 
+                x: this.startElementX, 
+                y: this.startElementY,
+                points: this.originalPoints
+            };
+            const newPosition = { 
+                x: this.draggedItem['x'], 
+                y: this.draggedItem['y'],
+                points: this.draggedItem['points']
+            };
 
-        // Only create a command if the position actually changed
-        if (oldPosition.x !== newPosition.x || oldPosition.y !== newPosition.y) {
-            const command = new MoveObjectCommand(this.draggedItem.id, oldPosition, newPosition);
-            historyStore.executeCommand(command);
+            // Only create a command if the position actually changed
+            if (oldPosition.x !== newPosition.x || oldPosition.y !== newPosition.y) {
+                const command = new MoveObjectCommand(this.draggedItem.id, oldPosition, newPosition);
+                historyStore.executeCommand(command);
+            }
+        } else {
+            // For regular items with x/y properties
+            const oldPosition = { x: this.startElementX, y: this.startElementY };
+            const newPosition = { x: this.draggedItem['x'], y: this.draggedItem['y'] };
+
+            // Only create a command if the position actually changed
+            if (oldPosition.x !== newPosition.x || oldPosition.y !== newPosition.y) {
+                const command = new MoveObjectCommand(this.draggedItem.id, oldPosition, newPosition);
+                historyStore.executeCommand(command);
+            }
         }
 
         // Reset state
@@ -203,11 +332,23 @@ export class DragStore {
     cancelDragging = action('cancelDragging', () => {
         if (!this.isDragging || !this.draggedItem) return;
 
-        // For all items, revert to original x/y position
-        layoutStore.updateElement(this.draggedItem.id, {
-            x: this.startElementX,
-            y: this.startElementY
-        });
+        if (this.draggedItem.type === 'line') {
+            // For lines, revert to original positions
+            layoutStore.updateElement(this.draggedItem.id, {
+                x: this.startElementX,
+                y: this.startElementY,
+                startX: this.startElementX,
+                startY: this.startElementY,
+                endX: this.originalLineEndX,
+                endY: this.originalLineEndY
+            });
+        } else {
+            // For all other items, revert to original x/y position
+            layoutStore.updateElement(this.draggedItem.id, {
+                x: this.startElementX,
+                y: this.startElementY
+            });
+        }
 
         // Reset state completely when canceled
         this.isDragging = false;

@@ -75,6 +75,18 @@ export interface SeatingRowProperties extends Selectable {
   isPreview?: boolean;
 }
 
+export interface PolygonProperties extends Selectable {
+  x: number;
+  y: number;
+  points: Array<{x: number, y: number}>;
+  fillColor: string;
+  fillOpacity: number;
+  borderColor: string;
+  borderThickness: number;
+  showBorder: boolean;
+  name: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })

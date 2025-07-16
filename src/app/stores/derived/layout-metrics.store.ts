@@ -83,7 +83,7 @@ export class LayoutMetricsStore {
     const tableSeats = this.totalSeats;
     const standingCapacity = layoutStore.elements
       .filter(e => e.type === 'standingArea')
-      .reduce((sum, area) => sum + (area['capacity'] || 0), 0);
+      .reduce((sum, area) => sum + ((area as any)['capacity'] || 0), 0);
 
     return tableSeats + standingCapacity;
   }

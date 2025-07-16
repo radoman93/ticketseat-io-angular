@@ -1,0 +1,68 @@
+<!-- Line element using SVG -->
+<svg 
+  class="absolute overflow-visible"
+  [class.pointer-events-none]="_isPreview"
+  [attr.width]="svgWidth"
+  [attr.height]="svgHeight"
+  [style.left.px]="svgLeft"
+  [style.top.px]="svgTop"
+  *mobxAutorun>
+  
+  
+  <!-- Main line -->
+  <line 
+    [attr.x1]="svgX1"
+    [attr.y1]="svgY1"
+    [attr.x2]="svgX2"
+    [attr.y2]="svgY2"
+    [attr.stroke]="effectiveColor"
+    [attr.stroke-width]="effectiveThickness"
+    [attr.opacity]="_isPreview ? 0.7 : 1"
+    class="cursor-pointer transition-all duration-200 hover:opacity-80"
+    [style.pointer-events]="_isPreview ? 'none' : 'stroke'"
+    (click)="handleLineClick($event)"
+    [attr.data-title]="'Line ' + (_lineData?.name || _lineData?.id || '')">
+  </line>
+  
+  <!-- Selection highlight (when selected) -->
+  <line
+    *ngIf="_isSelected && !viewerStore.isViewerMode"
+    [attr.x1]="svgX1"
+    [attr.y1]="svgY1"
+    [attr.x2]="svgX2"
+    [attr.y2]="svgY2"
+    stroke="rgb(59, 130, 246)"
+    [attr.stroke-width]="effectiveThickness + 6"
+    stroke-opacity="0.3"
+    fill="none"
+    style="pointer-events: none">
+  </line>
+  
+  <!-- Start point (circular endpoint) -->
+  <circle 
+    [attr.cx]="svgX1"
+    [attr.cy]="svgY1"
+    r="4"
+    [attr.fill]="effectiveColor"
+    stroke="#9ca3af"
+    stroke-width="1"
+    [attr.opacity]="_isPreview ? 0.7 : 1"
+    class="cursor-pointer"
+    [style.pointer-events]="_isPreview ? 'none' : 'all'"
+    (click)="handleLineClick($event)">
+  </circle>
+  
+  <!-- End point (circular endpoint) -->
+  <circle 
+    [attr.cx]="svgX2"
+    [attr.cy]="svgY2"
+    r="4"
+    [attr.fill]="effectiveColor"
+    stroke="#9ca3af"
+    stroke-width="1"
+    [attr.opacity]="_isPreview ? 0.7 : 1"
+    class="cursor-pointer"
+    [style.pointer-events]="_isPreview ? 'none' : 'all'"
+    (click)="handleLineClick($event)">
+  </circle>
+</svg>

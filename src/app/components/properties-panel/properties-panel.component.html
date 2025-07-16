@@ -311,6 +311,216 @@
     </div>
   </div>
 
+  <!-- Line Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'line'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Line
+    </div>
+
+    <!-- Line Appearance Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Line Appearance</label>
+      </div>
+
+      <!-- Thickness -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Thickness:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementThickness()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="lineProperties.thickness" (ngModelChange)="updateProperty('thickness', $event)" min="1"
+            max="10" step="1">
+          <button class="join-item btn btn-xs" (click)="incrementThickness()">+</button>
+        </div>
+      </div>
+
+      <!-- Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Color:</label>
+        <input type="color" class="w-16 h-8 border border-gray-300 rounded cursor-pointer"
+          [ngModel]="lineProperties.color" (ngModelChange)="updateProperty('color', $event)">
+      </div>
+
+    </div>
+
+    <!-- Line Labeling Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Line Labeling</label>
+      </div>
+
+      <!-- ID (non-editable) -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Id</label>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
+      </div>
+
+      <!-- Displayed Label -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Display Label</label>
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs" [ngModel]="lineProperties.name"
+          (ngModelChange)="updateProperty('name', $event)">
+      </div>
+    </div>
+
+    <!-- Line coordinates info (read-only) -->
+    <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50">
+      <div>Start: {{lineProperties.startX | number:'1.0-0'}}, {{lineProperties.startY | number:'1.0-0'}}</div>
+      <div>End: {{lineProperties.endX | number:'1.0-0'}}, {{lineProperties.endY | number:'1.0-0'}}</div>
+    </div>
+
+    <!-- Delete Button -->
+    <div class="px-4 py-2 mt-auto">
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  </div>
+
+  <!-- Polygon Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'polygon'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Polygon
+    </div>
+
+    <!-- Polygon Appearance Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Polygon Appearance</label>
+      </div>
+
+      <!-- Fill Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Fill Color:</label>
+        <div class="flex gap-2">
+          <input 
+            type="color" 
+            class="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+            [ngModel]="polygonProperties.fillColor"
+            (ngModelChange)="updateProperty('fillColor', $event)">
+          <input 
+            type="text" 
+            class="input input-bordered input-xs flex-1 w-16 text-xs"
+            [ngModel]="polygonProperties.fillColor"
+            (ngModelChange)="updateProperty('fillColor', $event)">
+        </div>
+      </div>
+
+      <!-- Fill Opacity -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Fill Opacity:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementFillOpacity()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="polygonProperties.fillOpacity" (ngModelChange)="updateProperty('fillOpacity', $event)" 
+            min="0" max="1" step="0.1">
+          <button class="join-item btn btn-xs" (click)="incrementFillOpacity()">+</button>
+        </div>
+      </div>
+
+      <!-- Border Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Border Color:</label>
+        <div class="flex gap-2">
+          <input 
+            type="color" 
+            class="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+            [ngModel]="polygonProperties.borderColor"
+            (ngModelChange)="updateProperty('borderColor', $event)">
+          <input 
+            type="text" 
+            class="input input-bordered input-xs flex-1 w-16 text-xs"
+            [ngModel]="polygonProperties.borderColor"
+            (ngModelChange)="updateProperty('borderColor', $event)">
+        </div>
+      </div>
+
+      <!-- Border Thickness -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Border Thickness:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementBorderThickness()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="polygonProperties.borderThickness" (ngModelChange)="updateProperty('borderThickness', $event)" 
+            min="0" max="10" step="1">
+          <button class="join-item btn btn-xs" (click)="incrementBorderThickness()">+</button>
+        </div>
+      </div>
+
+      <!-- Show Border Toggle -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Show Border</label>
+        <label class="cursor-pointer">
+          <input type="checkbox" class="toggle toggle-warning toggle-sm"
+            [ngModel]="polygonProperties.showBorder"
+            (ngModelChange)="updateProperty('showBorder', $event)">
+        </label>
+      </div>
+    </div>
+
+    <!-- Polygon Labeling Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Polygon Labeling</label>
+      </div>
+
+      <!-- ID (non-editable) -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Id</label>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
+      </div>
+
+      <!-- Display Name -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Display Name</label>
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs" 
+          [ngModel]="polygonProperties.name"
+          (ngModelChange)="updateProperty('name', $event)">
+      </div>
+    </div>
+
+    <!-- Polygon Info Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Polygon Info</label>
+      </div>
+
+      <!-- Points Count (non-editable) -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Points:</label>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="polygonProperties.points.length" disabled>
+      </div>
+    </div>
+
+    <!-- Polygon position info (read-only) -->
+    <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50">
+      X: {{selectedItem?.['x'] | number:'1.0-0'}}, Y: {{selectedItem?.['y'] | number:'1.0-0'}}
+    </div>
+
+    <!-- Delete Button -->
+    <div class="px-4 py-2 mt-auto">
+      <button class="btn btn-error btn-sm w-full" (click)="deleteElement()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  </div>
+
   <!-- Empty state panel -->
   <div *ngIf="!selectedItem"
     class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">

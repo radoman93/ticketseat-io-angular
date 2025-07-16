@@ -1,0 +1,69 @@
+<!-- Polygon element using SVG -->
+<svg 
+  class="absolute overflow-visible"
+  [class.pointer-events-none]="_isPreview"
+  [attr.width]="svgWidth"
+  [attr.height]="svgHeight"
+  [style.left.px]="svgLeft"
+  [style.top.px]="svgTop"
+  *mobxAutorun>
+  
+  <!-- Main polygon -->
+  <path 
+    *ngIf="effectivePoints.length >= 3"
+    [attr.d]="pathData"
+    [attr.fill]="effectiveFillColor"
+    [attr.fill-opacity]="effectiveFillOpacity"
+    [attr.stroke]="effectiveShowBorder ? effectiveBorderColor : 'none'"
+    [attr.stroke-width]="effectiveShowBorder ? effectiveBorderThickness : 0"
+    [attr.opacity]="_isPreview ? 0.7 : 1"
+    class="cursor-pointer transition-all duration-200 hover:opacity-80"
+    [style.pointer-events]="_isPreview ? 'none' : 'fill'"
+    (click)="handlePolygonClick($event)"
+    [attr.data-title]="'Polygon ' + (_polygonData?.name || _polygonData?.id || '')">
+  </path>
+  
+  <!-- Selection highlight (when selected) -->
+  <path
+    *ngIf="_isSelected && !viewerStore.isViewerMode && effectivePoints.length >= 3"
+    [attr.d]="pathData"
+    fill="none"
+    stroke="rgb(59, 130, 246)"
+    [attr.stroke-width]="effectiveBorderThickness + 4"
+    stroke-opacity="0.5"
+    style="pointer-events: none">
+  </path>
+  
+  <!-- Vertex points (show during preview or when selected) -->
+  <g *ngIf="(_isPreview || (_isSelected && !viewerStore.isViewerMode)) && effectivePoints.length > 0">
+    <circle 
+      *ngFor="let point of effectivePoints; let i = index"
+      [attr.cx]="getSvgX(point.x)"
+      [attr.cy]="getSvgY(point.y)"
+      r="4"
+      [attr.fill]="i === 0 ? '#ff0000' : effectiveBorderColor"
+      stroke="#9ca3af"
+      stroke-width="1"
+      [attr.opacity]="_isPreview ? 0.7 : 1"
+      class="cursor-pointer"
+      [style.pointer-events]="_isPreview ? 'none' : 'all'"
+      (click)="handlePolygonClick($event)"
+      [attr.data-title]="i === 0 ? 'Starting point' : 'Vertex ' + (i + 1)">
+    </circle>
+  </g>
+  
+  <!-- Preview lines connecting vertices (show during preview) -->
+  <g *ngIf="_isPreview && effectivePoints.length > 1">
+    <line 
+      *ngFor="let point of effectivePoints; let i = index"
+      [attr.x1]="getSvgX(point.x)"
+      [attr.y1]="getSvgY(point.y)"
+      [attr.x2]="getSvgX(effectivePoints[(i + 1) % effectivePoints.length].x)"
+      [attr.y2]="getSvgY(effectivePoints[(i + 1) % effectivePoints.length].y)"
+      [attr.stroke]="effectiveBorderColor"
+      [attr.stroke-width]="effectiveBorderThickness"
+      stroke-opacity="0.5"
+      style="pointer-events: none">
+    </line>
+  </g>
+</svg>

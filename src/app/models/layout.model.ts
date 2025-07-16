@@ -13,7 +13,9 @@ export enum ElementType {
   ROUND_TABLE = 'roundTable',
   RECTANGLE_TABLE = 'rectangleTable',
   SEATING_ROW = 'seatingRow',
-  SEGMENTED_SEATING_ROW = 'segmentedSeatingRow'
+  SEGMENTED_SEATING_ROW = 'segmentedSeatingRow',
+  LINE = 'line',
+  POLYGON = 'polygon'
 }
 
 // Complete layout schema

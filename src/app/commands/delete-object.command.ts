@@ -29,4 +29,8 @@ export class DeleteObjectCommand implements Command {
     // Restore selection for a better user experience
     this.sStore.selectItem(this.deletedObject);
   }
+
+  redo(): void {
+    this.execute();
+  }
 } 

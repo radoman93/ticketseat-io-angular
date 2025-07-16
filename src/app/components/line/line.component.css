@@ -1,0 +1,27 @@
+/* Line component styles */
+
+/* SVG-specific styles */
+svg {
+  /* Ensure SVG doesn't interfere with layout */
+  display: block;
+}
+
+/* Ensure proper cursor for interactive elements */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Smooth transitions for hover effects */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.duration-200 {
+  transition-duration: 200ms;
+}
+
+/* Hover effect */
+.hover\:opacity-80:hover {
+  opacity: 0.8;
+}

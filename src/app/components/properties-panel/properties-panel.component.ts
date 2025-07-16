@@ -7,8 +7,9 @@ import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { HistoryStore } from '../../stores/history.store';
 import { DeleteObjectCommand } from '../../commands/delete-object.command';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, PolygonProperties } from '../../services/selection.service';
 import { UpdateObjectCommand } from '../../commands/update-object.command';
+import { LineElement } from '../../models/elements.model';
 
 @Component({
   selector: 'app-properties-panel',
@@ -95,6 +96,16 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     return this.selectedItem as SeatingRowProperties;
   }
 
+  @computed
+  get lineProperties(): LineElement {
+    return this.selectedItem as LineElement;
+  }
+
+  @computed
+  get polygonProperties(): PolygonProperties {
+    return this.selectedItem as PolygonProperties;
+  }
+
   @action
   updateProperty(property: string, value: any): void {
     if (!this.selectedItem) return;
@@ -109,13 +120,18 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
       value = true;
     }
 
-    // Update the element in the layout store
-    const updatedElement = this.layoutStore.updateElement(this.selectedItem.id, { [property]: value });
+    // Get the old value for undo/redo
+    const oldValue = (this.selectedItem as any)[property];
+    
+    // Only proceed if the value actually changed
+    if (oldValue === value) return;
 
-    // Update the selection with the new element reference
-    if (updatedElement) {
-      this.selectionStore.selectItem(updatedElement);
-    }
+    // Create and execute update command for undo/redo support
+    const updateCommand = new UpdateObjectCommand(
+      this.selectedItem.id,
+      { [property]: value }
+    );
+    this.historyStore.executeCommand(updateCommand);
   }
 
   @action
@@ -256,5 +272,43 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     if (!this.selectedItem) return;
     const currentRotation = (this.selectedItem as any).rotation || 0;
     this.updateProperty('rotation', currentRotation - 15);
+  }
+
+  // Line properties
+  @action incrementThickness(): void {
+    if (!this.lineProperties) return;
+    const newValue = Math.min(10, (this.lineProperties.thickness || 2) + 1);
+    this.updateProperty('thickness', newValue);
+  }
+
+  @action decrementThickness(): void {
+    if (!this.lineProperties) return;
+    const newValue = Math.max(1, (this.lineProperties.thickness || 2) - 1);
+    this.updateProperty('thickness', newValue);
+  }
+
+  // Polygon properties
+  @action incrementBorderThickness(): void {
+    if (!this.polygonProperties) return;
+    const newValue = Math.min(10, (this.polygonProperties.borderThickness || 2) + 1);
+    this.updateProperty('borderThickness', newValue);
+  }
+
+  @action decrementBorderThickness(): void {
+    if (!this.polygonProperties) return;
+    const newValue = Math.max(0, (this.polygonProperties.borderThickness || 2) - 1);
+    this.updateProperty('borderThickness', newValue);
+  }
+
+  @action incrementFillOpacity(): void {
+    if (!this.polygonProperties) return;
+    const newValue = Math.min(1, (this.polygonProperties.fillOpacity || 0.3) + 0.1);
+    this.updateProperty('fillOpacity', Math.round(newValue * 10) / 10);
+  }
+
+  @action decrementFillOpacity(): void {
+    if (!this.polygonProperties) return;
+    const newValue = Math.max(0, (this.polygonProperties.fillOpacity || 0.3) - 0.1);
+    this.updateProperty('fillOpacity', Math.round(newValue * 10) / 10);
   }
 }

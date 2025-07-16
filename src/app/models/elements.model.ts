@@ -41,4 +41,26 @@ export interface SegmentProperties {
   chairs: any[];
 }
 
-export type TableElement = RoundTableElement | RectangleTableElement | SeatingRowElement | SegmentedSeatingRowElement;
+export interface LineElement extends LayoutElement {
+  type: ElementType.LINE;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  thickness: number;
+  color: string;
+  name: string;
+}
+
+export interface PolygonElement extends LayoutElement {
+  type: ElementType.POLYGON;
+  points: Array<{x: number, y: number}>;
+  fillColor: string;
+  fillOpacity: number;
+  borderColor: string;
+  borderThickness: number;
+  showBorder: boolean;
+  name: string;
+}
+
+export type TableElement = RoundTableElement | RectangleTableElement | SeatingRowElement | SegmentedSeatingRowElement | LineElement | PolygonElement;

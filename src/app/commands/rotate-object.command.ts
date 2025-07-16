@@ -19,4 +19,8 @@ export class RotateObjectCommand implements Command {
   undo(): void {
     this.lStore.updateElement(this.targetId, this.oldState);
   }
+
+  redo(): void {
+    this.execute();
+  }
 } 
