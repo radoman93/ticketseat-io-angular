@@ -22,6 +22,7 @@ import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import viewerStore from '../../stores/viewer.store';
+import { LoggerService } from '../../services/logger.service';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement;
@@ -85,7 +86,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
   constructor(
     private historyStore: HistoryStore,
-    private segmentedSeatingRowService: SegmentedSeatingRowService
+    private segmentedSeatingRowService: SegmentedSeatingRowService,
+    private logger: LoggerService
   ) { }
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -529,7 +531,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
             );
 
           } else {
-            console.error('Expected segments array not to be empty');
+            this.logger.error('Expected segments array not to be empty', new Error('Empty segments array'), { component: 'GridComponent', action: 'handleGridClick', activeTool: 'SegmentedSeatingRow' });
           }
         }
 
@@ -797,7 +799,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
       // Safety validation: ensure seatCount > 0
       if (!seatingRowData.seatCount || seatingRowData.seatCount <= 0) {
-        console.warn('Cannot create seating row with 0 or invalid seat count:', seatingRowData.seatCount);
+        this.logger.warn('Cannot create seating row with invalid seat count', { component: 'GridComponent', action: 'createSeatingRow', seatCount: seatingRowData.seatCount });
         return;
       }
 

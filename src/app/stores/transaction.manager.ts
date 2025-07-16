@@ -1,14 +1,17 @@
 import { action, runInAction } from 'mobx';
 import { layoutStore } from './layout.store';
 import { selectionStore } from './selection.store';
+import { LoggerService } from '../services/logger.service';
 
 /**
  * TransactionManager handles complex multi-step operations
  * that need to be treated as a single transaction.
  */
 export class TransactionManager {
+  private logger: LoggerService;
+
   constructor() {
-    // Nothing to observe, this is a pure action manager
+    this.logger = new LoggerService();
   }
 
   /**
@@ -31,7 +34,7 @@ export class TransactionManager {
 
       return addedTables;
     } catch (error) {
-      console.error('TransactionManager: Failed to add tables in bulk', error);
+      this.logger.error('Failed to add tables in bulk', error instanceof Error ? error : new Error(String(error)), { store: 'TransactionManager', action: 'bulkAddTables', tableCount: tables.length });
       throw error;
     }
   }
@@ -51,7 +54,7 @@ export class TransactionManager {
 
       return true;
     } catch (error) {
-      console.error('TransactionManager: Failed to move multiple elements', error);
+      this.logger.error('Failed to move multiple elements', error instanceof Error ? error : new Error(String(error)), { store: 'TransactionManager', action: 'moveMultipleElements', elementCount: elementsWithNewPositions.length });
       throw error;
     }
   }
@@ -63,7 +66,7 @@ export class TransactionManager {
   duplicateSelection(offsetX: number = 50, offsetY: number = 50) {
     const selectedItem = selectionStore.selectedItem;
     if (!selectedItem) {
-      console.warn('TransactionManager: Nothing selected to duplicate');
+      this.logger.warn('Nothing selected to duplicate', { store: 'TransactionManager', action: 'duplicateSelection' });
       return null;
     }
 
@@ -92,7 +95,7 @@ export class TransactionManager {
 
       return newElement;
     } catch (error) {
-      console.error('TransactionManager: Failed to duplicate selection', error);
+      this.logger.error('Failed to duplicate selection', error instanceof Error ? error : new Error(String(error)), { store: 'TransactionManager', action: 'duplicateSelection', selectedItemId: selectedItem ? (selectedItem as any).id : null });
       throw error;
     }
   }
@@ -117,7 +120,7 @@ export class TransactionManager {
 
       return true;
     } catch (error) {
-      console.error('TransactionManager: Failed to delete multiple elements', error);
+      this.logger.error('Failed to delete multiple elements', error instanceof Error ? error : new Error(String(error)), { store: 'TransactionManager', action: 'deleteMultipleElements', elementCount: ids.length });
       throw error;
     }
   }
@@ -143,7 +146,7 @@ export class TransactionManager {
 
       return true;
     } catch (error) {
-      console.error('TransactionManager: Failed to align elements to grid', error);
+      this.logger.error('Failed to align elements to grid', error instanceof Error ? error : new Error(String(error)), { store: 'TransactionManager', action: 'alignElementsToGrid', gridSize, elementCount: layoutStore.elements.length });
       throw error;
     }
   }

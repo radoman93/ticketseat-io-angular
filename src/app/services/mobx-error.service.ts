@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { makeAutoObservable } from 'mobx';
+import { LoggerService } from './logger.service';
 
 export interface MobXError {
   id: string;
@@ -14,7 +15,10 @@ export interface MobXError {
 export class MobxErrorService {
   errors: MobXError[] = [];
   
+  private logger: LoggerService;
+
   constructor() {
+    this.logger = new LoggerService();
     // Make properties observable
     makeAutoObservable(this);
     
@@ -41,8 +45,12 @@ export class MobxErrorService {
   logError(error: MobXError): void {
     this.errors.push(error);
     
-    // Log to console
-    console.error('[MobX Error]', error.message, error.context);
+    // Log using the logging service
+    this.logger.error(`MobX Error: ${error.message}`, new Error(error.message), { 
+      component: 'MobxErrorService',
+      context: error.context,
+      errorId: error.id
+    });
   }
   
   /**

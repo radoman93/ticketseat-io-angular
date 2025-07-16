@@ -6,6 +6,7 @@ import { MoveObjectCommand } from '../commands/move-object.command';
 import { HistoryStore } from './history.store';
 import { SegmentProperties } from '../models/elements.model';
 import { TableElement } from './layout.store';
+import { LoggerService } from '../services/logger.service';
 
 export class DragStore {
     // Track dragging state
@@ -31,7 +32,10 @@ export class DragStore {
     // Track when dragging has just ended (to prevent immediate deselection)
     justEndedDragging = false;
 
+    private logger: LoggerService;
+
     constructor() {
+        this.logger = new LoggerService();
         makeAutoObservable(this, {
             // Actions
             prepareForDragging: action,
@@ -60,20 +64,20 @@ export class DragStore {
     ) => {
         // Check if item has appropriate position properties
         if (!item) {
-            console.warn('Cannot prepare drag for null item');
+            this.logger.warn('Cannot prepare drag for null item', { store: 'DragStore', action: 'prepareForDragging' });
             return;
         }
 
         // For lines, check for startX/startY properties
         if (item.type === 'line') {
             if (!('startX' in item) || !('startY' in item)) {
-                console.warn('Cannot prepare drag for line without startX/startY properties:', item);
+                this.logger.warn('Cannot prepare drag for line without startX/startY properties', { store: 'DragStore', action: 'prepareForDragging', itemType: item.type, itemId: (item as any).id });
                 return;
             }
         } else {
             // For other items, check for x and y properties
             if (!('x' in item) || !('y' in item)) {
-                console.warn('Cannot prepare drag for item without position properties:', item);
+                this.logger.warn('Cannot prepare drag for item without position properties', { store: 'DragStore', action: 'prepareForDragging', itemType: (item as any).type, itemId: (item as any).id });
                 return;
             }
         }
@@ -107,24 +111,24 @@ export class DragStore {
     startDragging = action('startDragging', () => {
         // Only allow dragging if item exists and has appropriate properties
         if (!this.potentialDragItem) {
-            console.warn('Cannot drag: no potential drag item');
+            this.logger.warn('Cannot drag: no potential drag item', { store: 'DragStore', action: 'startDragging' });
             return;
         }
 
         // Check if item has appropriate position properties
         if (this.potentialDragItem.type === 'line') {
             if (!('startX' in this.potentialDragItem) || !('startY' in this.potentialDragItem)) {
-                console.warn('Cannot drag line without startX/startY properties');
+                this.logger.warn('Cannot drag line without startX/startY properties', { store: 'DragStore', action: 'startDragging', itemType: this.potentialDragItem.type, itemId: (this.potentialDragItem as any).id });
                 return;
             }
         } else if (this.potentialDragItem.type === 'polygon') {
             if (!('x' in this.potentialDragItem) || !('y' in this.potentialDragItem) || !('points' in this.potentialDragItem)) {
-                console.warn('Cannot drag polygon without position or points properties');
+                this.logger.warn('Cannot drag polygon without position or points properties', { store: 'DragStore', action: 'startDragging', itemType: this.potentialDragItem.type, itemId: (this.potentialDragItem as any).id });
                 return;
             }
         } else {
             if (!('x' in this.potentialDragItem) || !('y' in this.potentialDragItem)) {
-                console.warn('Cannot drag item without position properties');
+                this.logger.warn('Cannot drag item without position properties', { store: 'DragStore', action: 'startDragging', itemType: (this.potentialDragItem as any).type, itemId: (this.potentialDragItem as any).id });
                 return;
             }
         }

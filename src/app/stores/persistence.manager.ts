@@ -4,6 +4,7 @@ import { selectionStore } from './selection.store';
 import { MobxErrorService } from '../services/mobx-error.service';
 import { RoundTableProperties } from '../services/selection.service';
 import { Injectable } from '@angular/core';
+import { LoggerService } from '../services/logger.service';
 
 export interface SavedLayout {
   id: string;
@@ -26,7 +27,10 @@ export class PersistenceManager {
   private readonly STORAGE_KEY = 'ticketseat-io-layouts';
   private readonly CURRENT_LAYOUT_KEY = 'ticketseat-io-current-layout';
 
-  constructor(private mobxErrorService: MobxErrorService) {
+  constructor(
+    private mobxErrorService: MobxErrorService,
+    private logger: LoggerService = new LoggerService()
+  ) {
     // Nothing to observe, this is a pure action manager
   }
 
@@ -41,7 +45,7 @@ export class PersistenceManager {
       const layouts = JSON.parse(storedData);
       return layouts.map(({ id, name, timestamp }: any) => ({ id, name, timestamp }));
     } catch (error) {
-      console.error('PersistenceManager: Failed to get saved layouts', error);
+      this.logger.error('Failed to get saved layouts', error instanceof Error ? error : new Error(String(error)), { store: 'PersistenceManager', action: 'getSavedLayouts' });
       return [];
     }
   }
@@ -80,7 +84,7 @@ export class PersistenceManager {
 
       return layoutId;
     } catch (error) {
-      console.error('PersistenceManager: Failed to save layout', error);
+      this.logger.error('Failed to save layout', error instanceof Error ? error : new Error(String(error)), { store: 'PersistenceManager', action: 'saveLayout', layoutName: name });
       throw error;
     }
   }
@@ -112,7 +116,7 @@ export class PersistenceManager {
       // Get saved layouts
       const storedData = localStorage.getItem(this.STORAGE_KEY);
       if (!storedData) {
-        console.warn('PersistenceManager: No saved layouts found');
+        this.logger.warn('No saved layouts found', { store: 'PersistenceManager', action: 'loadLayout', layoutId });
         return false;
       }
 
@@ -120,7 +124,7 @@ export class PersistenceManager {
       const layout = layouts.find((l: any) => l.id === layoutId);
 
       if (!layout) {
-        console.warn(`PersistenceManager: Layout with ID ${layoutId} not found`);
+        this.logger.warn('Layout not found', { store: 'PersistenceManager', action: 'loadLayout', layoutId });
         return false;
       }
 
@@ -140,7 +144,7 @@ export class PersistenceManager {
 
       return true;
     } catch (error) {
-      console.error('PersistenceManager: Failed to load layout', error);
+      this.logger.error('Failed to load layout', error instanceof Error ? error : new Error(String(error)), { store: 'PersistenceManager', action: 'loadLayout', layoutId });
       throw error;
     }
   }
@@ -163,7 +167,7 @@ export class PersistenceManager {
 
       return true;
     } catch (error) {
-      console.error('PersistenceManager: Failed to delete layout', error);
+      this.logger.error('Failed to delete layout', error instanceof Error ? error : new Error(String(error)), { store: 'PersistenceManager', action: 'deleteLayout', layoutId });
       return false;
     }
   }
@@ -202,7 +206,7 @@ export class PersistenceManager {
 
       return true;
     } catch (error) {
-      console.error('PersistenceManager: Failed to export layout to file', error);
+      this.logger.error('Failed to export layout to file', error instanceof Error ? error : new Error(String(error)), { store: 'PersistenceManager', action: 'exportToFile' });
       return false;
     }
   }
@@ -218,7 +222,7 @@ export class PersistenceManager {
 
       // Validate the imported data
       if (!importedData.elements || !Array.isArray(importedData.elements)) {
-        console.error('PersistenceManager: Invalid import file format');
+        this.logger.error('Invalid import file format', new Error('Missing or invalid elements array'), { store: 'PersistenceManager', action: 'importFromFile' });
         return false;
       }
 
@@ -238,11 +242,11 @@ export class PersistenceManager {
 
       return true;
     } catch (error) {
-      console.error('PersistenceManager: Failed to import layout from file', error);
+      this.logger.error('Failed to import layout from file', error instanceof Error ? error : new Error(String(error)), { store: 'PersistenceManager', action: 'importFromFile' });
       return false;
     }
   }
 }
 
 // Create singleton instance
-export const persistenceManager = new PersistenceManager(new MobxErrorService()); 
+export const persistenceManager = new PersistenceManager(new MobxErrorService(), new LoggerService()); 

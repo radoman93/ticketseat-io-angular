@@ -13,6 +13,7 @@ import { autorun, IReactionDisposer } from 'mobx';
 import { layoutStore } from '../../stores/layout.store';
 import { rootStore } from '../../stores/root.store';
 import { gridStore } from '../../stores/grid.store';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-event-editor',
@@ -39,7 +40,10 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
 
   private disposers: IReactionDisposer[] = [];
 
-  constructor(private layoutImportService: LayoutExportImportService) {
+  constructor(
+    private layoutImportService: LayoutExportImportService,
+    private logger: LoggerService
+  ) {
     // Ensure we're in editor mode when this component is used
     this.viewerStore.setMode('editor');
   }
@@ -90,7 +94,7 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
       } catch (error) {
-        console.error('Failed to load design in editor:', error);
+        this.logger.error('Failed to load design in editor', error instanceof Error ? error : new Error(String(error)), { component: 'EventEditorComponent', action: 'loadDesignIfProvided' });
       }
     }
   }

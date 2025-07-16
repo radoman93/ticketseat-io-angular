@@ -5,6 +5,7 @@ import { EventEditorComponent } from './components/event-editor/event-editor.com
 import { EventViewerComponent } from './components/event-viewer/event-viewer.component';
 import { LayoutExportData } from './services/layout-export-import.service';
 import { Chair } from './models/chair.model';
+import { LoggerService } from './services/logger.service';
 
 @Component({
   selector: 'app-root',
@@ -36,7 +37,7 @@ export class AppComponent {
   // Sample layout data
   sampleLayout: LayoutExportData | null = null;
 
-  constructor() {
+  constructor(private logger: LoggerService) {
     // Create a sample layout for testing
     this.createSampleLayout();
   }
@@ -70,7 +71,12 @@ export class AppComponent {
   }
 
   onSelectedSeatsChange(selectedChairs: Chair[]): void {
-    console.log('Selected seats changed:', selectedChairs);
+    this.logger.info('Selected seats changed', {
+      component: 'AppComponent',
+      action: 'seat_selection',
+      selectedCount: selectedChairs.length,
+      chairIds: selectedChairs.map(c => c.id)
+    });
   }
 
   private createSampleLayout(): void {

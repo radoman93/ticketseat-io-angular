@@ -13,4 +13,7 @@ configure({
 });
 
 bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));
+  .catch((err) => {
+    // Critical bootstrap errors should always be logged to console
+    console.error('Application bootstrap failed:', err);
+  });

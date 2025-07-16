@@ -4,6 +4,7 @@ import { CUSTOM_ELEMENTS_SCHEMA, EventEmitter, Output } from '@angular/core';
 import { persistenceManager } from '../../stores/persistence.manager';
 import { SavedLayoutsComponent } from './saved-layouts/saved-layouts.component';
 import { LayoutOptionsComponent } from './layout-options/layout-options.component';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-layout-manager',
@@ -48,6 +49,8 @@ import { LayoutOptionsComponent } from './layout-options/layout-options.componen
 export class LayoutManagerComponent {
   @Output() closeModal = new EventEmitter<void>();
 
+  private logger = new LoggerService();
+
   constructor() { }
 
   onLoadLayout(layoutId: string): void {
@@ -55,7 +58,7 @@ export class LayoutManagerComponent {
       persistenceManager.loadLayout(layoutId);
       this.closeModal.emit();
     } catch (error) {
-      console.error('Failed to load layout', error);
+      this.logger.error('Failed to load layout', error instanceof Error ? error : new Error(String(error)), { component: 'LayoutManagerComponent', action: 'onLoadLayout', layoutId });
     }
   }
 
@@ -63,7 +66,7 @@ export class LayoutManagerComponent {
     try {
       persistenceManager.deleteLayout(layoutId);
     } catch (error) {
-      console.error('Failed to delete layout', error);
+      this.logger.error('Failed to delete layout', error instanceof Error ? error : new Error(String(error)), { component: 'LayoutManagerComponent', action: 'onDeleteLayout', layoutId });
     }
   }
 
@@ -72,7 +75,7 @@ export class LayoutManagerComponent {
       persistenceManager.saveLayout(name);
       this.closeModal.emit();
     } catch (error) {
-      console.error('Failed to save layout', error);
+      this.logger.error('Failed to save layout', error instanceof Error ? error : new Error(String(error)), { component: 'LayoutManagerComponent', action: 'onSaveLayout', layoutName });
     }
   }
 
@@ -81,7 +84,7 @@ export class LayoutManagerComponent {
       persistenceManager.exportToFile();
       this.closeModal.emit();
     } catch (error) {
-      console.error('Failed to export layout', error);
+      this.logger.error('Failed to export layout', error instanceof Error ? error : new Error(String(error)), { component: 'LayoutManagerComponent', action: 'onExportLayout' });
     }
   }
 
@@ -94,7 +97,7 @@ export class LayoutManagerComponent {
           this.closeModal.emit();
         }
       } catch (error) {
-        console.error('Failed to import layout', error);
+        this.logger.error('Failed to import layout', error instanceof Error ? error : new Error(String(error)), { component: 'LayoutManagerComponent', action: 'onImportLayout' });
       }
     };
     reader.readAsText(file);

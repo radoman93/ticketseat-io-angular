@@ -9,6 +9,7 @@ import viewerStore from '../../stores/viewer.store';
 import { rootStore } from '../../stores/root.store';
 import { Chair } from '../../models/chair.model';
 import { LayoutExportImportService, LayoutExportData } from '../../services/layout-export-import.service';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-event-viewer',
@@ -99,7 +100,10 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() selectedSeatsChange = new EventEmitter<Chair[]>(); // Emits selected chair objects
 
-  constructor(private layoutImportService: LayoutExportImportService) {
+  constructor(
+    private layoutImportService: LayoutExportImportService,
+    private logger: LoggerService
+  ) {
     // Ensure we're in viewer mode when this component is used
     this.viewerStore.setMode('viewer');
   }
@@ -164,7 +168,7 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
       } catch (error) {
-        console.error('Failed to load design in viewer:', error);
+        this.logger.error('Failed to load design in viewer', error instanceof Error ? error : new Error(String(error)), { component: 'EventViewerComponent', action: 'loadDesignIfProvided' });
       }
     }
   }

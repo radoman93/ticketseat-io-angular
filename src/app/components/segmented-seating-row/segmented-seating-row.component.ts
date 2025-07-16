@@ -6,6 +6,7 @@ import { makeAutoObservable, computed, observable, action } from 'mobx';
 import { rootStore } from '../../stores';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-segmented-seating-row',
@@ -36,6 +37,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   
   store = rootStore;
   viewerStore = viewerStore;
+  private logger = new LoggerService();
   
   constructor() {
     makeAutoObservable(this, {
@@ -312,7 +314,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     if (actualChair) {
       this.selectChair(actualChair, (event as MouseEvent).clientX, (event as MouseEvent).clientY);
     } else {
-      console.warn('[SegmentedSeatingRowComponent] Chair not found in store with ID:', chairData.id);
+      this.logger.warn('Chair not found in store', { component: 'SegmentedSeatingRowComponent', action: 'onChairClick', chairId: chairData.id });
     }
   }
 
