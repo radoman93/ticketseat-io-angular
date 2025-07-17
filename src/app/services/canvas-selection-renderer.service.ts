@@ -60,15 +60,17 @@ export class CanvasSelectionRenderer {
    */
   initializeCanvas(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    const context = canvas.getContext('2d');
     
-    if (!this.ctx) {
+    if (!context) {
       this.logger.error('Failed to get canvas 2D context', new Error('Canvas context is null'), {
         component: 'CanvasSelectionRenderer',
         action: 'initializeCanvas'
       });
       return;
     }
+    
+    this.ctx = context;
 
     // Set high DPI scaling for crisp rendering
     const dpr = window.devicePixelRatio || 1;
