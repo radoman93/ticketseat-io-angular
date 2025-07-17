@@ -1,4 +1,4 @@
-import { action, makeAutoObservable } from 'mobx';
+import { action, makeAutoObservable, runInAction } from 'mobx';
 import { layoutStore } from './layout.store';
 import { gridStore } from './grid.store';
 import { selectionStore } from './selection.store';
@@ -163,91 +163,93 @@ export class DragStore {
         const canvasDx = dx / zoomFactor;
         const canvasDy = dy / zoomFactor;
 
-        // Handle different item types
-        if (this.draggedItem.type === 'line') {
-            // For lines, move both start and end points by the same delta
-            const deltaToEnd = {
-                x: this.originalLineEndX - this.startElementX,
-                y: this.originalLineEndY - this.startElementY
-            };
-            
-            // Calculate new positions
-            const newStartX = this.startElementX + canvasDx;
-            const newStartY = this.startElementY + canvasDy;
-            const newEndX = newStartX + deltaToEnd.x;
-            const newEndY = newStartY + deltaToEnd.y;
-
-            const update = { 
-                x: newStartX, // Keep x/y for compatibility with selection system
-                y: newStartY,
-                startX: newStartX, 
-                startY: newStartY, 
-                endX: newEndX, 
-                endY: newEndY 
-            };
-            Object.assign(this.draggedItem, update);
-            layoutStore.updateElement(this.draggedItem.id, update);
-        } else if (this.draggedItem.type === 'segmentedSeatingRow') {
-            // Calculate new position
-            const newX = this.startElementX + canvasDx;
-            const newY = this.startElementY + canvasDy;
-
-            const deltaX = newX - this.draggedItem['x'];
-            const deltaY = newY - this.draggedItem['y'];
-
-            // Update all segment positions
-            if (this.draggedItem['segments']) {
-                const segments: SegmentProperties[] = this.draggedItem['segments'];
-                const updatedSegments = segments.map(segment => ({
-                    ...segment,
-                    chairs: segment.chairs.map(chair => ({
-                        ...chair,
-                        x: chair.x + deltaX,
-                        y: chair.y + deltaY
-                    }))
-                }));
-
-                const update = {
-                    x: newX,
-                    y: newY,
-                    segments: updatedSegments
+        // Batch all updates using runInAction for better performance
+        runInAction(() => {
+            // Handle different item types
+            if (this.draggedItem!.type === 'line') {
+                // For lines, move both start and end points by the same delta
+                const deltaToEnd = {
+                    x: this.originalLineEndX - this.startElementX,
+                    y: this.originalLineEndY - this.startElementY
                 };
-                Object.assign(this.draggedItem, update);
+                
+                // Calculate new positions
+                const newStartX = this.startElementX + canvasDx;
+                const newStartY = this.startElementY + canvasDy;
+                const newEndX = newStartX + deltaToEnd.x;
+                const newEndY = newStartY + deltaToEnd.y;
 
-                layoutStore.updateElement(this.draggedItem.id, update);
+                const update = { 
+                    x: newStartX, // Keep x/y for compatibility with selection system
+                    y: newStartY,
+                    startX: newStartX, 
+                    startY: newStartY, 
+                    endX: newEndX, 
+                    endY: newEndY 
+                };
+                Object.assign(this.draggedItem!, update);
+                layoutStore.updateElement(this.draggedItem!.id, update);
+            } else if (this.draggedItem!.type === 'segmentedSeatingRow') {
+                // Calculate new position
+                const newX = this.startElementX + canvasDx;
+                const newY = this.startElementY + canvasDy;
+
+                const deltaX = newX - (this.draggedItem as any)['x'];
+                const deltaY = newY - (this.draggedItem as any)['y'];
+
+                // Update all segment positions
+                if ((this.draggedItem as any)['segments']) {
+                    const segments: SegmentProperties[] = (this.draggedItem as any)['segments'];
+                    const updatedSegments = segments.map(segment => ({
+                        ...segment,
+                        chairs: segment.chairs.map(chair => ({
+                            ...chair,
+                            x: chair.x + deltaX,
+                            y: chair.y + deltaY
+                        }))
+                    }));
+
+                    const update = {
+                        x: newX,
+                        y: newY,
+                        segments: updatedSegments
+                    };
+                    Object.assign(this.draggedItem!, update);
+                    layoutStore.updateElement(this.draggedItem!.id, update);
+                }
+            } else if (this.draggedItem!.type === 'polygon') {
+                // For polygons, move all vertices by the same delta
+                const newX = this.startElementX + canvasDx;
+                const newY = this.startElementY + canvasDy;
+                
+                // Calculate the delta from the current center to the new center
+                const deltaX = newX - (this.draggedItem as any)['x'];
+                const deltaY = newY - (this.draggedItem as any)['y'];
+                
+                // Move all points by the same delta
+                const currentPoints = (this.draggedItem as any)['points'] || [];
+                const newPoints = currentPoints.map((point: {x: number, y: number}) => ({
+                    x: point.x + deltaX,
+                    y: point.y + deltaY
+                }));
+                
+                const update = { 
+                    x: newX, 
+                    y: newY, 
+                    points: newPoints 
+                };
+                Object.assign(this.draggedItem!, update);
+                layoutStore.updateElement(this.draggedItem!.id, update);
+            } else {
+                // For all other items (roundTable, rectangleTable, seatingRow), update x and y
+                const newX = this.startElementX + canvasDx;
+                const newY = this.startElementY + canvasDy;
+
+                const update = { x: newX, y: newY };
+                Object.assign(this.draggedItem!, update);
+                layoutStore.updateElement(this.draggedItem!.id, update);
             }
-        } else if (this.draggedItem.type === 'polygon') {
-            // For polygons, move all vertices by the same delta
-            const newX = this.startElementX + canvasDx;
-            const newY = this.startElementY + canvasDy;
-            
-            // Calculate the delta from the current center to the new center
-            const deltaX = newX - this.draggedItem['x'];
-            const deltaY = newY - this.draggedItem['y'];
-            
-            // Move all points by the same delta
-            const currentPoints = this.draggedItem['points'] || [];
-            const newPoints = currentPoints.map((point: {x: number, y: number}) => ({
-                x: point.x + deltaX,
-                y: point.y + deltaY
-            }));
-            
-            const update = { 
-                x: newX, 
-                y: newY, 
-                points: newPoints 
-            };
-            Object.assign(this.draggedItem, update);
-            layoutStore.updateElement(this.draggedItem.id, update);
-        } else {
-            // For all other items (roundTable, rectangleTable, seatingRow), update x and y
-            const newX = this.startElementX + canvasDx;
-            const newY = this.startElementY + canvasDy;
-
-            const update = { x: newX, y: newY };
-            Object.assign(this.draggedItem, update);
-            layoutStore.updateElement(this.draggedItem.id, update);
-        }
+        });
     });
 
     /**

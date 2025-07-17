@@ -54,53 +54,82 @@ export class LayoutMetricsStore {
    * The total number of tables in the layout
    */
   get totalTables() {
-    return layoutStore.elements.filter(e => e.type.includes('Table') || e.type === 'seatingRow').length;
+    return this.seatingElements.length;
+  }
+
+  /**
+   * Cached seating elements to avoid repeated filtering
+   */
+  @computed
+  get seatingElements() {
+    return layoutStore.elements.filter(e => 
+      e.type.includes('Table') || e.type === 'seatingRow'
+    );
+  }
+
+  /**
+   * Cached standing area elements
+   */
+  @computed
+  get standingElements() {
+    return layoutStore.elements.filter(e => e.type === 'standingArea');
+  }
+
+  /**
+   * Cached element statistics - computed once, used by multiple getters
+   */
+  @computed
+  get elementStats() {
+    const stats = {
+      totalSeats: 0,
+      standingCapacity: 0,
+      typeCounts: {} as { [type: string]: number }
+    };
+
+    // Process seating elements
+    this.seatingElements.forEach(element => {
+      // Count types
+      stats.typeCounts[element.type] = (stats.typeCounts[element.type] || 0) + 1;
+
+      // Count seats
+      if (element.type === 'roundTable') {
+        stats.totalSeats += ((element as RoundTableProperties).seats || 0);
+      } else if (element.type === 'rectangleTable') {
+        const rectTable = element as RectangleTableProperties;
+        stats.totalSeats += (rectTable.upChairs + rectTable.downChairs + rectTable.leftChairs + rectTable.rightChairs);
+      } else if (element.type === 'seatingRow') {
+        stats.totalSeats += ((element as SeatingRowProperties).seatCount || 0);
+      }
+    });
+
+    // Process standing areas
+    this.standingElements.forEach(area => {
+      stats.standingCapacity += ((area as any)['capacity'] || 0);
+    });
+
+    return stats;
   }
 
   /**
    * The total number of seats across all tables
    */
   get totalSeats() {
-    return layoutStore.elements
-      .filter(e => e.type.includes('Table') || e.type === 'seatingRow')
-      .reduce((sum, element) => {
-        if (element.type === 'roundTable') {
-          return sum + ((element as RoundTableProperties).seats || 0);
-        } else if (element.type === 'rectangleTable') {
-          const rectTable = element as RectangleTableProperties;
-          return sum + (rectTable.upChairs + rectTable.downChairs + rectTable.leftChairs + rectTable.rightChairs);
-        } else if (element.type === 'seatingRow') {
-          return sum + ((element as SeatingRowProperties).seatCount || 0);
-        }
-        return sum;
-      }, 0);
+    return this.elementStats.totalSeats;
   }
 
   /**
    * The total capacity including standing room elements
    */
   get totalCapacity() {
-    const tableSeats = this.totalSeats;
-    const standingCapacity = layoutStore.elements
-      .filter(e => e.type === 'standingArea')
-      .reduce((sum, area) => sum + ((area as any)['capacity'] || 0), 0);
-
-    return tableSeats + standingCapacity;
+    const stats = this.elementStats;
+    return stats.totalSeats + stats.standingCapacity;
   }
 
   /**
    * Count of each table type
    */
   get tableTypeCounts() {
-    const counts: { [type: string]: number } = {};
-
-    layoutStore.elements
-      .filter(e => e.type.includes('Table') || e.type === 'seatingRow')
-      .forEach(element => {
-        counts[element.type] = (counts[element.type] || 0) + 1;
-      });
-
-    return counts;
+    return this.elementStats.typeCounts;
   }
 
   /**
@@ -342,45 +371,63 @@ export class LayoutMetricsStore {
   }
 
   /**
+   * Helper method to calculate effective radius for an element
+   */
+  private getEffectiveRadius(element: TableElement): number {
+    if (element.type === 'roundTable') {
+      return (element as RoundTableProperties).radius;
+    } else if (element.type === 'rectangleTable') {
+      // For rectangle tables, use half diagonal as effective radius
+      const rectTable = element as RectangleTableProperties;
+      return Math.sqrt(rectTable.width * rectTable.width + rectTable.height * rectTable.height) / 2;
+    } else if (element.type === 'seatingRow') {
+      // For seating rows, calculate distance from start to end point
+      const seatingRow = element as SeatingRowProperties;
+      const dx = seatingRow.endX - seatingRow.x;
+      const dy = seatingRow.endY - seatingRow.y;
+      return Math.sqrt(dx * dx + dy * dy) / 2;
+    }
+    return 0;
+  }
+
+  /**
    * Find tables that are potentially too close to each other
+   * Optimized version with early exits and cached elements
    */
   getCloseProximityTables(proximityThreshold: number = 10): TableElement[][] {
-    const elements = layoutStore.elements.filter(e => e.type.includes('Table') || e.type === 'seatingRow');
+    const elements = this.seatingElements; // Use cached filtered elements
     const result: TableElement[][] = [];
 
-    // Check each pair of elements
+    // Early exit for small layouts
+    if (elements.length < 2) {
+      return result;
+    }
+
+    // Pre-calculate effective radii to avoid repeated calculations
+    const radii = new Map<string, number>();
+    elements.forEach(element => {
+      radii.set(element.id, this.getEffectiveRadius(element));
+    });
+
+    // Check each pair of elements with optimizations
     for (let i = 0; i < elements.length; i++) {
       for (let j = i + 1; j < elements.length; j++) {
         const table1 = elements[i];
         const table2 = elements[j];
 
-        // Calculate distance between element centers
-        const distance = Math.sqrt(
-          Math.pow(table1.x - table2.x, 2) +
-          Math.pow(table1.y - table2.y, 2)
-        );
+        // Quick distance check using squared distance (avoid sqrt until necessary)
+        const dx = table1.x - table2.x;
+        const dy = table1.y - table2.y;
+        const distanceSquared = dx * dx + dy * dy;
 
-        // For different element types, calculate effective radius
-        const getEffectiveRadius = (element: TableElement): number => {
-          if (element.type === 'roundTable') {
-            return (element as RoundTableProperties).radius;
-          } else if (element.type === 'rectangleTable') {
-            // For rectangle tables, use half diagonal as effective radius
-            const rectTable = element as RectangleTableProperties;
-            return Math.sqrt(rectTable.width * rectTable.width + rectTable.height * rectTable.height) / 2;
-          } else if (element.type === 'seatingRow') {
-            // For seating rows, calculate distance from start to end point
-            const seatingRow = element as SeatingRowProperties;
-            const dx = seatingRow.endX - seatingRow.x;
-            const dy = seatingRow.endY - seatingRow.y;
-            return Math.sqrt(dx * dx + dy * dy) / 2;
-          }
-          return 0;
-        };
+        // Get pre-calculated radii
+        const radius1 = radii.get(table1.id) || 0;
+        const radius2 = radii.get(table2.id) || 0;
+        const minDistance = radius1 + radius2 + proximityThreshold;
+        const minDistanceSquared = minDistance * minDistance;
 
-        // Check if elements are too close (considering their effective radii)
-        const minDistance = getEffectiveRadius(table1) + getEffectiveRadius(table2) + proximityThreshold;
-        if (distance < minDistance) {
+        // Only calculate actual distance if quick check suggests proximity
+        if (distanceSquared < minDistanceSquared) {
           result.push([table1, table2]);
         }
       }

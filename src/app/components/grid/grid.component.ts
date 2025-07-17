@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, HostListener, OnInit } from '@angular/core';
 import { gridStore } from '../../stores/grid.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { RoundTableComponent } from '../round-table/round-table.component';
@@ -17,13 +17,13 @@ import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { dragStore } from '../../stores/drag.store';
 import { rootStore } from '../../stores/root.store';
-import { autorun, IReactionDisposer } from 'mobx';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import viewerStore from '../../stores/viewer.store';
 import { LoggerService } from '../../services/logger.service';
 import { CanvasSelectionRenderer, SelectionBox } from '../../services/canvas-selection-renderer.service';
+import { MobXComponentBase } from '../../base/mobx-component.base';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement;
@@ -44,7 +44,7 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.css'
 })
-export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
+export class GridComponent extends MobXComponentBase implements AfterViewInit, OnInit {
   // Reference to our MobX stores
   store = gridStore;
   rootStore = rootStore;
@@ -60,8 +60,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   // Preview table for add mode
   previewTable: TablePosition | null = null;
 
-  // MobX reaction disposer for tool changes
-  private toolChangeDisposer: IReactionDisposer | null = null;
   private previousTool: ToolType = ToolType.None;
 
   // Segmented seating row state (used for both regular and segmented rows)
@@ -88,9 +86,11 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   constructor(
     private historyStore: HistoryStore,
     private segmentedSeatingRowService: SegmentedSeatingRowService,
-    private logger: LoggerService,
+    protected override logger: LoggerService,
     private canvasSelectionRenderer: CanvasSelectionRenderer
-  ) { }
+  ) { 
+    super('GridComponent');
+  }
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('selectionCanvas') selectionCanvasRef!: ElementRef<HTMLCanvasElement>;
@@ -98,8 +98,8 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   private ctx!: CanvasRenderingContext2D;
 
   ngOnInit(): void {
-    // Use MobX autorun to react to tool changes
-    this.toolChangeDisposer = autorun(() => {
+    // Use managed MobX autorun to react to tool changes
+    this.createAutorun(() => {
       const activeTool = this.toolStore.activeTool;
       
       // Only reset state when actually switching tools
@@ -221,7 +221,7 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       // Update previous tool
       this.previousTool = activeTool;
       }
-    });
+    }, 'tool-change-watcher');
 
     // Register delete handler with MobX selection store
     this.selectionStore.registerDeleteHandler((item) => {
@@ -428,28 +428,18 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     return table.y;
   }
 
-  ngOnDestroy() {
+  protected override onMobXDestroy(): void {
     // Unregister the callback when component is destroyed
     this.store.unregisterRedrawCallback(this.drawGrid.bind(this));
-
-    // Clean up MobX reactions
-    if (this.toolChangeDisposer) {
-      this.toolChangeDisposer();
-    }
-
-    // Cleanup selection watchers
-    if (this.selectionWatcherDisposers) {
-      this.selectionWatcherDisposers.forEach(dispose => dispose());
-    }
 
     // Cleanup canvas selection renderer
     if (this.canvasSelectionRenderer) {
       this.canvasSelectionRenderer.destroy();
     }
 
-    this.logger.debug('GridComponent destroyed', {
+    this.logger.debug('GridComponent custom cleanup complete', {
       component: 'GridComponent',
-      action: 'ngOnDestroy'
+      action: 'onMobXDestroy'
     });
   }
 
@@ -1367,12 +1357,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
    */
   private setupSelectionWatcher(): void {
     // React to selection changes
-    const selectionDisposer = autorun(() => {
+    this.createAutorun(() => {
       this.updateCanvasSelections();
-    });
+    }, 'selection-changes');
 
     // React to layout element changes (position, size, rotation)
-    const layoutDisposer = autorun(() => {
+    this.createAutorun(() => {
       // Watch layout store elements for changes
       this.layoutStore.elements.forEach(element => {
         // Access properties to make MobX track them
@@ -1385,22 +1375,16 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       });
       
       this.updateCanvasSelections();
-    });
+    }, 'layout-element-changes');
 
     // React to grid transform changes (pan/zoom)
-    const transformDisposer = autorun(() => {
+    this.createAutorun(() => {
       this.store.panOffset.x;
       this.store.panOffset.y;
       this.store.zoomLevel;
       
       this.updateCanvasSelections();
-    });
-
-    // Store disposers for cleanup
-    if (!this.selectionWatcherDisposers) {
-      this.selectionWatcherDisposers = [];
-    }
-    this.selectionWatcherDisposers.push(selectionDisposer, layoutDisposer, transformDisposer);
+    }, 'grid-transform-changes');
 
     this.logger.debug('Selection watcher setup complete', {
       component: 'GridComponent',
@@ -1607,8 +1591,6 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     return (currentTime - (cached as any).lastUpdated) < 100; // 100ms cache
   }
 
-  // Add cleanup for selection watchers
-  private selectionWatcherDisposers?: IReactionDisposer[];
 
   // Control whether to use canvas-based selection rendering (public for template access)
   public useCanvasSelection: boolean = true;
