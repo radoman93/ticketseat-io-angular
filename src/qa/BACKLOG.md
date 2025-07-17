@@ -198,13 +198,100 @@ This document outlines potential improvements to the codebase and new features t
   - Align top/middle/bottom
   - Distribute horizontally/vertically
   - Smart spacing
+  - **Requires**: Element Snapping System for visual feedback
 
-- [ ] **Snap System** [Effort: L]
-  - Snap to grid (existing)
-  - Snap to other elements
-  - Snap to guides
-  - Visual snap indicators
-  - Configurable snap distance
+- [ ] **Element Snapping System** [Effort: L]
+  - **Core Snapping Engine**:
+    - Element-to-element snapping detection
+    - Snap tolerance configuration (default: 10px)
+    - Performance optimization for large layouts
+    - Real-time snap calculation during drag operations
+    - Multi-element snap detection (snap to multiple elements simultaneously)
+  
+  - **Snap Points & Alignment**:
+    - **Edge Snapping**: Top, bottom, left, right edges of elements
+    - **Center Snapping**: Horizontal and vertical center alignment
+    - **Corner Snapping**: All four corners of rectangular elements
+    - **Custom Snap Points**: Element-specific snap points (e.g., chair positions on tables)
+    - **Alignment Lines**: When 3+ elements align, show alignment guides
+    - **Equal Spacing**: Snap to maintain equal spacing between elements
+  
+  - **Visual Feedback System**:
+    - **Snap Guides**: Dashed lines showing active snap relationships
+    - **Snap Indicators**: Highlight snap points when dragging near them
+    - **Measurement Labels**: Show distance/alignment measurements
+    - **Snap Preview**: Ghost outline showing final position before drop
+    - **Multi-color Coding**: Different colors for different snap types
+    - **Fade Animation**: Smooth fade in/out of snap guides
+  
+  - **User Controls**:
+    - **Toggle Button**: Enable/disable snapping in top toolbar
+    - **Keyboard Override**: Hold Shift to temporarily disable snapping
+    - **Snap Mode Selector**: Edge-only, center-only, or all snap points
+    - **Snap Sensitivity**: Adjustable snap distance in settings
+    - **Snap Sound**: Optional audio feedback for snap events
+  
+  
+  - **Performance Optimizations**:
+    - **Spatial Indexing**: Use quadtree/R-tree for efficient snap detection
+    - **Viewport Culling**: Only calculate snaps for visible elements
+    - **Debounced Updates**: Throttle snap calculations during rapid movement
+    - **Level-of-Detail**: Simplified snapping for zoomed-out views
+  
+  - **Element-Specific Behaviors**:
+    - **Tables**: table edges, center points
+    - **Seating Rows**: Snap to row alignment, seat spacing
+    - **Polygons**: Snap to vertex points and edge centers
+    - **Lines**: Snap endpoints and midpoints
+    - **Groups**: Snap to group bounding box
+  
+  - **Integration Points**:
+    - **Drag System**: Integrate with existing drag store
+    - **Grid System**: Combine with existing grid snapping
+    - **Undo/Redo**: Snap operations trackable in history
+    - **Selection System**: Multi-select snap behavior
+    - **Zoom Integration**: Scale snap sensitivity with zoom level
+
+- [ ] **Smart Guides & Rulers** [Effort: M]
+  - **Complementary Feature to Element Snapping**
+  - **Ruler System**:
+    - Horizontal and vertical rulers along canvas edges
+    - Dynamic measurement units (px, inches, cm)
+    - Ruler guides (draggable lines from rulers)
+    - Ruler zero point adjustment
+  - **Smart Guides**:
+    - Auto-generated alignment guides
+    - Distance measurement between elements
+    - Margin and padding indicators
+    - Object relationship visualization
+  - **Measurement Tools**:
+    - Click-to-measure distance tool
+    - Area calculation for selected elements
+    - Angle measurement for rotated elements
+    - Real-time coordinate display
+  - **Integration**:
+    - Snap to ruler guides
+    - Snap guides enhance ruler functionality
+    - Keyboard shortcuts for guide creation
+    - Guide persistence across sessions
+
+- [ ] **Enhanced Drag & Drop** [Effort: M]
+  - **Prerequisite for Advanced Snapping**
+  - **Drag Improvements**:
+    - Momentum-based dragging
+    - Multi-touch gesture support
+    - Drag constraints (horizontal/vertical only)
+    - Clone-on-drag with modifier keys
+  - **Drop Zones**:
+    - Visual drop zone highlights
+    - Invalid drop area indicators
+    - Drop preview with transparency
+    - Magnetic drop zones
+  - **Performance**:
+    - Optimized drag rendering
+    - Reduced DOM manipulation during drag
+    - Efficient collision detection
+    - Smooth animation curves
 
 - [ ] **Layers Panel** [Effort: L]
   - Visual layer management
@@ -401,8 +488,9 @@ This document outlines potential improvements to the codebase and new features t
 1. Unit test coverage
 2. Copy/paste system
 3. Multi-select rectangle
-4. Text tool
-5. Pricing zones
+4. Element snapping system (core engine + visual feedback)
+5. Text tool
+6. Pricing zones
 
 ### Large Projects (1-2 months each)
 1. Virtual scrolling
@@ -432,6 +520,11 @@ This document outlines potential improvements to the codebase and new features t
 - User satisfaction > 4.5/5
 - Support ticket reduction 50%
 - Feature adoption > 70%
+- **Element Snapping**:
+  - Snap success rate > 90%
+  - Snap response time < 50ms
+  - User precision improvement > 40%
+  - Layout creation time reduction > 25%
 
 ---
 
@@ -441,6 +534,12 @@ This document outlines potential improvements to the codebase and new features t
 - Some features depend on backend API changes
 - Real-time features require WebSocket infrastructure
 - Analytics require data collection consent
+- **Element Snapping System** requires:
+  - Enhanced drag & drop implementation
+  - Performance optimizations in MobX stores
+  - Canvas rendering improvements for snap guides
+  - Spatial indexing library (or custom implementation)
+  - Integration with existing grid system
 
 ### Breaking Changes
 - MobX strict mode may require migration
@@ -453,7 +552,39 @@ This document outlines potential improvements to the codebase and new features t
 - QA resources for testing
 - DevOps for infrastructure
 
+### Element Snapping Implementation Phases
+**Phase 1 (Week 1-2)**: Core Infrastructure
+- Spatial indexing system
+- Basic snap detection algorithm
+- Integration with drag store
+- Toggle control in toolbar
+
+**Phase 2 (Week 3-4)**: Visual Feedback
+- Snap guide rendering system
+- Dashed line visualization
+- Snap point highlighting
+- Animation system
+
+**Phase 3 (Week 5-6)**: Advanced Features
+- Multi-element snapping
+- Smart prioritization
+- Performance optimization
+- Element-specific behaviors
+
+**Phase 4 (Week 7-8)**: Polish & Integration
+- Keyboard shortcuts
+- Settings integration
+- Comprehensive testing
+- Documentation
+
 ---
 
-*Last Updated: January 2025*
-*Version: 1.0*
+*Last Updated: July 2025*
+*Version: 1.1*
+
+### Recent Updates
+- **P1 Task 3 - Debounce Property Updates**: ✅ Completed
+- **Element Snapping System**: Added comprehensive specification as next priority feature
+- **Smart Guides & Rulers**: Added complementary feature to enhance snapping
+- **Enhanced Drag & Drop**: Added prerequisite feature for advanced snapping
+- **Implementation Strategy**: Updated to include snapping as medium-priority project
