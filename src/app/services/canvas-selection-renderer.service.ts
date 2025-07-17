@@ -226,12 +226,8 @@ export class CanvasSelectionRenderer {
     ctx.fillStyle = this.config.backgroundColor;
     ctx.fillRect(x, y, width, height);
 
-    // Draw static diagonal stripes
+    // Draw static diagonal stripes over the entire selection area
     ctx.save();
-    
-    // Create clipping path for rounded rectangle
-    this.createRoundedRectPath(ctx, x, y, width, height, this.config.borderRadius);
-    ctx.clip();
 
     // Draw diagonal stripes pattern
     ctx.fillStyle = `rgba(59, 130, 246, ${this.config.stripesOpacity})`;
@@ -239,7 +235,7 @@ export class CanvasSelectionRenderer {
     const stripeWidth = 16;
     const stripeSpacing = 24;
     
-    // Draw static stripe pattern
+    // Draw static stripe pattern covering the full rectangular area
     for (let i = -stripeSpacing; i < width + height + stripeSpacing; i += stripeSpacing) {
       ctx.save();
       ctx.translate(x, y);
