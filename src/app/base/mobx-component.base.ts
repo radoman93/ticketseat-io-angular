@@ -1,4 +1,5 @@
 import { OnDestroy, inject, Injectable } from '@angular/core';
+import { runInAction } from 'mobx';
 import { MobXReactionManager } from '../services/mobx-reaction-manager.service';
 import { LoggerService } from '../services/logger.service';
 
@@ -190,10 +191,7 @@ export function createBatchedAction<T extends any[], R>(
     });
 
     try {
-      // Import runInAction dynamically to avoid circular dependencies
-      const { runInAction } = require('mobx');
-      
-      const result = runInAction(name, () => action(...args));
+      const result = runInAction(() => action(...args)) as R;
       
       performanceTimer();
       return result;
