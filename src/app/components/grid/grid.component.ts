@@ -264,6 +264,10 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     const canvas = this.canvasRef.nativeElement;
     const { width, height } = canvas;
     this.ctx.clearRect(0, 0, width, height);
+    
+    // Only draw the grid if showGrid is true
+    if (!this.store.showGrid) return;
+
     this.ctx.save();
 
     this.ctx.translate(this.store.panOffset.x, this.store.panOffset.y);
