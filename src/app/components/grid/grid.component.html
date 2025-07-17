@@ -1,7 +1,9 @@
 <div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun
   [class.cursor-grab]="viewerStore.isViewerMode" [class.cursor-grabbing]="viewerStore.isViewerMode && store.isPanning"
   (click)="handleCanvasClick()">
-  <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full"></canvas>
+  <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full" style="will-change: transform; transform: translateZ(0);"></canvas>
+  <!-- Canvas overlay for selection rendering -->
+  <canvas #selectionCanvas class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10; will-change: transform; transform: translateZ(0);"></canvas>
 
   <!-- Display all tables with position adjusted for pan offset and zoom -->
   <div class="table-container"
@@ -10,9 +12,9 @@
     <div *ngFor="let table of layoutStore.elements" (mousedown)="selectTable(table, $event)" class="selection-container"
       [class.draggable]="!viewerStore.isViewerMode && toolStore.activeTool !== ToolType.RoundTable"
       [class.dragging]="!viewerStore.isViewerMode && dragStore.isDragging && dragStore.draggedItem?.id === table.id">
-      <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode -->
+      <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode and when canvas renderer is active -->
       <div
-        *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow' && table.type !== 'line'"
+        *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && table.type !== 'segmentedSeatingRow' && table.type !== 'line' && !useCanvasSelection"
         class="selection-indicator table-selection" [style.width.px]="getSelectionWidth(table)"
         [style.height.px]="getSelectionHeight(table)"
         [style.transform]="'translate(-50%, -50%) rotate(' + (table.rotation || 0) + 'deg)'"
@@ -53,8 +55,8 @@
         [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
         [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
         [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true" #segmentedRow>
-        <!-- Selection indicator for segmented seating row - Hidden in viewer mode -->
-        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        <!-- Selection indicator for segmented seating row - Hidden in viewer mode and when canvas renderer is active -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && !useCanvasSelection"
           class="selection-indicator table-selection" [ngStyle]="segmentedRow.getSelectionStyles()">
         </div>
       </app-segmented-seating-row>
@@ -66,8 +68,8 @@
         [thickness]="$any(table).thickness" [color]="$any(table).color"
         [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
         [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)">
-        <!-- Selection indicator for line - Hidden in viewer mode -->
-        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        <!-- Selection indicator for line - Hidden in viewer mode and when canvas renderer is active -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && !useCanvasSelection"
           class="selection-indicator table-selection" 
           [style.width.px]="getSelectionWidth(table)"
           [style.height.px]="getSelectionHeight(table)"
@@ -85,8 +87,8 @@
         [borderThickness]="$any(table).borderThickness" [showBorder]="$any(table).showBorder"
         [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
         [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)">
-        <!-- Selection indicator for polygon - Hidden in viewer mode -->
-        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        <!-- Selection indicator for polygon - Hidden in viewer mode and when canvas renderer is active -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && !useCanvasSelection"
           class="selection-indicator table-selection" 
           [style.width.px]="getSelectionWidth(table)"
           [style.height.px]="getSelectionHeight(table)"

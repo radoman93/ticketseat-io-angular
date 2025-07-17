@@ -23,6 +23,7 @@ import { AddObjectCommand } from '../../commands/add-object.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import viewerStore from '../../stores/viewer.store';
 import { LoggerService } from '../../services/logger.service';
+import { CanvasSelectionRenderer, SelectionBox } from '../../services/canvas-selection-renderer.service';
 
 // Use union type for table positions  
 type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement;
@@ -87,10 +88,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
   constructor(
     private historyStore: HistoryStore,
     private segmentedSeatingRowService: SegmentedSeatingRowService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private canvasSelectionRenderer: CanvasSelectionRenderer
   ) { }
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('selectionCanvas') selectionCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('gridContainer') gridContainerRef!: ElementRef<HTMLDivElement>;
   private ctx!: CanvasRenderingContext2D;
 
@@ -237,6 +240,12 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
       // Register the drawGrid method as a callback
       this.store.registerRedrawCallback(this.drawGrid.bind(this));
     }
+
+    // Initialize selection canvas renderer
+    this.initializeSelectionCanvas();
+
+    // Set up selection state watching
+    this.setupSelectionWatcher();
   }
 
   //The idea is to make large canvas and have it contained within grid-container
@@ -427,6 +436,21 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
     if (this.toolChangeDisposer) {
       this.toolChangeDisposer();
     }
+
+    // Cleanup selection watchers
+    if (this.selectionWatcherDisposers) {
+      this.selectionWatcherDisposers.forEach(dispose => dispose());
+    }
+
+    // Cleanup canvas selection renderer
+    if (this.canvasSelectionRenderer) {
+      this.canvasSelectionRenderer.destroy();
+    }
+
+    this.logger.debug('GridComponent destroyed', {
+      component: 'GridComponent',
+      action: 'ngOnDestroy'
+    });
   }
 
   @HostListener('mousedown', ['$event'])
@@ -1309,4 +1333,297 @@ export class GridComponent implements AfterViewInit, OnDestroy, OnInit {
 
     return { x, y };
   }
+
+  /**
+   * Initialize the selection canvas renderer
+   */
+  private initializeSelectionCanvas(): void {
+    if (!this.selectionCanvasRef) return;
+
+    const selectionCanvas = this.selectionCanvasRef.nativeElement;
+    this.canvasSelectionRenderer.initializeCanvas(selectionCanvas);
+
+    // Match canvas size to container
+    this.updateSelectionCanvasSize();
+
+    this.logger.debug('Selection canvas initialized', {
+      component: 'GridComponent',
+      action: 'initializeSelectionCanvas'
+    });
+  }
+
+  /**
+   * Update selection canvas size to match container
+   */
+  private updateSelectionCanvasSize(): void {
+    if (this.selectionCanvasRef && this.gridContainerRef) {
+      const container = this.gridContainerRef.nativeElement;
+      this.canvasSelectionRenderer.resizeCanvas(container.clientWidth, container.clientHeight);
+    }
+  }
+
+  /**
+   * Set up MobX reactions to watch selection state changes
+   */
+  private setupSelectionWatcher(): void {
+    // React to selection changes
+    const selectionDisposer = autorun(() => {
+      this.updateCanvasSelections();
+    });
+
+    // React to layout element changes (position, size, rotation)
+    const layoutDisposer = autorun(() => {
+      // Watch layout store elements for changes
+      this.layoutStore.elements.forEach(element => {
+        // Access properties to make MobX track them
+        element.x;
+        element.y;
+        element.rotation;
+        if ('width' in element) element.width;
+        if ('height' in element) element.height;
+        if ('radius' in element) element.radius;
+      });
+      
+      this.updateCanvasSelections();
+    });
+
+    // React to grid transform changes (pan/zoom)
+    const transformDisposer = autorun(() => {
+      this.store.panOffset.x;
+      this.store.panOffset.y;
+      this.store.zoomLevel;
+      
+      this.updateCanvasSelections();
+    });
+
+    // Store disposers for cleanup
+    if (!this.selectionWatcherDisposers) {
+      this.selectionWatcherDisposers = [];
+    }
+    this.selectionWatcherDisposers.push(selectionDisposer, layoutDisposer, transformDisposer);
+
+    this.logger.debug('Selection watcher setup complete', {
+      component: 'GridComponent',
+      action: 'setupSelectionWatcher'
+    });
+  }
+
+  /**
+   * Update canvas selection boxes based on current selection state
+   */
+  private updateCanvasSelections(): void {
+    if (!this.canvasSelectionRenderer || viewerStore.isViewerMode) {
+      return;
+    }
+
+    const performanceTimer = this.logger.startTimer('update_canvas_selections', {
+      component: 'GridComponent',
+      action: 'updateCanvasSelections'
+    });
+
+    // Clear all existing selections
+    this.canvasSelectionRenderer.clearSelections();
+
+    // Add selection boxes for all selected elements
+    this.layoutStore.elements.forEach(element => {
+      if (selectionStore.isItemSelected(element.id)) {
+        const selectionBox = this.calculateSelectionBox(element);
+        if (selectionBox) {
+          this.canvasSelectionRenderer.setSelection(element.id, selectionBox);
+        }
+      }
+    });
+
+    // Render updated selections
+    this.canvasSelectionRenderer.render();
+
+    performanceTimer();
+  }
+
+  /**
+   * Calculate selection box geometry for an element
+   */
+  private calculateSelectionBox(element: any): SelectionBox | null {
+    // Check cache first for performance
+    const cached = this.canvasSelectionRenderer.getCachedGeometry(element.id);
+    if (cached && this.isGeometryCurrent(element, cached)) {
+      return cached;
+    }
+
+    // Apply grid transforms (pan/zoom) to coordinates
+    const panX = this.store.panOffset.x;
+    const panY = this.store.panOffset.y;
+    const zoom = this.store.zoomLevel / 100;
+
+    let box: SelectionBox | null = null;
+
+    // Calculate geometry based on element type
+    switch (element.type) {
+      case 'roundTable':
+        box = {
+          id: element.id,
+          x: (element.x * zoom) + panX,
+          y: (element.y * zoom) + panY,
+          width: (element.radius * 2 + 80) * zoom,
+          height: (element.radius * 2 + 80) * zoom,
+          rotation: element.rotation || 0,
+          type: 'table'
+        };
+        break;
+
+      case 'rectangleTable':
+        box = {
+          id: element.id,
+          x: (element.x * zoom) + panX,
+          y: (element.y * zoom) + panY,
+          width: (element.width + 80) * zoom,
+          height: (element.height + 80) * zoom,
+          rotation: element.rotation || 0,
+          type: 'table'
+        };
+        break;
+
+      case 'seatingRow':
+        const labelOffset = 60;
+        const chairsWidth = (element.seatCount - 1) * element.seatSpacing + 20;
+        const totalWidth = labelOffset + chairsWidth + 80;
+        
+        box = {
+          id: element.id,
+          x: (element.x * zoom) + panX,
+          y: (element.y * zoom) + panY,
+          width: totalWidth * zoom,
+          height: 100 * zoom,
+          rotation: element.rotation || 0,
+          type: 'row'
+        };
+        break;
+
+      case 'line':
+        const lineLength = Math.sqrt(
+          Math.pow(element.endX - element.startX, 2) + 
+          Math.pow(element.endY - element.startY, 2)
+        );
+        const centerX = ((element.startX + element.endX) / 2 * zoom) + panX;
+        const centerY = ((element.startY + element.endY) / 2 * zoom) + panY;
+        
+        box = {
+          id: element.id,
+          x: centerX,
+          y: centerY,
+          width: (lineLength + 20) * zoom,
+          height: 40 * zoom,
+          rotation: Math.atan2(
+            element.endY - element.startY, 
+            element.endX - element.startX
+          ) * 180 / Math.PI,
+          type: 'line'
+        };
+        break;
+
+      case 'polygon':
+        if (element.points && element.points.length > 0) {
+          const xs = element.points.map((p: any) => p.x);
+          const ys = element.points.map((p: any) => p.y);
+          const minX = Math.min(...xs);
+          const maxX = Math.max(...xs);
+          const minY = Math.min(...ys);
+          const maxY = Math.max(...ys);
+          
+          box = {
+            id: element.id,
+            x: (((minX + maxX) / 2) * zoom) + panX,
+            y: (((minY + maxY) / 2) * zoom) + panY,
+            width: ((maxX - minX) + 40) * zoom,
+            height: ((maxY - minY) + 40) * zoom,
+            rotation: 0,
+            type: 'polygon'
+          };
+        }
+        break;
+
+      case 'segmentedSeatingRow':
+        // Use existing method for complex geometry
+        if (element.segments && element.segments.length > 0) {
+          const boundingBox = this.calculateSegmentedRowBoundingBox(element);
+          box = {
+            id: element.id,
+            x: (boundingBox.centerX * zoom) + panX,
+            y: (boundingBox.centerY * zoom) + panY,
+            width: (boundingBox.width + 40) * zoom,
+            height: (boundingBox.height + 40) * zoom,
+            rotation: element.rotation || 0,
+            type: 'row'
+          };
+        }
+        break;
+    }
+
+    return box;
+  }
+
+  /**
+   * Calculate bounding box for segmented seating row
+   */
+  private calculateSegmentedRowBoundingBox(element: any): { 
+    centerX: number; centerY: number; width: number; height: number; 
+  } {
+    if (!element.segments || element.segments.length === 0) {
+      return { centerX: element.x, centerY: element.y, width: 100, height: 50 };
+    }
+
+    const allChairs: any[] = [];
+    element.segments.forEach((segment: any) => {
+      if (segment.chairs) {
+        allChairs.push(...segment.chairs);
+      }
+    });
+
+    if (allChairs.length === 0) {
+      return { centerX: element.x, centerY: element.y, width: 100, height: 50 };
+    }
+
+    const xs = allChairs.map(chair => chair.x);
+    const ys = allChairs.map(chair => chair.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    return {
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+  }
+
+  /**
+   * Check if cached geometry is still current
+   */
+  private isGeometryCurrent(element: any, cached: SelectionBox): boolean {
+    // Simple check - in a real implementation you might want more sophisticated caching
+    const currentTime = Date.now();
+    return (currentTime - (cached as any).lastUpdated) < 100; // 100ms cache
+  }
+
+  // Add cleanup for selection watchers
+  private selectionWatcherDisposers?: IReactionDisposer[];
+
+  // Control whether to use canvas-based selection rendering (public for template access)
+  public useCanvasSelection: boolean = true;
+
+  /**
+   * Handle window resize to update canvas sizes
+   */
+  @HostListener('window:resize', ['$event'])
+  onWindowResize(): void {
+    this.setCanvasSize();
+    this.updateSelectionCanvasSize();
+    
+    // Redraw after resize
+    this.drawGrid();
+    this.updateCanvasSelections();
+  }
+
 }

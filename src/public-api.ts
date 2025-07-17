@@ -56,6 +56,7 @@ export * from './app/services/layout-export-import.service';
 export * from './app/services/layout-validator.service';
 export * from './app/services/asset.service';
 export * from './app/services/logger.service';
+export * from './app/services/canvas-selection-renderer.service';
 
 // Specific command exports (avoiding problematic index imports)
 export * from './app/commands/add-object.command';
