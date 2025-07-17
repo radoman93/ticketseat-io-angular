@@ -384,24 +384,37 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   // Calculate selection indicator left position
   getSelectionLeft(table: any): number {
     if (table.type === 'seatingRow') {
-      // For seating rows, calculate the center position of where the selection box should be
-      // Row label is at table.x - 60
-      // First chair is at table.x
-      // Last chair is at table.x + (seatCount - 1) * seatSpacing
-      // Chair width is approximately 20px
+      // For seating rows, calculate the center position accounting for rotation
       const chairWidth = 20;
       const padding = 40;
-      const labelOffset = 60; // Row label is positioned 60px to the left
+      const labelOffset = 60;
+      const rotation = table.rotation || 0;
 
       const rowLabelX = table.x - labelOffset;
       const lastChairX = table.x + (table.seatCount - 1) * table.seatSpacing;
-
-      // Selection box should start before the row label and end after last chair
       const selectionStartX = rowLabelX - padding;
       const selectionEndX = lastChairX + chairWidth + padding;
 
-      // Return the center position (because transform translate(-50%, -50%) will center it)
-      return (selectionStartX + selectionEndX) / 2;
+      // Calculate center position accounting for rotation
+      if (Math.abs(rotation) < 0.01) {
+        // No rotation, use simple calculation
+        return (selectionStartX + selectionEndX) / 2;
+      } else {
+        // For rotated rows, calculate the actual visual center
+        const unrotatedCenterX = (selectionStartX + selectionEndX) / 2;
+        const unrotatedCenterY = table.y;
+        
+        // Calculate offset from rotation origin
+        const offsetX = unrotatedCenterX - table.x;
+        const offsetY = unrotatedCenterY - table.y;
+        
+        // Apply rotation transform
+        const rotationRad = rotation * Math.PI / 180;
+        const cos = Math.cos(rotationRad);
+        const sin = Math.sin(rotationRad);
+        
+        return table.x + (offsetX * cos - offsetY * sin);
+      }
     } else if (table.type === 'line') {
       // For lines, return the center point between start and end X coordinates
       return (table.startX + table.endX) / 2;
@@ -418,7 +431,39 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
   // Calculate selection indicator top position
   getSelectionTop(table: any): number {
-    if (table.type === 'line') {
+    if (table.type === 'seatingRow') {
+      // For seating rows, calculate the center position accounting for rotation
+      const chairWidth = 20;
+      const padding = 40;
+      const labelOffset = 60;
+      const rotation = table.rotation || 0;
+
+      const rowLabelX = table.x - labelOffset;
+      const lastChairX = table.x + (table.seatCount - 1) * table.seatSpacing;
+      const selectionStartX = rowLabelX - padding;
+      const selectionEndX = lastChairX + chairWidth + padding;
+
+      // Calculate center position accounting for rotation
+      if (Math.abs(rotation) < 0.01) {
+        // No rotation, use simple calculation
+        return table.y;
+      } else {
+        // For rotated rows, calculate the actual visual center
+        const unrotatedCenterX = (selectionStartX + selectionEndX) / 2;
+        const unrotatedCenterY = table.y;
+        
+        // Calculate offset from rotation origin
+        const offsetX = unrotatedCenterX - table.x;
+        const offsetY = unrotatedCenterY - table.y;
+        
+        // Apply rotation transform
+        const rotationRad = rotation * Math.PI / 180;
+        const cos = Math.cos(rotationRad);
+        const sin = Math.sin(rotationRad);
+        
+        return table.y + (offsetX * sin + offsetY * cos);
+      }
+    } else if (table.type === 'line') {
       // For lines, return the center point between start and end Y coordinates
       return (table.startY + table.endY) / 2;
     } else if (table.type === 'polygon') {
@@ -810,9 +855,10 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         chairLabelVisible: true
       };
       this.layoutStore.addElement(newTable);
-    } else if (this.toolStore.activeTool === ToolType.SeatingRow && this.previewTable) {
-      // Create a new seating row at the preview position
-
+    } else if (this.toolStore.activeTool === ToolType.SeatingRow && this.previewTable && !this.isCreatingRegularRow) {
+      // Only create seating row if NOT in two-click drawing mode
+      // This handles the old drag-to-create workflow (if it exists)
+      
       const seatingRowData = this.previewTable as SeatingRowProperties;
 
       // Safety validation: ensure seatCount > 0
@@ -1473,16 +1519,51 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
       case 'seatingRow':
         const labelOffset = 60;
-        const chairsWidth = (element.seatCount - 1) * element.seatSpacing + 20;
-        const totalWidth = labelOffset + chairsWidth + 80;
+        const chairWidth = 20;
+        const padding = 40;
+        const rotation = element.rotation || 0;
+        
+        // Calculate the unrotated bounding box dimensions
+        const rowLabelX = element.x - labelOffset;
+        const lastChairX = element.x + (element.seatCount - 1) * element.seatSpacing;
+        const selectionStartX = rowLabelX - padding;
+        const selectionEndX = lastChairX + chairWidth + padding;
+        const chairsWidth = (element.seatCount - 1) * element.seatSpacing + chairWidth;
+        const totalWidth = labelOffset + chairsWidth + (padding * 2);
+        const totalHeight = 60;
+        
+        // Calculate the center position accounting for rotation
+        let rowSelectionCenterX, rowSelectionCenterY;
+        if (Math.abs(rotation) < 0.01) {
+          // No rotation, use simple calculation
+          rowSelectionCenterX = (selectionStartX + selectionEndX) / 2;
+          rowSelectionCenterY = element.y;
+        } else {
+          // For rotated rows, calculate the actual visual center
+          // The row rotates around element.x, element.y
+          const unrotatedCenterX = (selectionStartX + selectionEndX) / 2;
+          const unrotatedCenterY = element.y;
+          
+          // Calculate offset from rotation origin
+          const offsetX = unrotatedCenterX - element.x;
+          const offsetY = unrotatedCenterY - element.y;
+          
+          // Apply rotation transform
+          const rotationRad = rotation * Math.PI / 180;
+          const cos = Math.cos(rotationRad);
+          const sin = Math.sin(rotationRad);
+          
+          rowSelectionCenterX = element.x + (offsetX * cos - offsetY * sin);
+          rowSelectionCenterY = element.y + (offsetX * sin + offsetY * cos);
+        }
         
         box = {
           id: element.id,
-          x: (element.x * zoom) + panX,
-          y: (element.y * zoom) + panY,
+          x: (rowSelectionCenterX * zoom) + panX,
+          y: (rowSelectionCenterY * zoom) + panY,
           width: totalWidth * zoom,
-          height: 100 * zoom,
-          rotation: element.rotation || 0,
+          height: totalHeight * zoom,
+          rotation: rotation,
           type: 'row'
         };
         break;
@@ -1560,19 +1641,18 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       return { centerX: element.x, centerY: element.y, width: 100, height: 50 };
     }
 
-    const allChairs: any[] = [];
+    const points: {x: number, y: number}[] = [];
     element.segments.forEach((segment: any) => {
-      if (segment.chairs) {
-        allChairs.push(...segment.chairs);
-      }
+      points.push({ x: segment.startX, y: segment.startY });
+      points.push({ x: segment.endX, y: segment.endY });
     });
 
-    if (allChairs.length === 0) {
+    if (points.length === 0) {
       return { centerX: element.x, centerY: element.y, width: 100, height: 50 };
     }
 
-    const xs = allChairs.map(chair => chair.x);
-    const ys = allChairs.map(chair => chair.y);
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);

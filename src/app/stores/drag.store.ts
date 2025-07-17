@@ -197,16 +197,15 @@ export class DragStore {
                 const deltaX = newX - (this.draggedItem as any)['x'];
                 const deltaY = newY - (this.draggedItem as any)['y'];
 
-                // Update all segment positions
+                // Update all segment positions by shifting their start and end coordinates
                 if ((this.draggedItem as any)['segments']) {
                     const segments: SegmentProperties[] = (this.draggedItem as any)['segments'];
                     const updatedSegments = segments.map(segment => ({
                         ...segment,
-                        chairs: segment.chairs.map(chair => ({
-                            ...chair,
-                            x: chair.x + deltaX,
-                            y: chair.y + deltaY
-                        }))
+                        startX: segment.startX + deltaX,
+                        startY: segment.startY + deltaY,
+                        endX: segment.endX + deltaX,
+                        endY: segment.endY + deltaY
                     }));
 
                     const update = {
