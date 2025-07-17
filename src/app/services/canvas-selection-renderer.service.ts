@@ -29,8 +29,6 @@ export interface CanvasSelectionConfig {
   providedIn: 'root'
 })
 export class CanvasSelectionRenderer {
-  private animationFrame?: number;
-  private stripesOffset = 0;
   private canvas?: HTMLCanvasElement;
   private ctx?: CanvasRenderingContext2D;
   private logger: LoggerService;
@@ -45,14 +43,13 @@ export class CanvasSelectionRenderer {
     backgroundColor: 'rgba(59, 130, 246, 0.03)', // CSS: rgba(59, 130, 246, 0.03)
     shadowColor: 'rgba(37, 99, 235, 0.2)',       // CSS: box-shadow color
     shadowBlur: 1,                    // CSS: box-shadow blur
-    enableAnimations: true,           // CSS: animation enabled
+    enableAnimations: false,          // Static stripes, no animation
     stripesOpacity: 0.05,            // CSS: rgba(59, 130, 246, 0.05)
     dashPattern: [8, 4]              // CSS: 2px dashed ~ 8px dash, 4px gap
   };
 
   constructor() {
     this.logger = new LoggerService();
-    this.startAnimationLoop();
   }
 
   /**
@@ -229,35 +226,31 @@ export class CanvasSelectionRenderer {
     ctx.fillStyle = this.config.backgroundColor;
     ctx.fillRect(x, y, width, height);
 
-    // Draw animated diagonal stripes (matching CSS animation)
-    if (this.config.enableAnimations) {
-      ctx.save();
-      
-      // Create clipping path for rounded rectangle
-      this.createRoundedRectPath(ctx, x, y, width, height, this.config.borderRadius);
-      ctx.clip();
+    // Draw static diagonal stripes
+    ctx.save();
+    
+    // Create clipping path for rounded rectangle
+    this.createRoundedRectPath(ctx, x, y, width, height, this.config.borderRadius);
+    ctx.clip();
 
-      // Draw diagonal stripes pattern
-      ctx.fillStyle = `rgba(59, 130, 246, ${this.config.stripesOpacity})`;
+    // Draw diagonal stripes pattern
+    ctx.fillStyle = `rgba(59, 130, 246, ${this.config.stripesOpacity})`;
+    
+    const stripeWidth = 16;
+    const stripeSpacing = 24;
+    
+    // Draw static stripe pattern
+    for (let i = -stripeSpacing; i < width + height + stripeSpacing; i += stripeSpacing) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-Math.PI / 4); // -45 degrees
       
-      const stripeWidth = 16;
-      const stripeSpacing = 24;
-      
-      // Calculate stripe pattern with animation offset
-      for (let i = -stripeSpacing; i < width + height + stripeSpacing; i += stripeSpacing) {
-        const offsetX = i + this.stripesOffset;
-        
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(-Math.PI / 4); // -45 degrees
-        
-        ctx.fillRect(offsetX, -height, stripeWidth, width + height * 2);
-        
-        ctx.restore();
-      }
+      ctx.fillRect(i, -height, stripeWidth, width + height * 2);
       
       ctx.restore();
     }
+    
+    ctx.restore();
   }
 
   /**
@@ -312,33 +305,9 @@ export class CanvasSelectionRenderer {
   }
 
   /**
-   * Animation loop for moving stripes effect
-   */
-  private startAnimationLoop(): void {
-    const animate = () => {
-      // Update stripes animation offset (matching CSS 3s duration)
-      this.stripesOffset = (this.stripesOffset + 0.5) % 24; // 24px pattern repeat
-      
-      // Render if we have selections and animations are enabled
-      if (this.selectionBoxes.size > 0 && this.config.enableAnimations) {
-        this.render();
-      }
-      
-      this.animationFrame = requestAnimationFrame(animate);
-    };
-    
-    this.animationFrame = requestAnimationFrame(animate);
-  }
-
-  /**
-   * Stop animation loop and clean up
+   * Clean up resources
    */
   destroy(): void {
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = undefined;
-    }
-    
     this.clearSelections();
     
     this.logger.debug('Canvas selection renderer destroyed', {
