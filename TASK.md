@@ -1,4 +1,39 @@
-# MobX Performance Audit: Implementation Plan
+# Task: Fix Zoom/Coordinate Controls Positioning and Visibility
+
+## Problem Identified
+The zoom and coordinate controls in the bottom-right corner of the canvas container had two critical issues:
+1. **Non-responsive positioning**: Used hardcoded `style="right: 340px;"` instead of responsive CSS
+2. **Visibility in viewer mode**: Controls were visible in viewer mode when they should be hidden
+
+## Solution Implemented
+
+### Changes Made in `grid.component.html:219`
+- **Before**: `<div class="absolute bottom-4 flex flex-col items-end gap-2" style="right: 340px;">`
+- **After**: `<div *ngIf="!viewerStore.isViewerMode" class="absolute bottom-4 right-4 flex flex-col items-end gap-2">`
+
+### Fixes Applied
+1. **Responsive Positioning**: 
+   - Removed hardcoded `style="right: 340px;"`
+   - Added Tailwind class `right-4` for responsive 1rem (16px) spacing
+   
+2. **Conditional Visibility**:
+   - Added `*ngIf="!viewerStore.isViewerMode"` directive
+   - Controls now hidden in viewer mode, only visible in editor mode
+
+## Technical Details
+- **File Modified**: `/src/app/components/grid/grid.component.html`
+- **Lines**: 218-231
+- **Framework**: Angular with Tailwind CSS
+- **State Management**: MobX store (`viewerStore.isViewerMode`)
+
+## Result
+- Controls now properly positioned responsively in bottom-right corner
+- Hidden completely in viewer mode for cleaner user experience
+- Maintains all existing functionality in editor mode
+
+---
+
+# Previous Task: MobX Performance Audit: Implementation Plan
 
 ## Executive Summary
 

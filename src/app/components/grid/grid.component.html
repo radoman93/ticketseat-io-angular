@@ -215,8 +215,8 @@
   </div>
 </div>
 
-<!-- Zoom and coordinate controls -->
-<div class="absolute bottom-4 flex flex-col items-end gap-2" style="right: 340px;">
+<!-- Zoom and coordinate controls - Hidden in viewer mode -->
+<div *ngIf="!viewerStore.isViewerMode" class="absolute bottom-4 flex flex-col items-end gap-2" style="right: 280px;">
   <!-- Coordinate display -->
   <div class="bg-white rounded-md p-2 text-xs shadow-lg" *mobxAutorun>
     X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
