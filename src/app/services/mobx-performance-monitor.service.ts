@@ -283,7 +283,7 @@ export class MobXPerformanceMonitor {
     }
 
     // Report every 30 seconds in development
-    if (!process.env['production']) {
+    if (typeof window !== 'undefined' && (window as any)['ng'] && (window as any)['ng']['ɵisDevMode']?.()) {
       setTimeout(() => {
         if (this.isMonitoring) {
           this.logCurrentStats();

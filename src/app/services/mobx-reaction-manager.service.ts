@@ -339,7 +339,7 @@ export class MobXReactionManager implements OnDestroy {
 
   private setupGlobalReactionMonitoring(): void {
     // Enable MobX reaction tracking in development
-    if (!process.env['production']) {
+    if (typeof window !== 'undefined' && (window as any)['ng'] && (window as any)['ng']['ɵisDevMode']?.()) {
       // Monitor for reactions that take too long
       const originalReactionScheduler = (Reaction as any).prototype.schedule;
       (Reaction as any).prototype.schedule = function() {
