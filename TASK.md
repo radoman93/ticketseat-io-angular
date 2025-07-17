@@ -1,35 +1,142 @@
-# Task: Fix Zoom/Coordinate Controls Positioning and Visibility
+# Text/Label Tool Implementation Plan
 
-## Problem Identified
-The zoom and coordinate controls in the bottom-right corner of the canvas container had two critical issues:
-1. **Non-responsive positioning**: Used hardcoded `style="right: 340px;"` instead of responsive CSS
-2. **Visibility in viewer mode**: Controls were visible in viewer mode when they should be hidden
+## Overview
+Implement a text/label tool for adding text annotations to seating layouts with customizable fonts, sizes, and alignment options.
 
-## Solution Implemented
+## Architecture Analysis Complete
+- Analyzed existing element types (RoundTable, RectangleTable, SeatingRow, etc.)
+- Reviewed tool system structure and registration patterns
+- Examined component rendering patterns using MobX
+- Studied store management architecture
+- Analyzed export/import system integration
 
-### Changes Made in `grid.component.html:219`
-- **Before**: `<div class="absolute bottom-4 flex flex-col items-end gap-2" style="right: 340px;">`
-- **After**: `<div *ngIf="!viewerStore.isViewerMode" class="absolute bottom-4 right-4 flex flex-col items-end gap-2">`
+## Implementation Roadmap
 
-### Fixes Applied
-1. **Responsive Positioning**: 
-   - Removed hardcoded `style="right: 340px;"`
-   - Added Tailwind class `right-4` for responsive 1rem (16px) spacing
-   
-2. **Conditional Visibility**:
-   - Added `*ngIf="!viewerStore.isViewerMode"` directive
-   - Controls now hidden in viewer mode, only visible in editor mode
+### Phase 1: Core Infrastructure (High Priority)
+1. **TextElement Model & Interface**
+   - Add TEXT to ElementType enum
+   - Create TextElement interface with typography properties
+   - Define default values and validation rules
 
-## Technical Details
-- **File Modified**: `/src/app/components/grid/grid.component.html`
-- **Lines**: 218-231
-- **Framework**: Angular with Tailwind CSS
-- **State Management**: MobX store (`viewerStore.isViewerMode`)
+2. **Tool System Integration**
+   - Add Text to ToolType enum
+   - Update ToolStore to handle text tool
+   - Add toolbar button integration
 
-## Result
-- Controls now properly positioned responsively in bottom-right corner
-- Hidden completely in viewer mode for cleaner user experience
-- Maintains all existing functionality in editor mode
+3. **Component Structure**
+   - Create TextComponent following MobX patterns
+   - Implement DOM-based rendering with CSS transforms
+   - Add selection and preview mode support
+
+### Phase 2: Functionality (Medium Priority)
+4. **Text Editing Capabilities**
+   - Implement inline text editing
+   - Add double-click to edit functionality
+   - Handle text content updates with debouncing
+
+5. **Typography & Styling**
+   - Font family selection
+   - Font size controls (8-72px range)
+   - Font weight and style options
+   - Text alignment (left, center, right)
+   - Color and background color pickers
+   - Border styling options
+
+6. **Grid Integration**
+   - Add text creation logic to GridComponent
+   - Implement click-to-place functionality
+   - Handle preview mode during creation
+
+### Phase 3: System Integration (Medium Priority)
+7. **Properties Panel**
+   - Create text-specific properties section
+   - Add typography controls
+   - Implement appearance customization
+   - Add debounced property updates
+
+8. **State Management**
+   - Update LayoutStore with text-specific methods
+   - Add text count computed property
+   - Implement text filtering and utilities
+
+9. **Export/Import System**
+   - Update export service to handle text elements
+   - Add text validation in import process
+   - Include text count in layout metrics
+
+### Phase 4: Testing & Polish (Low Priority)
+10. **Testing & Validation**
+    - Test text tool functionality
+    - Verify export/import works correctly
+    - Test undo/redo operations
+    - Validate selection handling
+
+## Technical Implementation Details
+
+### File Structure
+```
+src/app/
+├── models/
+│   ├── layout.model.ts (update ElementType enum)
+│   └── elements.model.ts (add TextElement interface)
+├── components/
+│   ├── text/ (new)
+│   │   ├── text.component.ts
+│   │   ├── text.component.html
+│   │   └── text.component.css
+│   ├── grid/
+│   │   └── grid.component.ts (update for text creation)
+│   ├── properties-panel/
+│   │   └── properties-panel.component.ts (add text properties)
+│   └── toolbars/main-toolbar/
+│       └── main-toolbar.component.html (add text tool button)
+├── services/
+│   ├── tool.service.ts (add ToolType.Text)
+│   └── layout-export-import.service.ts (update for text)
+└── stores/
+    ├── layout.store.ts (add text methods)
+    └── tool.store.ts (update for text tool)
+```
+
+### Key Implementation Patterns
+- **MobX Reactive State**: All components use makeAutoObservable
+- **Command Pattern**: Text operations support undo/redo
+- **Computed Properties**: Efficient reactive updates
+- **Debounced Updates**: Performance optimization for property changes
+- **SVG/DOM Hybrid**: Canvas grid, DOM elements for interaction
+
+### Default Text Properties
+```typescript
+{
+  text: 'Text Label',
+  fontSize: 14,
+  fontFamily: 'Arial',
+  fontWeight: 'normal',
+  fontStyle: 'normal',
+  textAlign: 'left',
+  color: '#000000',
+  backgroundColor: 'transparent',
+  borderColor: 'transparent',
+  borderWidth: 0,
+  padding: 4
+}
+```
+
+## Success Criteria
+- [ ] Text tool creates text elements on click
+- [ ] Text elements are selectable and editable
+- [ ] Typography options work correctly
+- [ ] Properties panel shows text-specific controls
+- [ ] Export/import includes text elements
+- [ ] Undo/redo works with text operations
+- [ ] Text elements integrate with existing selection system
+- [ ] Performance remains optimal with multiple text elements
+
+## Risk Mitigation
+- **Performance**: Use efficient DOM rendering, avoid excessive re-renders
+- **Compatibility**: Follow established patterns exactly
+- **Testing**: Incremental implementation with testing at each phase
+- **User Experience**: Intuitive editing with clear visual feedback
 
 ---
 

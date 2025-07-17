@@ -1,9 +1,9 @@
 import { makeAutoObservable, action } from 'mobx';
 import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../services/selection.service';
-import { LineElement, PolygonElement } from '../models/elements.model';
+import { LineElement, PolygonElement, TextElement } from '../models/elements.model';
 
 // Union type for all table types
-export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement;
+export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement | TextElement;
 
 export class LayoutStore {
   elements: TableElement[] = [];
@@ -19,6 +19,7 @@ export class LayoutStore {
       seatingRowCount: true,
       lineCount: true,
       polygonCount: true,
+      textCount: true,
       lastAddedElement: true,
       // Explicitly mark actions
       addElement: action,
@@ -51,6 +52,19 @@ export class LayoutStore {
       newElement.borderThickness = newElement.borderThickness ?? 2;
       newElement.showBorder = newElement.showBorder ?? true;
       newElement.points = newElement.points ?? [];
+    } else if (newElement.type === 'text') {
+      // Ensure text has default properties
+      newElement.text = newElement.text ?? 'Text Label';
+      newElement.fontSize = newElement.fontSize ?? 14;
+      newElement.fontFamily = newElement.fontFamily ?? 'Arial';
+      newElement.fontWeight = newElement.fontWeight ?? 'normal';
+      newElement.fontStyle = newElement.fontStyle ?? 'normal';
+      newElement.textAlign = newElement.textAlign ?? 'left';
+      newElement.color = newElement.color ?? '#000000';
+      newElement.backgroundColor = newElement.backgroundColor ?? 'transparent';
+      newElement.borderColor = newElement.borderColor ?? 'transparent';
+      newElement.borderWidth = newElement.borderWidth ?? 0;
+      newElement.padding = newElement.padding ?? 4;
     }
 
     this.elements.push(newElement);
@@ -129,6 +143,11 @@ export class LayoutStore {
     return this.elements.filter(el => el.type === 'polygon').length;
   }
 
+  // Computed property to get count of text elements
+  get textCount(): number {
+    return this.elements.filter(el => el.type === 'text').length;
+  }
+
   // Computed property to get the last added element
   get lastAddedElement(): TableElement | null {
     if (!this.lastAddedId) return null;
@@ -154,6 +173,11 @@ export class LayoutStore {
   // Polygon-specific utility methods
   getPolygons(): PolygonElement[] {
     return this.elements.filter(el => el.type === 'polygon') as PolygonElement[];
+  }
+
+  // Text-specific utility methods
+  getTexts(): TextElement[] {
+    return this.elements.filter(el => el.type === 'text') as TextElement[];
   }
 
   getTables(): TableElement[] {

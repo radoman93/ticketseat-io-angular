@@ -7,10 +7,11 @@ import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
 import { LineComponent } from '../line/line.component';
 import { PolygonComponent } from '../polygon/polygon.component';
+import { TextComponent } from '../text/text.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
 import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
-import { LineElement, PolygonElement } from '../../models/elements.model';
+import { LineElement, PolygonElement, TextElement } from '../../models/elements.model';
 import { ElementType } from '../../models/layout.model';
 import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
@@ -26,7 +27,7 @@ import { CanvasSelectionRenderer, SelectionBox } from '../../services/canvas-sel
 import { MobXComponentBase } from '../../base/mobx-component.base';
 
 // Use union type for table positions  
-type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement;
+type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement | TextElement;
 
 @Component({
   selector: 'app-grid',
@@ -38,6 +39,7 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
     SegmentedSeatingRowComponent,
     LineComponent,
     PolygonComponent,
+    TextComponent,
     CommonModule
   ],
   standalone: true,
@@ -205,6 +207,27 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         this.polygonPoints = [];
         this.isHoveringStartPoint = false;
         this.previewTable = null;
+      } else if (activeTool === ToolType.Text) {
+        // Initialize text element preview
+        this.previewTable = {
+          id: `text-preview-${Date.now()}`,
+          type: 'text',
+          x: 0,
+          y: 0,
+          rotation: 0,
+          text: 'Text Label',
+          fontSize: 14,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          textAlign: 'left',
+          color: '#000000',
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          borderWidth: 0,
+          padding: 4,
+          name: `Text ${this.layoutStore.elements.length + 1}`
+        } as TextElement;
       } else {
         this.previewTable = null;
         this.previewSegment = null;
@@ -699,6 +722,35 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
         // Deselect tool after placing
         this.toolStore.setActiveTool(ToolType.None);
+      } else if (activeTool === ToolType.Text) {
+        // We're in add mode for text elements, add a new text element
+        const gridCoords = this.getGridCoordinates(event);
+        const newTextElement: TextElement = {
+          id: `text-${Date.now()}`,
+          type: ElementType.TEXT,
+          x: gridCoords.x,
+          y: gridCoords.y,
+          rotation: 0,
+          text: 'Text Label',
+          fontSize: 14,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          textAlign: 'left',
+          color: '#000000',
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          borderWidth: 0,
+          padding: 4,
+          name: `Text ${this.layoutStore.elements.length + 1}`
+        };
+
+        // Add to layout and history
+        const addCmd = new AddObjectCommand(newTextElement);
+        this.historyStore.executeCommand(addCmd);
+
+        // Deselect tool after placing
+        this.toolStore.setActiveTool(ToolType.None);
       } else if (activeTool === ToolType.None) {
         // If no tool is selected, start panning with the left mouse button.
         this.store.startPanning(event.clientX, event.clientY);
@@ -1078,7 +1130,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     }
 
     // Prevent starting a drag if we're in table add mode
-    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow || this.toolStore.activeTool === ToolType.Line || this.toolStore.activeTool === ToolType.Polygon) {
+    if (this.toolStore.activeTool === ToolType.RoundTable || this.toolStore.activeTool === ToolType.RectangleTable || this.toolStore.activeTool === ToolType.SeatingRow || this.toolStore.activeTool === ToolType.Line || this.toolStore.activeTool === ToolType.Polygon || this.toolStore.activeTool === ToolType.Text) {
       return;
     }
 
@@ -1133,7 +1185,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   // Delete the currently selected table
   deleteSelectedTable(): boolean {
     const selectedItem = this.selectionStore.selectedItem;
-    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable' || selectedItem.type === 'seatingRow' || selectedItem.type === 'line')) {
+    if (selectedItem && (selectedItem.type === 'roundTable' || selectedItem.type === 'rectangleTable' || selectedItem.type === 'seatingRow' || selectedItem.type === 'line' || selectedItem.type === 'polygon' || selectedItem.type === 'text')) {
       this.layoutStore.deleteElement(selectedItem.id);
       this.selectionStore.deselectItem();
       return true;

@@ -1,0 +1,29 @@
+<!-- Text element using DOM element -->
+<div 
+  class="absolute select-none"
+  [class.pointer-events-none]="_isPreview"
+  [style.left.px]="textPosition.x"
+  [style.top.px]="textPosition.y"
+  [ngStyle]="textStyles"
+  [attr.data-title]="'Text ' + (_textData?.name || _textData?.id || '')"
+  *mobxAutorun>
+  
+  <!-- Main text content -->
+  <div 
+    class="cursor-pointer transition-all duration-200 hover:opacity-80"
+    [class.whitespace-pre-wrap]="!effectiveWidth || effectiveWidth === 0"
+    [class.break-words]="effectiveWidth && effectiveWidth > 0"
+    [style.pointer-events]="_isPreview ? 'none' : 'all'"
+    [style.word-wrap]="'break-word'"
+    [style.overflow-wrap]="'break-word'"
+    (click)="handleTextClick($event)">
+    {{ effectiveText }}
+  </div>
+  
+  <!-- Selection highlight (when selected) -->
+  <div
+    *ngIf="_isSelected && !viewerStore.isViewerMode"
+    class="absolute inset-0 border-2 border-blue-400 border-opacity-60 pointer-events-none"
+    style="margin: -2px;">
+  </div>
+</div>

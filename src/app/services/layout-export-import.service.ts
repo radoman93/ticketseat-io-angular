@@ -49,8 +49,8 @@ export class LayoutExportImportService {
 
     // Create elements with their chairs nested
     const elementsWithChairs = layoutStore.elements.map(element => {
-      // Lines and polygons don't have chairs, so only add chairs for table elements
-      if (element.type === 'line' || element.type === 'polygon') {
+      // Lines, polygons, and text elements don't have chairs, so only add chairs for table elements
+      if (element.type === 'line' || element.type === 'polygon' || element.type === 'text') {
         return { ...element };
       }
       
@@ -155,7 +155,7 @@ export class LayoutExportImportService {
         layoutStore.addElement(element);
 
         // Add chairs to chair store (only for elements that have chairs)
-        if (element.type !== 'line' && element.type !== 'polygon') {
+        if (element.type !== 'line' && element.type !== 'polygon' && element.type !== 'text') {
           const elementChairs = chairsByElement.get(element.id) || [];
           elementChairs.forEach(chair => {
             rootStore.chairStore.addChair(chair);
@@ -190,7 +190,7 @@ export class LayoutExportImportService {
         layoutStore.addElement(elementWithoutChairs);
 
         // Add chairs to chair store (only for elements that have chairs)
-        if (element.type !== 'line' && element.type !== 'polygon') {
+        if (element.type !== 'line' && element.type !== 'polygon' && element.type !== 'text') {
           chairs.forEach((chair: Chair) => {
             rootStore.chairStore.addChair(chair);
           });
@@ -245,6 +245,7 @@ export class LayoutExportImportService {
     rowCount: number;
     lineCount: number;
     polygonCount: number;
+    textCount: number;
   } {
     const tableCount = data.elements.filter(el =>
       el.type === 'roundTable' || el.type === 'rectangleTable'
@@ -262,6 +263,10 @@ export class LayoutExportImportService {
       el.type === 'polygon'
     ).length;
 
+    const textCount = data.elements.filter(el =>
+      el.type === 'text'
+    ).length;
+
     return {
       name: data.meta.name,
       description: data.meta.description,
@@ -270,7 +275,8 @@ export class LayoutExportImportService {
       tableCount,
       rowCount,
       lineCount,
-      polygonCount
+      polygonCount,
+      textCount
     };
   }
 } 

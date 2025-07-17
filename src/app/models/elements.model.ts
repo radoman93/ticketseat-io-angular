@@ -63,4 +63,22 @@ export interface PolygonElement extends LayoutElement {
   name: string;
 }
 
-export type TableElement = RoundTableElement | RectangleTableElement | SeatingRowElement | SegmentedSeatingRowElement | LineElement | PolygonElement;
+export interface TextElement extends LayoutElement {
+  type: ElementType.TEXT;
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: string;
+  fontStyle: string;
+  textAlign: string;
+  color: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  padding?: number;
+  width?: number;
+  height?: number;
+  name: string;
+}
+
+export type TableElement = RoundTableElement | RectangleTableElement | SeatingRowElement | SegmentedSeatingRowElement | LineElement | PolygonElement | TextElement;

@@ -9,7 +9,7 @@ import { HistoryStore } from '../../stores/history.store';
 import { DeleteObjectCommand } from '../../commands/delete-object.command';
 import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, PolygonProperties } from '../../services/selection.service';
 import { UpdateObjectCommand } from '../../commands/update-object.command';
-import { LineElement } from '../../models/elements.model';
+import { LineElement, TextElement } from '../../models/elements.model';
 import { debouncedPropertyUpdate, batchedPropertyUpdate } from '../../utils/debounce.util';
 
 @Component({
@@ -111,6 +111,11 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   @computed
   get polygonProperties(): PolygonProperties {
     return this.selectedItem as PolygonProperties;
+  }
+
+  @computed
+  get textProperties(): TextElement {
+    return this.selectedItem as TextElement;
   }
 
   @action
@@ -321,5 +326,18 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     if (!this.polygonProperties) return;
     const newValue = Math.max(0, (this.polygonProperties.fillOpacity || 0.3) - 0.1);
     this.updateProperty('fillOpacity', Math.round(newValue * 10) / 10);
+  }
+
+  // Text-specific methods
+  @action incrementFontSize(): void {
+    if (!this.textProperties) return;
+    const newValue = Math.min(72, (this.textProperties.fontSize || 14) + 2);
+    this.updateProperty('fontSize', newValue);
+  }
+
+  @action decrementFontSize(): void {
+    if (!this.textProperties) return;
+    const newValue = Math.max(8, (this.textProperties.fontSize || 14) - 2);
+    this.updateProperty('fontSize', newValue);
   }
 }

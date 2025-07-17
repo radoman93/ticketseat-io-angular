@@ -1,0 +1,47 @@
+/* Text component styles */
+.text-element {
+  user-select: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  display: inline-block;
+  position: relative;
+}
+
+.text-element.editing {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.text-element:hover {
+  cursor: text;
+}
+
+.text-element.preview {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.text-element.selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Ensure text renders properly with transforms */
+.text-element {
+  transform-origin: center;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Selection highlight styling */
+.selection-highlight {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid #3b82f6;
+  border-radius: 2px;
+  opacity: 0.6;
+  pointer-events: none;
+}

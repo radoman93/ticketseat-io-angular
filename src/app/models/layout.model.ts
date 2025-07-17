@@ -15,7 +15,8 @@ export enum ElementType {
   SEATING_ROW = 'seatingRow',
   SEGMENTED_SEATING_ROW = 'segmentedSeatingRow',
   LINE = 'line',
-  POLYGON = 'polygon'
+  POLYGON = 'polygon',
+  TEXT = 'text'
 }
 
 // Complete layout schema

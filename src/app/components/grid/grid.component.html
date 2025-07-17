@@ -99,6 +99,29 @@
         </div>
       </app-polygon>
 
+      <!-- Text -->
+      <app-text *ngIf="table.type === 'text'" [x]="table.x" [y]="table.y"
+        [textData]="$any(table)"
+        [text]="$any(table).text" [fontSize]="$any(table).fontSize"
+        [fontFamily]="$any(table).fontFamily" [fontWeight]="$any(table).fontWeight"
+        [fontStyle]="$any(table).fontStyle" [textAlign]="$any(table).textAlign"
+        [color]="$any(table).color" [backgroundColor]="$any(table).backgroundColor"
+        [borderColor]="$any(table).borderColor" [borderWidth]="$any(table).borderWidth"
+        [padding]="$any(table).padding" [rotation]="table.rotation || 0"
+        [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)">
+        <!-- Selection indicator for text - Hidden in viewer mode and when canvas renderer is active -->
+        <div *ngIf="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id) && !useCanvasSelection"
+          class="selection-indicator table-selection" 
+          [style.width.px]="getSelectionWidth(table)"
+          [style.height.px]="getSelectionHeight(table)"
+          [style.transform]="'translate(-50%, -50%)'"
+          [style.transform-origin]="'center center'" 
+          [style.left]="getSelectionLeft(table) + 'px'" 
+          [style.top]="getSelectionTop(table) + 'px'">
+        </div>
+      </app-text>
+
       <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
       <app-round-table *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
         [x]="previewTable.x" [y]="previewTable.y" [radius]="$any(previewTable).radius"
@@ -206,11 +229,32 @@
         </svg>
       </div>
 
+      <!-- Text Preview - Hidden in viewer mode -->
+      <app-text *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Text"
+        [x]="previewTable.x"
+        [y]="previewTable.y"
+        [textData]="$any(previewTable)"
+        [text]="$any(previewTable).text"
+        [fontSize]="$any(previewTable).fontSize"
+        [fontFamily]="$any(previewTable).fontFamily"
+        [fontWeight]="$any(previewTable).fontWeight"
+        [fontStyle]="$any(previewTable).fontStyle"
+        [textAlign]="$any(previewTable).textAlign"
+        [color]="$any(previewTable).color"
+        [backgroundColor]="$any(previewTable).backgroundColor"
+        [borderColor]="$any(previewTable).borderColor"
+        [borderWidth]="$any(previewTable).borderWidth"
+        [padding]="$any(previewTable).padding"
+        [rotation]="$any(previewTable).rotation || 0"
+        [isPreview]="true"
+        class="opacity-70 preview-text">
+      </app-text>
+
     </div>
 
     <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
     <div
-      *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow || toolStore.activeTool === ToolType.Line || toolStore.activeTool === ToolType.Polygon)"
+      *ngIf="!viewerStore.isViewerMode && (toolStore.activeTool === ToolType.RoundTable || toolStore.activeTool === ToolType.RectangleTable || toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow || toolStore.activeTool === ToolType.Line || toolStore.activeTool === ToolType.Polygon || toolStore.activeTool === ToolType.Text)"
       class="absolute top-0 left-0 w-full h-full cursor-crosshair"></div>
   </div>
 </div>

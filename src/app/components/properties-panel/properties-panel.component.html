@@ -521,6 +521,223 @@
     </div>
   </div>
 
+  <!-- Text Properties -->
+  <div *ngIf="selectedItem?.type === 'text'" class="w-64 h-full bg-white overflow-y-auto shadow-lg">
+    <!-- Header with element title -->
+    <div class="px-4 py-3 text-black font-medium text-lg flex items-center justify-center">
+      Text Element
+    </div>
+
+    <!-- Text Content Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Text Content</label>
+      </div>
+
+      <!-- Text Input -->
+      <div class="mb-2">
+        <textarea class="textarea textarea-bordered w-full" 
+                  [ngModel]="textProperties.text"
+                  (ngModelChange)="updatePropertyDebounced('text', $event)"
+                  placeholder="Enter text content"
+                  rows="2"></textarea>
+      </div>
+    </div>
+
+    <!-- Typography Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Typography</label>
+      </div>
+
+      <!-- Font Size -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Font Size:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementFontSize()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [ngModel]="textProperties.fontSize" (ngModelChange)="updatePropertyDebounced('fontSize', $event)" 
+            min="8" max="72" step="2">
+          <button class="join-item btn btn-xs" (click)="incrementFontSize()">+</button>
+        </div>
+      </div>
+
+      <!-- Font Family -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Font:</label>
+        <select class="select select-bordered select-xs w-32" 
+                [ngModel]="textProperties.fontFamily"
+                (ngModelChange)="updatePropertyDebounced('fontFamily', $event)">
+          <option value="Arial">Arial</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Courier New">Courier New</option>
+        </select>
+      </div>
+
+      <!-- Font Weight -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Weight:</label>
+        <select class="select select-bordered select-xs w-24" 
+                [ngModel]="textProperties.fontWeight"
+                (ngModelChange)="updatePropertyDebounced('fontWeight', $event)">
+          <option value="normal">Normal</option>
+          <option value="bold">Bold</option>
+          <option value="lighter">Light</option>
+        </select>
+      </div>
+
+      <!-- Font Style -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Style:</label>
+        <select class="select select-bordered select-xs w-24" 
+                [ngModel]="textProperties.fontStyle"
+                (ngModelChange)="updatePropertyDebounced('fontStyle', $event)">
+          <option value="normal">Normal</option>
+          <option value="italic">Italic</option>
+        </select>
+      </div>
+
+      <!-- Text Alignment -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Align:</label>
+        <select class="select select-bordered select-xs w-24" 
+                [ngModel]="textProperties.textAlign"
+                (ngModelChange)="updatePropertyDebounced('textAlign', $event)">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Dimensions Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Dimensions</label>
+      </div>
+
+      <!-- Width -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Width:</label>
+        <div class="flex items-center gap-1">
+          <input type="number" 
+            class="input input-bordered input-xs w-16 text-center"
+            [ngModel]="textProperties.width || ''"
+            (ngModelChange)="updatePropertyDebounced('width', $event || null)"
+            min="50" max="800" step="10"
+            placeholder="Auto">
+          <span class="text-xs text-gray-400">px</span>
+        </div>
+      </div>
+
+      <!-- Height -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Height:</label>
+        <div class="flex items-center gap-1">
+          <input type="number" 
+            class="input input-bordered input-xs w-16 text-center"
+            [ngModel]="textProperties.height || ''"
+            (ngModelChange)="updatePropertyDebounced('height', $event || null)"
+            min="20" max="400" step="10"
+            placeholder="Auto">
+          <span class="text-xs text-gray-400">px</span>
+        </div>
+      </div>
+
+      <!-- Info text -->
+      <div class="mt-2 text-xs text-gray-500">
+        Leave empty for auto-sizing (max 300px width)
+      </div>
+    </div>
+
+    <!-- Appearance Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center mb-3">
+        <label class="text-gray-700 font-medium">Appearance</label>
+      </div>
+
+      <!-- Text Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Text Color:</label>
+        <div class="flex items-center gap-2">
+          <input type="color" 
+            class="input input-bordered input-xs flex-1 w-16 text-xs"
+            [ngModel]="textProperties.color"
+            (ngModelChange)="updatePropertyDebounced('color', $event)">
+        </div>
+      </div>
+
+      <!-- Background Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Background:</label>
+        <div class="flex items-center gap-2">
+          <input type="color" 
+            class="input input-bordered input-xs flex-1 w-16 text-xs"
+            [ngModel]="textProperties.backgroundColor || '#ffffff'"
+            (ngModelChange)="updatePropertyDebounced('backgroundColor', $event)">
+          <button class="btn btn-xs" (click)="updatePropertyDebounced('backgroundColor', 'transparent')" 
+                  title="Transparent">⌀</button>
+        </div>
+      </div>
+
+      <!-- Border Color -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">Border:</label>
+        <div class="flex items-center gap-2">
+          <input type="color" 
+            class="input input-bordered input-xs flex-1 w-12 text-xs"
+            [ngModel]="textProperties.borderColor || '#000000'"
+            (ngModelChange)="updatePropertyDebounced('borderColor', $event)">
+          <input type="number" 
+            class="input input-bordered input-xs w-12 text-center text-xs"
+            [ngModel]="textProperties.borderWidth || 0"
+            (ngModelChange)="updatePropertyDebounced('borderWidth', $event)"
+            min="0" max="10" step="1">
+        </div>
+      </div>
+
+      <!-- Padding -->
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Padding:</label>
+        <input type="number" 
+          class="input input-bordered input-xs w-16 text-center"
+          [ngModel]="textProperties.padding || 4"
+          (ngModelChange)="updatePropertyDebounced('padding', $event)"
+          min="0" max="20" step="1">
+      </div>
+    </div>
+
+    <!-- Element Info Section -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm text-gray-600">ID:</label>
+        <input type="text" class="input input-bordered input-sm input-disabled w-36 text-xs text-right"
+          [value]="selectedItem?.id || ''" disabled>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-gray-600">Name:</label>
+        <input type="text" class="input input-bordered input-sm w-36 max-w-xs" [ngModel]="textProperties.name"
+          (ngModelChange)="updatePropertyDebounced('name', $event)">
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="px-4 py-3 border-b border-gray-100">
+      <button (click)="deleteElement()"
+        class="btn btn-sm btn-outline btn-error w-full flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete Text
+      </button>
+    </div>
+  </div>
+
   <!-- Empty state panel -->
   <div *ngIf="!selectedItem"
     class="w-64 h-full bg-white shadow-lg flex flex-col items-center justify-center p-4 text-center">
