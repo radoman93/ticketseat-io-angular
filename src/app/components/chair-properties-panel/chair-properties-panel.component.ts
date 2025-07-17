@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MobxAngularModule } from 'mobx-angular';
 import { rootStore } from '../../stores/root.store';
+import { debounce } from '../../utils/debounce.util';
 
 @Component({
   selector: 'app-chair-properties-panel',
@@ -88,13 +89,19 @@ import { rootStore } from '../../stores/root.store';
 export class ChairPropertiesPanelComponent {
   store = rootStore;
 
+  private debouncedLabelUpdate = debounce((chairId: string, label: string) => {
+    this.store.chairStore.updateChair(chairId, { label });
+  }, 300);
+
+  private debouncedPriceUpdate = debounce((chairId: string, price: number) => {
+    this.store.chairStore.updateChair(chairId, { price });
+  }, 300);
+
   onLabelChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const selectedChair = this.store.chairStore.selectedChair;
     if (selectedChair) {
-      this.store.chairStore.updateChair(selectedChair.id, { 
-        label: input.value 
-      });
+      this.debouncedLabelUpdate(selectedChair.id, input.value);
     }
   }
 
@@ -103,9 +110,7 @@ export class ChairPropertiesPanelComponent {
     const selectedChair = this.store.chairStore.selectedChair;
     if (selectedChair) {
       const price = parseFloat(input.value) || 0;
-      this.store.chairStore.updateChair(selectedChair.id, { 
-        price: price 
-      });
+      this.debouncedPriceUpdate(selectedChair.id, price);
     }
   }
 

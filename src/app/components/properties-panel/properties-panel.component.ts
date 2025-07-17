@@ -10,6 +10,7 @@ import { DeleteObjectCommand } from '../../commands/delete-object.command';
 import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, PolygonProperties } from '../../services/selection.service';
 import { UpdateObjectCommand } from '../../commands/update-object.command';
 import { LineElement } from '../../models/elements.model';
+import { debouncedPropertyUpdate, batchedPropertyUpdate } from '../../utils/debounce.util';
 
 @Component({
   selector: 'app-properties-panel',
@@ -27,10 +28,16 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   layoutStore = layoutStore;
 
   private disposer: IReactionDisposer | null = null;
+  private debouncedUpdate: (property: string, value: any) => void;
 
   constructor(
     private historyStore: HistoryStore
-  ) { }
+  ) {
+    this.debouncedUpdate = debouncedPropertyUpdate(
+      (property: string, value: any) => this.updateProperty(property, value),
+      300
+    );
+  }
 
   ngOnInit(): void {
     // Set up autorun to track changes and sync selection with layout
@@ -132,6 +139,10 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
       { [property]: value }
     );
     this.historyStore.executeCommand(updateCommand);
+  }
+
+  updatePropertyDebounced(property: string, value: any): void {
+    this.debouncedUpdate(property, value);
   }
 
   @action
