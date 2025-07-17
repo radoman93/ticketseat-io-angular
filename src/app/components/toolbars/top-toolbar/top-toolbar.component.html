@@ -32,6 +32,16 @@
       <label for="show-grid" class="text-gray-600 cursor-pointer">Show Grid</label>
     </div>
 
+    <!-- Snap to Grid Toggle -->
+    <div class="flex items-center gap-2" *mobxAutorun>
+      <input type="checkbox"
+             id="snap-to-grid"
+             [checked]="store.snapToGrid"
+             (change)="store.toggleSnapToGrid()"
+             class="toggle toggle-sm toggle-warning" />
+      <label for="snap-to-grid" class="text-gray-600 cursor-pointer">Snap to Grid</label>
+    </div>
+
     <!-- Undo/Redo -->
     <div class="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
       <button (click)="historyStore.undo()"
@@ -91,6 +101,13 @@
            [checked]="store.showGrid"
            (change)="store.toggleGrid()"
            class="toggle toggle-sm toggle-success" />
+  </div>
+  <div class="flex items-center justify-between" *mobxAutorun>
+    <span class="text-sm font-medium text-gray-700">Snap to Grid:</span>
+    <input type="checkbox"
+           [checked]="store.snapToGrid"
+           (change)="store.toggleSnapToGrid()"
+           class="toggle toggle-sm toggle-warning" />
   </div>
 
   <!-- Mobile Action Buttons -->

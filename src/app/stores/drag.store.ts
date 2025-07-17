@@ -163,6 +163,17 @@ export class DragStore {
         const canvasDx = dx / zoomFactor;
         const canvasDy = dy / zoomFactor;
 
+        // Calculate proposed new position
+        let newX = this.startElementX + canvasDx;
+        let newY = this.startElementY + canvasDy;
+
+        // Apply snap-to-grid if enabled
+        if (gridStore.snapToGrid) {
+            const snapped = gridStore.snapCoordinateToGrid(newX, newY);
+            newX = snapped.x;
+            newY = snapped.y;
+        }
+
         // Batch all updates using runInAction for better performance
         runInAction(() => {
             // Handle different item types
@@ -173,9 +184,9 @@ export class DragStore {
                     y: this.originalLineEndY - this.startElementY
                 };
                 
-                // Calculate new positions
-                const newStartX = this.startElementX + canvasDx;
-                const newStartY = this.startElementY + canvasDy;
+                // Use snapped positions for lines
+                const newStartX = newX;
+                const newStartY = newY;
                 const newEndX = newStartX + deltaToEnd.x;
                 const newEndY = newStartY + deltaToEnd.y;
 
@@ -190,9 +201,7 @@ export class DragStore {
                 Object.assign(this.draggedItem!, update);
                 layoutStore.updateElement(this.draggedItem!.id, update);
             } else if (this.draggedItem!.type === 'segmentedSeatingRow') {
-                // Calculate new position
-                const newX = this.startElementX + canvasDx;
-                const newY = this.startElementY + canvasDy;
+                // Use snapped positions for segmented seating rows
 
                 const deltaX = newX - (this.draggedItem as any)['x'];
                 const deltaY = newY - (this.draggedItem as any)['y'];
@@ -217,9 +226,7 @@ export class DragStore {
                     layoutStore.updateElement(this.draggedItem!.id, update);
                 }
             } else if (this.draggedItem!.type === 'polygon') {
-                // For polygons, move all vertices by the same delta
-                const newX = this.startElementX + canvasDx;
-                const newY = this.startElementY + canvasDy;
+                // Use snapped positions for polygons
                 
                 // Calculate the delta from the current center to the new center
                 const deltaX = newX - (this.draggedItem as any)['x'];
@@ -240,9 +247,7 @@ export class DragStore {
                 Object.assign(this.draggedItem!, update);
                 layoutStore.updateElement(this.draggedItem!.id, update);
             } else {
-                // For all other items (roundTable, rectangleTable, seatingRow), update x and y
-                const newX = this.startElementX + canvasDx;
-                const newY = this.startElementY + canvasDy;
+                // For all other items (roundTable, rectangleTable, seatingRow), use snapped positions
 
                 const update = { x: newX, y: newY };
                 Object.assign(this.draggedItem!, update);

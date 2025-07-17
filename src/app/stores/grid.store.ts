@@ -11,6 +11,7 @@ export class GridStore {
   panStart = { x: 0, y: 0 };
   showGrid = true;
   showGuides = true;
+  snapToGrid = false;
   
   // Callback for triggering grid redraw
   private redrawCallbacks: (() => void)[] = [];
@@ -28,6 +29,8 @@ export class GridStore {
       zoomOut: action,
       toggleGrid: action,
       toggleGuides: action,
+      toggleSnapToGrid: action,
+      snapCoordinateToGrid: false,
       registerRedrawCallback: false,
       unregisterRedrawCallback: false,
       triggerRedraw: false
@@ -99,8 +102,30 @@ export class GridStore {
     this.triggerRedraw();
   });
 
+  toggleSnapToGrid = action('toggleSnapToGrid', () => {
+    this.snapToGrid = !this.snapToGrid;
+  });
+
   getUnscaledCoordinate(coord: number): number {
     return Math.floor(coord / (this.zoomLevel / 100));
+  }
+
+  /**
+   * Snap coordinates to the grid if snap-to-grid is enabled
+   */
+  snapCoordinateToGrid(x: number, y: number): { x: number; y: number } {
+    if (!this.snapToGrid) {
+      return { x, y };
+    }
+
+    // Calculate the effective grid size accounting for zoom level
+    const effectiveGridSize = this.gridSize;
+    
+    // Snap to nearest grid intersection
+    const snappedX = Math.round(x / effectiveGridSize) * effectiveGridSize;
+    const snappedY = Math.round(y / effectiveGridSize) * effectiveGridSize;
+
+    return { x: snappedX, y: snappedY };
   }
 
   // Methods for managing redraw callbacks
