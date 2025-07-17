@@ -226,8 +226,13 @@ export class CanvasSelectionRenderer {
     ctx.fillStyle = this.config.backgroundColor;
     ctx.fillRect(x, y, width, height);
 
-    // Draw static diagonal stripes over the entire selection area
+    // Draw static diagonal stripes within the selection rectangle
     ctx.save();
+    
+    // Create clipping path for the full rectangular selection area
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
 
     // Draw diagonal stripes pattern
     ctx.fillStyle = `rgba(59, 130, 246, ${this.config.stripesOpacity})`;
@@ -236,12 +241,21 @@ export class CanvasSelectionRenderer {
     const stripeSpacing = 24;
     
     // Draw static stripe pattern covering the full rectangular area
-    for (let i = -stripeSpacing; i < width + height + stripeSpacing; i += stripeSpacing) {
+    // Calculate the diagonal extent needed to cover the entire rectangle
+    const diagonal = Math.sqrt(width * width + height * height);
+    const stripeCount = Math.ceil(diagonal / stripeSpacing) + 2;
+    const startOffset = -stripeCount * stripeSpacing / 2;
+    
+    for (let i = 0; i < stripeCount; i++) {
       ctx.save();
-      ctx.translate(x, y);
+      
+      // Translate to the center of the selection rectangle
+      ctx.translate(x + width / 2, y + height / 2);
       ctx.rotate(-Math.PI / 4); // -45 degrees
       
-      ctx.fillRect(i, -height, stripeWidth, width + height * 2);
+      // Draw stripe centered around the rectangle
+      const stripeX = startOffset + i * stripeSpacing;
+      ctx.fillRect(stripeX, -diagonal, stripeWidth, diagonal * 2);
       
       ctx.restore();
     }
