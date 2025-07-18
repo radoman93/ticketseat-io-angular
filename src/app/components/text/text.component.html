@@ -4,8 +4,10 @@
   [class.pointer-events-none]="_isPreview"
   [style.left.px]="textPosition.x"
   [style.top.px]="textPosition.y"
-  [ngStyle]="textStyles"
+  [style.transform]="'translate(-50%, -50%) rotate(' + _rotation + 'deg)'"
+  [ngStyle]="textStylesWithoutTransform"
   [attr.data-title]="'Text ' + (_textData?.name || _textData?.id || '')"
+  [attr.data-text-id]="_textData?.id"
   *mobxAutorun>
   
   <!-- Main text content -->
@@ -20,10 +22,5 @@
     {{ effectiveText }}
   </div>
   
-  <!-- Selection highlight (when selected) -->
-  <div
-    *ngIf="_isSelected && !viewerStore.isViewerMode"
-    class="absolute inset-0 border-2 border-blue-400 border-opacity-60 pointer-events-none"
-    style="margin: -2px;">
-  </div>
+  <!-- Selection highlight removed - using standard grid selection system -->
 </div>

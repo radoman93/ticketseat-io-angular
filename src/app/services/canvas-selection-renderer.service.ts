@@ -8,7 +8,7 @@ export interface SelectionBox {
   width: number;
   height: number;
   rotation: number;
-  type: 'table' | 'row' | 'line' | 'polygon';
+  type: 'table' | 'row' | 'line' | 'polygon' | 'text';
   centerX?: number;
   centerY?: number;
 }

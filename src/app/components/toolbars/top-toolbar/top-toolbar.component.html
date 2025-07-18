@@ -1,20 +1,19 @@
-<div class="flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm z-10">
-  <!-- Left Section: Logo and Title -->
-  <div class="flex items-center gap-4">
-    <div class="text-xl font-bold text-yellow-600">TicketSeats</div>
-    <div class="flex items-center gap-2 border-l border-gray-200 pl-4">
-      <div class="h-2 w-2 rounded-full bg-blue-500"></div>
-      <span class="text-sm font-medium text-gray-500">Layout Editor</span>
-    </div>
+<div class="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm z-10">
+  <!-- Left Section: Clean minimalist space -->
+  <div class="flex items-center">
+    <!-- Intentionally minimal for clean design -->
   </div>
 
   <!-- Center Section: Editor Controls -->
-  <div class="hidden md:flex flex-1 items-center justify-center gap-6 text-sm">
+  <div class="hidden md:flex flex-1 items-center justify-start gap-8 text-sm pl-6">
     <!-- Grid Size -->
-    <div class="flex items-center gap-2">
-      <label for="grid-size" class="text-gray-600">Grid:</label>
+    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16m-7-7v14"></path>
+      </svg>
+      <label for="grid-size" class="text-sm font-medium text-gray-700">Grid:</label>
       <select id="grid-size"
-              class="select select-ghost select-sm focus:outline-none focus:ring-0"
+              class="bg-transparent border-none text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
               [value]="store.gridSize"
               (change)="updateGridSize($event)"
               *mobxAutorun>
@@ -23,39 +22,51 @@
     </div>
 
     <!-- Show Grid Toggle -->
-    <div class="flex items-center gap-2" *mobxAutorun>
+    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM5 5h14v2H5V5zM5 9h14v2H5V9zM5 13h14v2H5v-2zM5 17h14v2H5v-2z"></path>
+      </svg>
+      <label for="show-grid" class="text-sm font-medium text-gray-700 cursor-pointer">Show Grid</label>
       <input type="checkbox"
              id="show-grid"
              [checked]="store.showGrid"
              (change)="store.toggleGrid()"
-             class="toggle toggle-sm toggle-success" />
-      <label for="show-grid" class="text-gray-600 cursor-pointer">Show Grid</label>
+             class="toggle toggle-sm toggle-primary" />
     </div>
 
     <!-- Snap to Grid Toggle -->
-    <div class="flex items-center gap-2" *mobxAutorun>
+    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m0 0V7a2 2 0 012-2h3a2 2 0 012 2v3l-4 4z"></path>
+      </svg>
+      <label for="snap-to-grid" class="text-sm font-medium text-gray-700 cursor-pointer">Snap to Grid</label>
       <input type="checkbox"
              id="snap-to-grid"
              [checked]="store.snapToGrid"
              (change)="store.toggleSnapToGrid()"
-             class="toggle toggle-sm toggle-warning" />
-      <label for="snap-to-grid" class="text-gray-600 cursor-pointer">Snap to Grid</label>
+             class="toggle toggle-sm toggle-secondary" />
     </div>
 
     <!-- Undo/Redo -->
-    <div class="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
+    <div class="flex items-center gap-1 rounded-lg bg-gray-50 p-1">
       <button (click)="historyStore.undo()"
               [disabled]="!historyStore.canUndo"
-              class="btn btn-xs btn-ghost"
+              class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Undo (Ctrl+Z)">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"/>
+        </svg>
+        <span class="text-sm font-medium text-gray-700">Undo</span>
       </button>
-      <div class="h-4 w-px bg-gray-300"></div>
+      <div class="h-6 w-px bg-gray-300"></div>
       <button (click)="historyStore.redo()"
               [disabled]="!historyStore.canRedo"
-              class="btn btn-xs btn-ghost"
+              class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Redo (Ctrl+Y)">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2m18-10l-4-4m4 4l-4 4"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2m18-10l-4-4m4 4l-4 4"/>
+        </svg>
+        <span class="text-sm font-medium text-gray-700">Redo</span>
       </button>
     </div>
   </div>
@@ -63,22 +74,37 @@
   <!-- Right Section: Actions and Info -->
   <div class="flex items-center gap-4">
     <!-- Table Count -->
-    <div *mobxAutorun class="hidden sm:flex items-center gap-2 text-sm">
-      <span class="font-medium text-gray-500">Tables:</span>
-      <span class="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-blue-700">
+    <div *mobxAutorun class="hidden sm:flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+      </svg>
+      <span class="text-sm font-medium text-gray-700">Tables:</span>
+      <span class="inline-flex items-center justify-center rounded-full bg-blue-500 px-2.5 py-1 text-white text-sm font-semibold min-w-[2rem]">
         {{ layoutStore.tableCount }}
       </span>
     </div>
 
     <!-- Import/Export -->
     <div class="hidden sm:flex items-center gap-2">
-      <button (click)="openImportDialog()" class="btn btn-sm btn-ghost text-gray-600">Import</button>
-      <button (click)="openExportDialog()" class="btn btn-sm btn-ghost text-gray-600">Export</button>
+      <button (click)="openImportDialog()" class="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+        </svg>
+        <span class="text-sm font-medium text-gray-700">Import</span>
+      </button>
+      <button (click)="openExportDialog()" class="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        <span class="text-sm font-medium text-gray-700">Export</span>
+      </button>
     </div>
 
     <!-- Hamburger Menu (Mobile) -->
-    <button class="md:hidden p-1 hover:bg-gray-100 rounded-md hamburger-button" (click)="toggleMenu()">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-4-6h0" /></svg>
+    <button class="md:hidden p-3 hover:bg-gray-50 rounded-lg transition-colors duration-200" (click)="toggleMenu()">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
     </button>
   </div>
 </div>

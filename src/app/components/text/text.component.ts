@@ -81,6 +81,7 @@ export class TextComponent implements OnInit, OnChanges {
       dynamicWidth: computed,
       textPosition: computed,
       textStyles: computed,
+      textStylesWithoutTransform: computed,
       // Internal observable properties
       _x: observable,
       _y: observable,
@@ -245,7 +246,36 @@ export class TextComponent implements OnInit, OnChanges {
     return { x, y };
   }
 
-  // Combined text styles
+  // Combined text styles without transform (handled by parent div)
+  get textStylesWithoutTransform(): { [key: string]: string } {
+    const styles: { [key: string]: string } = {
+      fontSize: `${this.effectiveFontSize}px`,
+      fontFamily: this.effectiveFontFamily,
+      fontWeight: this.effectiveFontWeight,
+      fontStyle: this.effectiveFontStyle,
+      textAlign: this.effectiveTextAlign,
+      color: this.effectiveColor,
+      padding: `${this.effectivePadding}px`,
+      width: this.dynamicWidth,
+      maxWidth: this.effectiveWidth && this.effectiveWidth > 0 ? `${this.effectiveWidth}px` : '300px'
+    };
+
+    if (this.effectiveHeight && this.effectiveHeight > 0) {
+      styles['height'] = `${this.effectiveHeight}px`;
+    }
+
+    if (this.effectiveBackgroundColor) {
+      styles['backgroundColor'] = this.effectiveBackgroundColor;
+    }
+
+    if (this.effectiveBorderColor && this.effectiveBorderWidth) {
+      styles['border'] = `${this.effectiveBorderWidth}px solid ${this.effectiveBorderColor}`;
+    }
+
+    return styles;
+  }
+
+  // Combined text styles (legacy - keeping for compatibility)
   get textStyles(): { [key: string]: string } {
     const styles: { [key: string]: string } = {
       fontSize: `${this.effectiveFontSize}px`,

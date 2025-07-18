@@ -344,39 +344,88 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     this.drawGrid();
   }
 
+  // Get actual text element dimensions from DOM
+  private getTextElementDimensions(textElement: any): { width: number, height: number } {
+    try {
+      // Find the text element using the specific data-text-id attribute
+      if (textElement.id) {
+        const textDiv = document.querySelector(`[data-text-id="${textElement.id}"]`) as HTMLElement;
+        if (textDiv) {
+          const rect = textDiv.getBoundingClientRect();
+          // Only use DOM dimensions if they're reasonable (not zero or tiny)
+          if (rect.width > 10 && rect.height > 5) {
+            // Convert screen pixels back to logical grid units by accounting for current zoom
+            const currentZoom = this.store.zoomLevel / 100;
+            return {
+              width: rect.width / currentZoom,
+              height: rect.height / currentZoom
+            };
+          }
+        }
+      }
+    } catch (error) {
+      // Fallback to estimation if DOM query fails
+    }
+    
+    // Fallback estimation
+    const fontSize = textElement.fontSize || 14;
+    const padding = (textElement.padding || 4) * 2;
+    
+    if (textElement.width && textElement.width > 0) {
+      const lineHeight = fontSize * 1.2;
+      const charWidth = fontSize * 0.6;
+      const effectiveWidth = textElement.width - padding;
+      const charsPerLine = Math.max(1, Math.floor(effectiveWidth / charWidth));
+      const estimatedLines = Math.max(1, Math.ceil((textElement.text?.length || 0) / charsPerLine));
+      
+      return {
+        width: textElement.width,
+        height: (estimatedLines * lineHeight) + padding
+      };
+    } else {
+      const estimatedWidth = Math.min((textElement.text?.length || 0) * fontSize * 0.6 + padding, 300);
+      return {
+        width: Math.max(estimatedWidth, 60),
+        height: fontSize * 1.2 + padding
+      };
+    }
+  }
+
   // Calculate selection indicator width for different table types
   getSelectionWidth(table: any): number {
     if (table.type === 'roundTable') {
       return table.radius * 2 + 80;
     } else if (table.type === 'seatingRow') {
-      // Calculate width based on actual element positions including label
+      // Simplified seating row width calculation
       const chairWidth = 20;
-      const padding = 40; // Padding on each side
-      const labelOffset = 60; // Row label is positioned 60px to the left
-
-      // Calculate the full width from row label to last chair
-      // Row label starts at -60 from table.x
-      // Last chair ends at table.x + (seatCount - 1) * seatSpacing + chairWidth
-      const labelToFirstChair = labelOffset;
-      const chairsWidth = (table.seatCount - 1) * table.seatSpacing + chairWidth;
-
-      // Total width: label offset + chairs width + padding on both sides
-      return labelToFirstChair + chairsWidth + (padding * 2);
+      const rowWidth = (table.seatCount - 1) * table.seatSpacing + chairWidth;
+      const labelWidth = 60; // Row label width
+      const padding = 20; // Reduced padding
+      return rowWidth + labelWidth + padding;
     } else if (table.type === 'line') {
       // For lines, calculate width based on line endpoints
       const dx = Math.abs(table.endX - table.startX);
-      const padding = 40; // Padding on each side
-      return Math.max(dx + padding, 60); // Minimum width of 60px
+      const padding = 20; // Reduced padding
+      return Math.max(dx + padding, 60);
     } else if (table.type === 'polygon') {
-      // For polygons, calculate width based on bounding box
+      // For polygons, calculate width based on bounding box with proper scaling
       const points = table.points;
       if (points.length === 0) return 60;
       const minX = Math.min(...points.map((p: any) => p.x));
       const maxX = Math.max(...points.map((p: any) => p.x));
-      const padding = 40; // Padding on each side
-      return Math.max(maxX - minX + padding, 60); // Minimum width of 60px
+      const padding = 20; // Reduced padding for tighter fit
+      return Math.max(maxX - minX + padding, 60);
+    } else if (table.type === 'rectangleTable') {
+      // Rectangle table with chairs
+      const padding = 60; // Account for chairs around the table
+      return table.width + padding;
+    } else if (table.type === 'text') {
+      // Text elements - get actual DOM dimensions with fallback
+      const dimensions = this.getTextElementDimensions(table);
+      const padding = 20;
+      return dimensions.width + padding;
     } else {
-      return table.width + 80;
+      return (table.width || 100) + 40; // Default padding for other types
     }
   }
 
@@ -385,59 +434,41 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     if (table.type === 'roundTable') {
       return table.radius * 2 + 80;
     } else if (table.type === 'seatingRow') {
-      return 60;
+      return 50; // Fixed height for seating rows
     } else if (table.type === 'line') {
       // For lines, calculate height based on line endpoints
       const dy = Math.abs(table.endY - table.startY);
-      const padding = 40; // Padding on each side
-      return Math.max(dy + padding, 60); // Minimum height of 60px
+      const padding = 20; // Reduced padding
+      return Math.max(dy + padding, 40);
     } else if (table.type === 'polygon') {
       // For polygons, calculate height based on bounding box
       const points = table.points;
       if (points.length === 0) return 60;
       const minY = Math.min(...points.map((p: any) => p.y));
       const maxY = Math.max(...points.map((p: any) => p.y));
-      const padding = 40; // Padding on each side
-      return Math.max(maxY - minY + padding, 60); // Minimum height of 60px
+      const padding = 20; // Reduced padding for tighter fit
+      return Math.max(maxY - minY + padding, 60);
+    } else if (table.type === 'rectangleTable') {
+      // Rectangle table with chairs
+      const padding = 60; // Account for chairs around the table
+      return table.height + padding;
+    } else if (table.type === 'text') {
+      // Text elements - get actual DOM dimensions with fallback
+      const dimensions = this.getTextElementDimensions(table);
+      const padding = 20;
+      return dimensions.height + padding;
     } else {
-      return table.height + 80;
+      return (table.height || 50) + 40; // Default padding for other types
     }
   }
 
   // Calculate selection indicator left position
   getSelectionLeft(table: any): number {
     if (table.type === 'seatingRow') {
-      // For seating rows, calculate the center position accounting for rotation
-      const chairWidth = 20;
-      const padding = 40;
-      const labelOffset = 60;
-      const rotation = table.rotation || 0;
-
-      const rowLabelX = table.x - labelOffset;
-      const lastChairX = table.x + (table.seatCount - 1) * table.seatSpacing;
-      const selectionStartX = rowLabelX - padding;
-      const selectionEndX = lastChairX + chairWidth + padding;
-
-      // Calculate center position accounting for rotation
-      if (Math.abs(rotation) < 0.01) {
-        // No rotation, use simple calculation
-        return (selectionStartX + selectionEndX) / 2;
-      } else {
-        // For rotated rows, calculate the actual visual center
-        const unrotatedCenterX = (selectionStartX + selectionEndX) / 2;
-        const unrotatedCenterY = table.y;
-        
-        // Calculate offset from rotation origin
-        const offsetX = unrotatedCenterX - table.x;
-        const offsetY = unrotatedCenterY - table.y;
-        
-        // Apply rotation transform
-        const rotationRad = rotation * Math.PI / 180;
-        const cos = Math.cos(rotationRad);
-        const sin = Math.sin(rotationRad);
-        
-        return table.x + (offsetX * cos - offsetY * sin);
-      }
+      // For seating rows, use simplified center calculation
+      const rowWidth = (table.seatCount - 1) * table.seatSpacing + 20; // chair width
+      const labelOffset = 30; // Half of label width
+      return table.x + (rowWidth / 2) - labelOffset;
     } else if (table.type === 'line') {
       // For lines, return the center point between start and end X coordinates
       return (table.startX + table.endX) / 2;
@@ -455,37 +486,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   // Calculate selection indicator top position
   getSelectionTop(table: any): number {
     if (table.type === 'seatingRow') {
-      // For seating rows, calculate the center position accounting for rotation
-      const chairWidth = 20;
-      const padding = 40;
-      const labelOffset = 60;
-      const rotation = table.rotation || 0;
-
-      const rowLabelX = table.x - labelOffset;
-      const lastChairX = table.x + (table.seatCount - 1) * table.seatSpacing;
-      const selectionStartX = rowLabelX - padding;
-      const selectionEndX = lastChairX + chairWidth + padding;
-
-      // Calculate center position accounting for rotation
-      if (Math.abs(rotation) < 0.01) {
-        // No rotation, use simple calculation
-        return table.y;
-      } else {
-        // For rotated rows, calculate the actual visual center
-        const unrotatedCenterX = (selectionStartX + selectionEndX) / 2;
-        const unrotatedCenterY = table.y;
-        
-        // Calculate offset from rotation origin
-        const offsetX = unrotatedCenterX - table.x;
-        const offsetY = unrotatedCenterY - table.y;
-        
-        // Apply rotation transform
-        const rotationRad = rotation * Math.PI / 180;
-        const cos = Math.cos(rotationRad);
-        const sin = Math.sin(rotationRad);
-        
-        return table.y + (offsetX * sin + offsetY * cos);
-      }
+      // For seating rows, simply use the row's Y position
+      return table.y;
     } else if (table.type === 'line') {
       // For lines, return the center point between start and end Y coordinates
       return (table.startY + table.endY) / 2;
@@ -1677,6 +1679,22 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
             type: 'row'
           };
         }
+        break;
+
+      case 'text':
+        // Calculate text selection box based on content
+        const textWidth = this.getSelectionWidth(element);
+        const textHeight = this.getSelectionHeight(element);
+        
+        box = {
+          id: element.id,
+          x: (element.x * zoom) + panX,
+          y: (element.y * zoom) + panY,
+          width: textWidth * zoom,
+          height: textHeight * zoom,
+          rotation: element.rotation || 0,
+          type: 'text'
+        };
         break;
     }
 
