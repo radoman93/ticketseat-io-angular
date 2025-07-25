@@ -26,6 +26,7 @@ import viewerStore from '../../stores/viewer.store';
 import { LoggerService } from '../../services/logger.service';
 import { CanvasSelectionRenderer, SelectionBox } from '../../services/canvas-selection-renderer.service';
 import { AlignmentGuideRenderer } from '../../services/alignment-guide-renderer.service';
+import { ElementBoundsService } from '../../services/element-bounds.service';
 import { MobXComponentBase } from '../../base/mobx-component.base';
 
 // Use union type for table positions  
@@ -93,7 +94,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     private segmentedSeatingRowService: SegmentedSeatingRowService,
     protected override logger: LoggerService,
     private canvasSelectionRenderer: CanvasSelectionRenderer,
-    private alignmentGuideRenderer: AlignmentGuideRenderer
+    private alignmentGuideRenderer: AlignmentGuideRenderer,
+    private elementBoundsService: ElementBoundsService
   ) { 
     super('GridComponent');
   }
@@ -406,113 +408,36 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
   // Calculate selection indicator width for different table types
   getSelectionWidth(table: any): number {
-    if (table.type === 'roundTable') {
-      return table.radius * 2 + 80;
-    } else if (table.type === 'seatingRow') {
-      // Simplified seating row width calculation
-      const chairWidth = 20;
-      const rowWidth = (table.seatCount - 1) * table.seatSpacing + chairWidth;
-      const labelWidth = 60; // Row label width
-      const padding = 20; // Reduced padding
-      return rowWidth + labelWidth + padding;
-    } else if (table.type === 'line') {
-      // For lines, calculate width based on line endpoints
-      const dx = Math.abs(table.endX - table.startX);
-      const padding = 20; // Reduced padding
-      return Math.max(dx + padding, 60);
-    } else if (table.type === 'polygon') {
-      // For polygons, calculate width based on bounding box with proper scaling
-      const points = table.points;
-      if (points.length === 0) return 60;
-      const minX = Math.min(...points.map((p: any) => p.x));
-      const maxX = Math.max(...points.map((p: any) => p.x));
-      const padding = 20; // Reduced padding for tighter fit
-      return Math.max(maxX - minX + padding, 60);
-    } else if (table.type === 'rectangleTable') {
-      // Rectangle table with chairs
-      const padding = 60; // Account for chairs around the table
-      return table.width + padding;
-    } else if (table.type === 'text') {
-      // Text elements - get actual DOM dimensions with fallback
-      const dimensions = this.getTextElementDimensions(table);
-      const padding = 20;
-      return dimensions.width + padding;
-    } else {
-      return (table.width || 100) + 40; // Default padding for other types
-    }
+    const bounds = this.elementBoundsService.getElementBounds(table);
+    // Use visual bounds that include chairs and other visual elements
+    const padding = 20; // Padding for selection box
+    // No need to scale by zoom - the parent container handles scaling
+    return bounds.visualRight - bounds.visualLeft + padding;
   }
 
   // Calculate selection indicator height for different table types
   getSelectionHeight(table: any): number {
-    if (table.type === 'roundTable') {
-      return table.radius * 2 + 80;
-    } else if (table.type === 'seatingRow') {
-      return 50; // Fixed height for seating rows
-    } else if (table.type === 'line') {
-      // For lines, calculate height based on line endpoints
-      const dy = Math.abs(table.endY - table.startY);
-      const padding = 20; // Reduced padding
-      return Math.max(dy + padding, 40);
-    } else if (table.type === 'polygon') {
-      // For polygons, calculate height based on bounding box
-      const points = table.points;
-      if (points.length === 0) return 60;
-      const minY = Math.min(...points.map((p: any) => p.y));
-      const maxY = Math.max(...points.map((p: any) => p.y));
-      const padding = 20; // Reduced padding for tighter fit
-      return Math.max(maxY - minY + padding, 60);
-    } else if (table.type === 'rectangleTable') {
-      // Rectangle table with chairs
-      const padding = 60; // Account for chairs around the table
-      return table.height + padding;
-    } else if (table.type === 'text') {
-      // Text elements - get actual DOM dimensions with fallback
-      const dimensions = this.getTextElementDimensions(table);
-      const padding = 20;
-      return dimensions.height + padding;
-    } else {
-      return (table.height || 50) + 40; // Default padding for other types
-    }
+    const bounds = this.elementBoundsService.getElementBounds(table);
+    // Use visual bounds that include chairs and other visual elements
+    const padding = 20; // Padding for selection box
+    // No need to scale by zoom - the parent container handles scaling
+    return bounds.visualBottom - bounds.visualTop + padding;
   }
 
   // Calculate selection indicator left position
   getSelectionLeft(table: any): number {
-    if (table.type === 'seatingRow') {
-      // For seating rows, use simplified center calculation
-      const rowWidth = (table.seatCount - 1) * table.seatSpacing + 20; // chair width
-      const labelOffset = 30; // Half of label width
-      return table.x + (rowWidth / 2) - labelOffset;
-    } else if (table.type === 'line') {
-      // For lines, return the center point between start and end X coordinates
-      return (table.startX + table.endX) / 2;
-    } else if (table.type === 'polygon') {
-      // For polygons, return the center point of the bounding box
-      const points = table.points;
-      if (points.length === 0) return table.x;
-      const minX = Math.min(...points.map((p: any) => p.x));
-      const maxX = Math.max(...points.map((p: any) => p.x));
-      return (minX + maxX) / 2;
-    }
-    return table.x;
+    const bounds = this.elementBoundsService.getElementBounds(table);
+    // For center-based positioning with translate(-50%, -50%)
+    // Return the center X coordinate
+    return bounds.centerX;
   }
 
   // Calculate selection indicator top position
   getSelectionTop(table: any): number {
-    if (table.type === 'seatingRow') {
-      // For seating rows, simply use the row's Y position
-      return table.y;
-    } else if (table.type === 'line') {
-      // For lines, return the center point between start and end Y coordinates
-      return (table.startY + table.endY) / 2;
-    } else if (table.type === 'polygon') {
-      // For polygons, return the center point of the bounding box
-      const points = table.points;
-      if (points.length === 0) return table.y;
-      const minY = Math.min(...points.map((p: any) => p.y));
-      const maxY = Math.max(...points.map((p: any) => p.y));
-      return (minY + maxY) / 2;
-    }
-    return table.y;
+    const bounds = this.elementBoundsService.getElementBounds(table);
+    // For center-based positioning with translate(-50%, -50%)
+    // Return the center Y coordinate
+    return bounds.centerY;
   }
 
   protected override onMobXDestroy(): void {
@@ -1561,94 +1486,58 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     // Calculate geometry based on element type
     switch (element.type) {
       case 'roundTable':
+        const roundBounds = this.elementBoundsService.getElementBounds(element);
         box = {
           id: element.id,
           x: (element.x * zoom) + panX,
           y: (element.y * zoom) + panY,
-          width: (element.radius * 2 + 80) * zoom,
-          height: (element.radius * 2 + 80) * zoom,
+          width: (roundBounds.visualRight - roundBounds.visualLeft + 10) * zoom,
+          height: (roundBounds.visualBottom - roundBounds.visualTop + 10) * zoom,
           rotation: element.rotation || 0,
           type: 'table'
         };
         break;
 
       case 'rectangleTable':
+        const rectBounds = this.elementBoundsService.getElementBounds(element);
         box = {
           id: element.id,
           x: (element.x * zoom) + panX,
           y: (element.y * zoom) + panY,
-          width: (element.width + 80) * zoom,
-          height: (element.height + 80) * zoom,
+          width: (rectBounds.visualRight - rectBounds.visualLeft + 10) * zoom,
+          height: (rectBounds.visualBottom - rectBounds.visualTop + 10) * zoom,
           rotation: element.rotation || 0,
           type: 'table'
         };
         break;
 
       case 'seatingRow':
-        const labelOffset = 60;
-        const chairWidth = 20;
-        const padding = 40;
-        const rotation = element.rotation || 0;
-        
-        // Calculate the unrotated bounding box dimensions
-        const rowLabelX = element.x - labelOffset;
-        const lastChairX = element.x + (element.seatCount - 1) * element.seatSpacing;
-        const selectionStartX = rowLabelX - padding;
-        const selectionEndX = lastChairX + chairWidth + padding;
-        const chairsWidth = (element.seatCount - 1) * element.seatSpacing + chairWidth;
-        const totalWidth = labelOffset + chairsWidth + (padding * 2);
-        const totalHeight = 60;
-        
-        // Calculate the center position accounting for rotation
-        let rowSelectionCenterX, rowSelectionCenterY;
-        if (Math.abs(rotation) < 0.01) {
-          // No rotation, use simple calculation
-          rowSelectionCenterX = (selectionStartX + selectionEndX) / 2;
-          rowSelectionCenterY = element.y;
-        } else {
-          // For rotated rows, calculate the actual visual center
-          // The row rotates around element.x, element.y
-          const unrotatedCenterX = (selectionStartX + selectionEndX) / 2;
-          const unrotatedCenterY = element.y;
-          
-          // Calculate offset from rotation origin
-          const offsetX = unrotatedCenterX - element.x;
-          const offsetY = unrotatedCenterY - element.y;
-          
-          // Apply rotation transform
-          const rotationRad = rotation * Math.PI / 180;
-          const cos = Math.cos(rotationRad);
-          const sin = Math.sin(rotationRad);
-          
-          rowSelectionCenterX = element.x + (offsetX * cos - offsetY * sin);
-          rowSelectionCenterY = element.y + (offsetX * sin + offsetY * cos);
-        }
+        const seatingBounds = this.elementBoundsService.getElementBounds(element);
+        const centerX = (seatingBounds.visualLeft + seatingBounds.visualRight) / 2;
+        const centerY = (seatingBounds.visualTop + seatingBounds.visualBottom) / 2;
         
         box = {
           id: element.id,
-          x: (rowSelectionCenterX * zoom) + panX,
-          y: (rowSelectionCenterY * zoom) + panY,
-          width: totalWidth * zoom,
-          height: totalHeight * zoom,
-          rotation: rotation,
+          x: (centerX * zoom) + panX,
+          y: (centerY * zoom) + panY,
+          width: (seatingBounds.visualRight - seatingBounds.visualLeft + 10) * zoom,
+          height: (seatingBounds.visualBottom - seatingBounds.visualTop + 10) * zoom,
+          rotation: element.rotation || 0,
           type: 'row'
         };
         break;
 
       case 'line':
-        const lineLength = Math.sqrt(
-          Math.pow(element.endX - element.startX, 2) + 
-          Math.pow(element.endY - element.startY, 2)
-        );
-        const centerX = ((element.startX + element.endX) / 2 * zoom) + panX;
-        const centerY = ((element.startY + element.endY) / 2 * zoom) + panY;
+        const lineBounds = this.elementBoundsService.getElementBounds(element);
+        const lineCenterX = (lineBounds.visualLeft + lineBounds.visualRight) / 2;
+        const lineCenterY = (lineBounds.visualTop + lineBounds.visualBottom) / 2;
         
         box = {
           id: element.id,
-          x: centerX,
-          y: centerY,
-          width: (lineLength + 20) * zoom,
-          height: 40 * zoom,
+          x: (lineCenterX * zoom) + panX,
+          y: (lineCenterY * zoom) + panY,
+          width: (lineBounds.visualRight - lineBounds.visualLeft + 10) * zoom,
+          height: (lineBounds.visualBottom - lineBounds.visualTop + 10) * zoom,
           rotation: Math.atan2(
             element.endY - element.startY, 
             element.endX - element.startX
@@ -1659,19 +1548,16 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
       case 'polygon':
         if (element.points && element.points.length > 0) {
-          const xs = element.points.map((p: any) => p.x);
-          const ys = element.points.map((p: any) => p.y);
-          const minX = Math.min(...xs);
-          const maxX = Math.max(...xs);
-          const minY = Math.min(...ys);
-          const maxY = Math.max(...ys);
+          const polygonBounds = this.elementBoundsService.getElementBounds(element);
+          const polygonCenterX = (polygonBounds.visualLeft + polygonBounds.visualRight) / 2;
+          const polygonCenterY = (polygonBounds.visualTop + polygonBounds.visualBottom) / 2;
           
           box = {
             id: element.id,
-            x: (((minX + maxX) / 2) * zoom) + panX,
-            y: (((minY + maxY) / 2) * zoom) + panY,
-            width: ((maxX - minX) + 40) * zoom,
-            height: ((maxY - minY) + 40) * zoom,
+            x: (polygonCenterX * zoom) + panX,
+            y: (polygonCenterY * zoom) + panY,
+            width: (polygonBounds.visualRight - polygonBounds.visualLeft + 10) * zoom,
+            height: (polygonBounds.visualBottom - polygonBounds.visualTop + 10) * zoom,
             rotation: 0,
             type: 'polygon'
           };
@@ -1679,19 +1565,20 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         break;
 
       case 'segmentedSeatingRow':
-        // Use existing method for complex geometry
-        if (element.segments && element.segments.length > 0) {
-          const boundingBox = this.calculateSegmentedRowBoundingBox(element);
-          box = {
-            id: element.id,
-            x: (boundingBox.centerX * zoom) + panX,
-            y: (boundingBox.centerY * zoom) + panY,
-            width: (boundingBox.width + 40) * zoom,
-            height: (boundingBox.height + 40) * zoom,
-            rotation: element.rotation || 0,
-            type: 'row'
-          };
-        }
+        // Use ElementBoundsService for consistent bounds calculation
+        const segmentedBounds = this.elementBoundsService.getElementBounds(element);
+        const segmentedCenterX = (segmentedBounds.visualLeft + segmentedBounds.visualRight) / 2;
+        const segmentedCenterY = (segmentedBounds.visualTop + segmentedBounds.visualBottom) / 2;
+        
+        box = {
+          id: element.id,
+          x: (segmentedCenterX * zoom) + panX,
+          y: (segmentedCenterY * zoom) + panY,
+          width: (segmentedBounds.visualRight - segmentedBounds.visualLeft + 10) * zoom,
+          height: (segmentedBounds.visualBottom - segmentedBounds.visualTop + 10) * zoom,
+          rotation: element.rotation || 0,
+          type: 'row'
+        };
         break;
 
       case 'text':

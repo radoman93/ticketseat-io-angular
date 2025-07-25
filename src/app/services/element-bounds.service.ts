@@ -112,7 +112,9 @@ export class ElementBoundsService {
    * Round table bounds calculation
    */
   private getRoundTableBounds(element: RoundTableProperties): ElementBounds {
-    const chairPadding = 40; // Space for chairs
+    const chairOffset = 25; // Distance from table edge  
+    const chairRadius = 10; // Approximate chair radius
+    const chairPadding = chairOffset + chairRadius + 10; // Total padding needed
     const visualRadius = element.radius + chairPadding;
     
     return {
@@ -148,7 +150,9 @@ export class ElementBoundsService {
    * Rectangle table bounds calculation
    */
   private getRectangleTableBounds(element: RectangleTableProperties): ElementBounds {
-    const chairPadding = 40;
+    const chairOffset = 25; // Distance from table edge (from rectangle-table.component.ts)
+    const chairRadius = 10; // Approximate chair radius
+    const chairPadding = chairOffset + chairRadius + 10; // Total padding needed
     const halfWidth = element.width / 2;
     const halfHeight = element.height / 2;
     const visualHalfWidth = halfWidth + chairPadding;
