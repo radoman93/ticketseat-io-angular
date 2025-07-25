@@ -9,7 +9,8 @@
 
   <!-- Display all tables with position adjusted for pan offset and zoom -->
   <div class="table-container"
-    [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'">
+    [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'"
+    [style.transform-origin]="'0 0'">
     <!-- Tables from MobX store -->
     <div *ngFor="let table of layoutStore.elements" (mousedown)="selectTable(table, $event)" class="selection-container"
       [class.draggable]="!viewerStore.isViewerMode && toolStore.activeTool !== ToolType.RoundTable"
