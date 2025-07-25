@@ -17,6 +17,7 @@ import { toolStore } from '../../stores/tool.store';
 import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { dragStore } from '../../stores/drag.store';
+import { snappingStore } from '../../stores/snapping.store';
 import { rootStore } from '../../stores/root.store';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
@@ -24,6 +25,7 @@ import { SegmentedSeatingRowService } from '../../services/segmented-seating-row
 import viewerStore from '../../stores/viewer.store';
 import { LoggerService } from '../../services/logger.service';
 import { CanvasSelectionRenderer, SelectionBox } from '../../services/canvas-selection-renderer.service';
+import { AlignmentGuideRenderer } from '../../services/alignment-guide-renderer.service';
 import { MobXComponentBase } from '../../base/mobx-component.base';
 
 // Use union type for table positions  
@@ -55,6 +57,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   layoutStore = layoutStore;
   dragStore = dragStore;
   viewerStore = viewerStore;
+  snappingStore = snappingStore;
 
   // Make enum available in template
   ToolType = ToolType;
@@ -89,13 +92,15 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     private historyStore: HistoryStore,
     private segmentedSeatingRowService: SegmentedSeatingRowService,
     protected override logger: LoggerService,
-    private canvasSelectionRenderer: CanvasSelectionRenderer
+    private canvasSelectionRenderer: CanvasSelectionRenderer,
+    private alignmentGuideRenderer: AlignmentGuideRenderer
   ) { 
     super('GridComponent');
   }
 
   @ViewChild('gridCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('selectionCanvas') selectionCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('alignmentCanvas') alignmentCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('gridContainer') gridContainerRef!: ElementRef<HTMLDivElement>;
   private ctx!: CanvasRenderingContext2D;
 
@@ -267,8 +272,16 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     // Initialize selection canvas renderer
     this.initializeSelectionCanvas();
 
+    // Initialize alignment guide renderer with a small delay to ensure canvas is ready
+    setTimeout(() => {
+      this.initializeAlignmentCanvas();
+    }, 100);
+
     // Set up selection state watching
     this.setupSelectionWatcher();
+
+    // Set up alignment guide watching
+    this.setupAlignmentGuideWatcher();
   }
 
   //The idea is to make large canvas and have it contained within grid-container
@@ -1756,10 +1769,85 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   onWindowResize(): void {
     this.setCanvasSize();
     this.updateSelectionCanvasSize();
+    this.updateAlignmentCanvasSize();
     
     // Redraw after resize
     this.drawGrid();
     this.updateCanvasSelections();
+    this.updateAlignmentGuides();
+  }
+
+  /**
+   * Initialize the alignment guide canvas renderer
+   */
+  private initializeAlignmentCanvas(): void {
+    if (!this.alignmentCanvasRef) return;
+
+    const alignmentCanvas = this.alignmentCanvasRef.nativeElement;
+    this.alignmentGuideRenderer.initializeCanvas(alignmentCanvas);
+
+    // Match canvas size to container
+    this.updateAlignmentCanvasSize();
+
+    this.logger.debug('Alignment canvas initialized', {
+      component: 'GridComponent',
+      action: 'initializeAlignmentCanvas'
+    });
+  }
+
+  /**
+   * Update alignment canvas size to match container
+   */
+  private updateAlignmentCanvasSize(): void {
+    if (this.alignmentCanvasRef && this.gridContainerRef) {
+      const container = this.gridContainerRef.nativeElement;
+      this.alignmentGuideRenderer.resizeCanvas(container.clientWidth, container.clientHeight);
+    }
+  }
+
+  /**
+   * Set up MobX reactions to watch alignment guide state changes
+   */
+  private setupAlignmentGuideWatcher(): void {
+    // React to active guides changes
+    this.createAutorun(() => {
+      // Watch snapping store active guides
+      const guides = this.snappingStore.activeGuides;
+      guides.length; // Access to make MobX track it
+      
+      this.updateAlignmentGuides();
+    }, 'alignment-guides-changes');
+
+    // React to grid transform changes (pan/zoom)
+    this.createAutorun(() => {
+      if (this.snappingStore.activeGuides.length > 0) {
+        this.store.panOffset.x;
+        this.store.panOffset.y;
+        this.store.zoomLevel;
+        
+        this.updateAlignmentGuides();
+      }
+    }, 'alignment-grid-transform-changes');
+
+    this.logger.debug('Alignment guide watcher setup complete', {
+      component: 'GridComponent',
+      action: 'setupAlignmentGuideWatcher'
+    });
+  }
+
+  /**
+   * Update alignment guides rendering
+   */
+  private updateAlignmentGuides(): void {
+    if (!this.alignmentGuideRenderer || viewerStore.isViewerMode) {
+      return;
+    }
+
+    const guides = this.snappingStore.activeGuides;
+    const zoom = this.store.zoomLevel / 100;
+    const pan = this.store.panOffset;
+
+    this.alignmentGuideRenderer.renderGuides(guides, zoom, pan);
   }
 
 }

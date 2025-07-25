@@ -4,6 +4,8 @@
   <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full" style="will-change: transform; transform: translateZ(0);"></canvas>
   <!-- Canvas overlay for selection rendering -->
   <canvas #selectionCanvas class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10; will-change: transform; transform: translateZ(0);"></canvas>
+  <!-- Canvas overlay for alignment guides -->
+  <canvas #alignmentCanvas class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 11; will-change: transform; transform: translateZ(0);"></canvas>
 
   <!-- Display all tables with position adjusted for pan offset and zoom -->
   <div class="table-container"

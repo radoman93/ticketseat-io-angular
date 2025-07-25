@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { gridStore } from '../../../stores/grid.store';
 import { layoutStore } from '../../../stores/layout.store';
 import { selectionStore } from '../../../stores/selection.store';
+import { snappingStore } from '../../../stores/snapping.store';
 import { HistoryStore } from '../../../stores/history.store';
 import { MobxAngularModule } from 'mobx-angular';
 import { FormsModule } from '@angular/forms';
@@ -21,6 +22,7 @@ export class TopToolbarComponent implements OnInit {
   store = gridStore;
   layoutStore = layoutStore;
   selectionStore = selectionStore;
+  snappingStore = snappingStore;
   historyStore: HistoryStore;
   
   gridSizes = [25, 50, 75, 100];

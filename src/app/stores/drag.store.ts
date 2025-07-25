@@ -2,6 +2,7 @@ import { action, makeAutoObservable, runInAction } from 'mobx';
 import { layoutStore } from './layout.store';
 import { gridStore } from './grid.store';
 import { selectionStore } from './selection.store';
+import { snappingStore } from './snapping.store';
 import { MoveObjectCommand } from '../commands/move-object.command';
 import { HistoryStore } from './history.store';
 import { SegmentProperties } from '../models/elements.model';
@@ -31,6 +32,14 @@ export class DragStore {
 
     // Track when dragging has just ended (to prevent immediate deselection)
     justEndedDragging = false;
+    
+    // Movement threshold for snapped objects
+    private movementThreshold = 5; // pixels - base threshold
+    private unsnapThreshold = 12; // pixels - higher threshold for breaking snap
+    private hasExceededThreshold = false;
+    private accumulatedDeltaX = 0;
+    private accumulatedDeltaY = 0;
+    private wasSnappedOnStart = false;
 
     private logger: LoggerService;
 
@@ -52,6 +61,15 @@ export class DragStore {
      */
     resetJustEndedDragging = action('resetJustEndedDragging', () => {
         this.justEndedDragging = false;
+    });
+    
+    /**
+     * Set movement threshold for snapped objects
+     */
+    setMovementThreshold = action('setMovementThreshold', (threshold: number) => {
+        this.movementThreshold = Math.max(0, Math.min(20, threshold)); // Clamp between 0-20 pixels
+        // Unsnap threshold is always higher than movement threshold
+        this.unsnapThreshold = Math.max(this.movementThreshold + 5, this.movementThreshold * 2);
     });
 
     /**
@@ -103,6 +121,7 @@ export class DragStore {
             this.startElementX = item['x'];
             this.startElementY = item['y'];
         }
+        
     });
 
     /**
@@ -143,6 +162,23 @@ export class DragStore {
 
         // Ensure item is selected
         selectionStore.selectItem(this.draggedItem);
+        
+        // Reset movement threshold tracking
+        this.hasExceededThreshold = false;
+        this.accumulatedDeltaX = 0;
+        this.accumulatedDeltaY = 0;
+        
+        // Check if element is currently snapped by detecting snap targets at current position
+        if (snappingStore.config.enableSnapping && this.draggedItem) {
+            const currentSnapResult = snappingStore.detectSnapTargets(
+                this.draggedItem, 
+                this.startElementX, 
+                this.startElementY
+            );
+            this.wasSnappedOnStart = currentSnapResult.guides.length > 0;
+        } else {
+            this.wasSnappedOnStart = false;
+        }
     });
 
     /**
@@ -155,23 +191,71 @@ export class DragStore {
         if (!this.isDragging || !this.draggedItem) return;
 
         // Calculate the mouse movement delta
-        const dx = mouseX - this.startMouseX;
-        const dy = mouseY - this.startMouseY;
+        let dx = mouseX - this.startMouseX;
+        let dy = mouseY - this.startMouseY;
 
         // Account for zoom level
         const zoomFactor = gridStore.zoomLevel / 100;
-        const canvasDx = dx / zoomFactor;
-        const canvasDy = dy / zoomFactor;
+        let canvasDx = dx / zoomFactor;
+        let canvasDy = dy / zoomFactor;
+        
+        // Apply movement threshold logic
+        if (!this.hasExceededThreshold) {
+            // Accumulate the movement
+            this.accumulatedDeltaX = canvasDx;
+            this.accumulatedDeltaY = canvasDy;
+            
+            // Calculate the total movement distance
+            const totalMovement = Math.sqrt(
+                this.accumulatedDeltaX * this.accumulatedDeltaX + 
+                this.accumulatedDeltaY * this.accumulatedDeltaY
+            );
+            
+            // Use higher threshold if element was snapped to prevent easy unsnapping
+            const effectiveThreshold = this.wasSnappedOnStart ? this.unsnapThreshold : this.movementThreshold;
+            
+            // Check if threshold has been exceeded
+            if (totalMovement < effectiveThreshold) {
+                // Don't move the object yet
+                // Clear guides to show element is "locked" in place
+                snappingStore.setActiveGuides([]);
+                return;
+            }
+            
+            // Threshold exceeded, reset reference points to current position
+            this.hasExceededThreshold = true;
+            
+            // Reset the mouse start position to current mouse position
+            // This prevents jumping - the element will start moving from its current position
+            this.startMouseX = mouseX;
+            this.startMouseY = mouseY;
+            
+            // Since we reset mouse position, recalculate deltas
+            dx = 0;
+            dy = 0;
+            canvasDx = 0;
+            canvasDy = 0;
+        }
 
         // Calculate proposed new position
         let newX = this.startElementX + canvasDx;
         let newY = this.startElementY + canvasDy;
 
-        // Apply snap-to-grid if enabled
-        if (gridStore.snapToGrid) {
+        // Apply element-to-element snapping if enabled
+        if (snappingStore.config.enableSnapping) {
+            const snapResult = snappingStore.detectSnapTargets(this.draggedItem, newX, newY);
+            newX = snapResult.x;
+            newY = snapResult.y;
+            snappingStore.setActiveGuides(snapResult.guides);
+        } 
+        // Apply grid snapping only if element snapping is disabled or didn't occur
+        else if (gridStore.snapToGrid) {
             const snapped = gridStore.snapCoordinateToGrid(newX, newY);
             newX = snapped.x;
             newY = snapped.y;
+            snappingStore.setActiveGuides([]); // Clear guides when grid snapping
+        } else {
+            snappingStore.setActiveGuides([]); // Clear guides when no snapping
         }
 
         // Batch all updates using runInAction for better performance
@@ -326,6 +410,10 @@ export class DragStore {
         // Set the flag to prevent immediate deselection
         this.justEndedDragging = true;
 
+        // Clear snapping guides and snap state
+        snappingStore.setActiveGuides([]);
+        snappingStore.clearSnapState();
+
         // Reset the flag after a short delay
         setTimeout(() => {
             this.resetJustEndedDragging();
@@ -365,6 +453,10 @@ export class DragStore {
         this.draggedItem = null;
         this.potentialDragItem = null;
         this.originalPoints = [];
+        
+        // Clear snapping guides and snap state
+        snappingStore.setActiveGuides([]);
+        snappingStore.clearSnapState();
     });
 }
 

@@ -47,6 +47,19 @@
              class="toggle toggle-sm toggle-secondary" />
     </div>
 
+    <!-- Snap to Objects Toggle -->
+    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+      </svg>
+      <label for="snap-to-objects" class="text-sm font-medium text-gray-700 cursor-pointer">Snap to Objects</label>
+      <input type="checkbox"
+             id="snap-to-objects"
+             [checked]="snappingStore.config.enableSnapping"
+             (change)="snappingStore.toggleSnapping()"
+             class="toggle toggle-sm toggle-info" />
+    </div>
+
     <!-- Undo/Redo -->
     <div class="flex items-center gap-1 rounded-lg bg-gray-50 p-1">
       <button (click)="historyStore.undo()"
@@ -134,6 +147,13 @@
            [checked]="store.snapToGrid"
            (change)="store.toggleSnapToGrid()"
            class="toggle toggle-sm toggle-warning" />
+  </div>
+  <div class="flex items-center justify-between" *mobxAutorun>
+    <span class="text-sm font-medium text-gray-700">Snap to Objects:</span>
+    <input type="checkbox"
+           [checked]="snappingStore.config.enableSnapping"
+           (change)="snappingStore.toggleSnapping()"
+           class="toggle toggle-sm toggle-info" />
   </div>
 
   <!-- Mobile Action Buttons -->

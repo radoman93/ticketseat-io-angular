@@ -1,9 +1,10 @@
-import { makeAutoObservable, action } from 'mobx';
+import { makeAutoObservable, action, reaction } from 'mobx';
 import { LayoutStore, layoutStore } from './layout.store';
 import { SelectionStore, selectionStore } from './selection.store';
 import { ToolStore, toolStore } from './tool.store';
 import { GridStore, gridStore } from './grid.store';
 import { ChairStore, chairStore } from './chair.store';
+import { SnappingStore, snappingStore } from './snapping.store';
 import { LayoutMetricsStore, layoutMetricsStore } from './derived/layout-metrics.store';
 import { TransactionManager, transactionManager } from './transaction.manager';
 import { PersistenceManager, persistenceManager } from './persistence.manager';
@@ -22,6 +23,7 @@ export class RootStore {
   gridStore: GridStore;
   chairStore: ChairStore;
   viewerStore: ViewerStore;
+  snappingStore: SnappingStore;
   
   // Derived stores
   layoutMetricsStore: LayoutMetricsStore;
@@ -38,6 +40,7 @@ export class RootStore {
     this.gridStore = gridStore;
     this.chairStore = chairStore;
     this.viewerStore = viewerStore;
+    this.snappingStore = snappingStore;
     
     // Derived stores
     this.layoutMetricsStore = layoutMetricsStore;
@@ -65,6 +68,22 @@ export class RootStore {
     this.selectionStore.registerDeleteHandler((item) => {
       this.layoutStore.deleteElement(item.id);
     });
+    
+    // Set up snapping store reactions
+    this.setupSnappingReactions();
+  }
+  
+  private setupSnappingReactions() {
+    // Rebuild spatial index when elements are added/removed
+    reaction(
+      () => this.layoutStore.elements.length,
+      () => {
+        this.snappingStore.rebuildSpatialIndex();
+      }
+    );
+    
+    // Update spatial index when elements move (after drag ends)
+    // This is handled in the drag store when endDragging is called
   }
   
   // Helper method to reset application state
