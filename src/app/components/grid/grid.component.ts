@@ -21,6 +21,7 @@ import { snappingStore } from '../../stores/snapping.store';
 import { rootStore } from '../../stores/root.store';
 import { HistoryStore } from '../../stores/history.store';
 import { AddObjectCommand } from '../../commands/add-object.command';
+import { ReorderElementCommand } from '../../commands/reorder-element.command';
 import { SegmentedSeatingRowService } from '../../services/segmented-seating-row.service';
 import viewerStore from '../../stores/viewer.store';
 import { LoggerService } from '../../services/logger.service';
@@ -88,6 +89,12 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   isDrawingPolygon: boolean = false;
   polygonPoints: Array<{x: number, y: number}> = [];
   isHoveringStartPoint: boolean = false;
+
+  // Context menu state
+  showContextMenuFlag: boolean = false;
+  contextMenuX: number = 0;
+  contextMenuY: number = 0;
+  contextMenuElement: any = null;
 
   constructor(
     private historyStore: HistoryStore,
@@ -455,8 +462,34 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     });
   }
 
+  @HostListener('contextmenu', ['$event'])
+  onContextMenu(event: MouseEvent): void {
+    // Prevent default context menu
+    event.preventDefault();
+    
+    // Don't show context menu in viewer mode
+    if (this.viewerStore.isViewerMode) {
+      return;
+    }
+    
+    // Get element at click position
+    const element = this.getElementAtPosition(event.clientX, event.clientY);
+    if (element) {
+      // Select the element
+      this.selectionStore.selectItem(element.id);
+      
+      // Show context menu
+      this.showContextMenu(event.clientX, event.clientY, element);
+    }
+  }
+
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
+    // Hide context menu on any mouse down
+    if (this.showContextMenuFlag) {
+      this.showContextMenuFlag = false;
+    }
+    
     // Allow panning in viewer mode, but disable table manipulation and creation
     if (this.viewerStore.isViewerMode) {
       if (event.button === 1 || event.button === 0) {
@@ -1061,6 +1094,13 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     // Also prevent any click event from bubbling up
     if (event.type === 'mousedown') {
       const mousedownEvent = event as MouseEvent;
+      
+      // Only handle left mouse button for selection and dragging
+      // Right mouse button is handled by onContextMenu
+      if (mousedownEvent.button !== 0) {
+        return;
+      }
+      
       // Create a one-time click event handler to stop propagation
       const clickHandler = (e: Event) => {
         e.stopPropagation();
@@ -1087,8 +1127,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
     // Get the mouse event if available
     const mouseEvent = event as MouseEvent;
-    if (mouseEvent && mouseEvent.clientX && mouseEvent.clientY) {
-      // Only prepare for dragging by setting the potential drag item
+    if (mouseEvent && mouseEvent.clientX && mouseEvent.clientY && mouseEvent.button === 0) {
+      // Only prepare for dragging by setting the potential drag item on left click
       this.dragStore.prepareForDragging(
         table,
         mouseEvent.clientX,
@@ -1648,6 +1688,92 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
   // Control whether to use canvas-based selection rendering (public for template access)
   public useCanvasSelection: boolean = true;
+
+  /**
+   * Get element at specific screen position
+   */
+  private getElementAtPosition(screenX: number, screenY: number): any {
+    // Convert screen coordinates to grid coordinates
+    const rect = this.gridContainerRef.nativeElement.getBoundingClientRect();
+    const x = screenX - rect.left;
+    const y = screenY - rect.top;
+    
+    // Account for pan and zoom
+    const worldX = (x - this.store.panOffset.x) / (this.store.zoomLevel / 100);
+    const worldY = (y - this.store.panOffset.y) / (this.store.zoomLevel / 100);
+    
+    // Check elements in reverse order (top to bottom)
+    const elements = [...this.layoutStore.elements].reverse();
+    
+    for (const element of elements) {
+      const bounds = this.elementBoundsService.getElementBounds(element);
+      
+      if (worldX >= bounds.left && worldX <= bounds.right &&
+          worldY >= bounds.top && worldY <= bounds.bottom) {
+        return element;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Show context menu at position
+   */
+  private showContextMenu(x: number, y: number, element: any): void {
+    this.contextMenuX = x;
+    this.contextMenuY = y;
+    this.contextMenuElement = element;
+    this.showContextMenuFlag = true;
+    
+    // Hide context menu when clicking elsewhere
+    const hideMenu = () => {
+      this.showContextMenuFlag = false;
+      document.removeEventListener('click', hideMenu);
+    };
+    
+    setTimeout(() => {
+      document.addEventListener('click', hideMenu);
+    }, 100);
+  }
+
+  /**
+   * Send element forward in z-order
+   */
+  sendElementForward(): void {
+    if (!this.contextMenuElement) return;
+    
+    const currentIndex = this.layoutStore.elements.findIndex(e => e.id === this.contextMenuElement.id);
+    if (currentIndex < this.layoutStore.elements.length - 1) {
+      const command = new ReorderElementCommand(
+        this.contextMenuElement.id,
+        currentIndex,
+        currentIndex + 1
+      );
+      this.historyStore.executeCommand(command);
+    }
+    
+    this.showContextMenuFlag = false;
+  }
+
+  /**
+   * Send element backward in z-order
+   */
+  sendElementBackward(): void {
+    if (!this.contextMenuElement) return;
+    
+    const currentIndex = this.layoutStore.elements.findIndex(e => e.id === this.contextMenuElement.id);
+    if (currentIndex > 0) {
+      const command = new ReorderElementCommand(
+        this.contextMenuElement.id,
+        currentIndex,
+        currentIndex - 1
+      );
+      this.historyStore.executeCommand(command);
+    }
+    
+    this.showContextMenuFlag = false;
+  }
 
   /**
    * Handle window resize to update canvas sizes

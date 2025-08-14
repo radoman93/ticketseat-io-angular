@@ -276,3 +276,26 @@
     <button (click)="store.adjustZoom(5)" class="btn btn-sm btn-ghost">+</button>
   </div>
 </div>
+
+<!-- Context Menu -->
+<div *ngIf="showContextMenuFlag" 
+     class="fixed bg-white shadow-lg rounded-md py-1 z-50 min-w-[160px]"
+     [style.left.px]="contextMenuX"
+     [style.top.px]="contextMenuY">
+  <button (click)="sendElementForward()" 
+          class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M5 15l7-7 7 7"></path>
+    </svg>
+    Send Forward
+  </button>
+  <button (click)="sendElementBackward()" 
+          class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M19 9l-7 7-7-7"></path>
+    </svg>
+    Send Backward
+  </button>
+</div>

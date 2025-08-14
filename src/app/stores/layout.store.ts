@@ -25,7 +25,8 @@ export class LayoutStore {
       addElement: action,
       updateElement: action,
       deleteElement: action,
-      clearAll: action
+      clearAll: action,
+      swapElements: action
     });
   }
 
@@ -158,6 +159,18 @@ export class LayoutStore {
   clearAll = action('clearAll', () => {
     this.elements = [];
     this.lastAddedId = null;
+  });
+
+  // Method to swap elements in the array (for z-order management)
+  swapElements = action('swapElements', (index1: number, index2: number) => {
+    if (index1 < 0 || index1 >= this.elements.length || 
+        index2 < 0 || index2 >= this.elements.length) {
+      return;
+    }
+    
+    const temp = this.elements[index1];
+    this.elements[index1] = this.elements[index2];
+    this.elements[index2] = temp;
   });
 
   // Method to check if an element exists
