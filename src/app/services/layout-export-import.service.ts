@@ -3,6 +3,7 @@ import { layoutStore } from '../stores/layout.store';
 import { gridStore } from '../stores/grid.store';
 import { rootStore } from '../stores/root.store';
 import { Chair } from '../models/chair.model';
+import { toJS } from '../utils/serialization.util';
 
 export interface LayoutExportData {
   meta: {
@@ -36,7 +37,8 @@ export class LayoutExportImportService {
    * Export the current layout to a JSON object
    */
   exportLayout(name: string, description?: string): LayoutExportData {
-    const chairs = Array.from(rootStore.chairStore.chairs.values());
+    // Convert MobX chairs to plain objects
+    const chairs = toJS(Array.from(rootStore.chairStore.chairs.values()));
 
     // Group chairs by their parent element
     const chairsByElement = new Map<string, Chair[]>();
@@ -47,11 +49,11 @@ export class LayoutExportImportService {
       chairsByElement.get(chair.tableId)!.push(chair);
     });
 
-    // Create elements with their chairs nested
-    const elementsWithChairs = layoutStore.elements.map(element => {
+    // Create elements with their chairs nested - convert all MobX proxies to plain objects
+    const elementsWithChairs = toJS(layoutStore.elements).map(element => {
       // Lines, polygons, and text elements don't have chairs, so only add chairs for table elements
       if (element.type === 'line' || element.type === 'polygon' || element.type === 'text') {
-        return { ...element };
+        return element;
       }
       
       const elementChairs = chairsByElement.get(element.id) || [];
@@ -77,7 +79,8 @@ export class LayoutExportImportService {
       elements: elementsWithChairs
     };
 
-    return exportData;
+    // Return completely serialized data
+    return toJS(exportData);
   }
 
   /**
@@ -85,6 +88,7 @@ export class LayoutExportImportService {
    */
   downloadLayout(name: string, description?: string): void {
     const exportData = this.exportLayout(name, description);
+    // exportData is already serialized by exportLayout, but we'll use toJSONString for consistency
     const jsonString = JSON.stringify(exportData, null, 2);
 
     const blob = new Blob([jsonString], { type: 'application/json' });

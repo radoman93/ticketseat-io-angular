@@ -63,7 +63,9 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
 
         // Export and emit the updated layout
         const layoutData = this.layoutImportService.exportLayout('current-layout');
+
         this.layoutUpdated.emit(layoutData);
+        console.log(layoutData)
       })
     );
   }
