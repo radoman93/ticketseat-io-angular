@@ -127,8 +127,11 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
     this.selectionReactionDisposer = reaction(
       () => this.viewerStore.selectedSeatsForReservation.slice(), // Observe the selection array
       (selectedSeatIds) => {
-        const selectedChairs = this.getSelectedChairObjects(selectedSeatIds);
-        this.selectedSeatsChange.emit(selectedChairs);
+        // Only emit if the change is user-initiated, not programmatic
+        if (!this.viewerStore.isProgrammaticUpdate) {
+          const selectedChairs = this.getSelectedChairObjects(selectedSeatIds);
+          this.selectedSeatsChange.emit(selectedChairs);
+        }
       }
     );
   }

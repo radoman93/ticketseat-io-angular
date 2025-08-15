@@ -1,4 +1,4 @@
-import { makeAutoObservable, action, computed, observable } from 'mobx';
+import { makeAutoObservable, action, computed, observable, runInAction } from 'mobx';
 import { Chair } from '../models/chair.model';
 
 export type AppMode = 'editor' | 'viewer';
@@ -17,6 +17,7 @@ export class ViewerStore {
   customerInfo: { name: string; email?: string; phone?: string } = { name: '' };
   notifications: Notification[] = [];
   seatLimit: number | null = 0; // 0 means unlimited, null means no limit set (same as 0)
+  private isUpdatingProgrammatically: boolean = false; // Track if changes are programmatic vs user-initiated
 
   constructor() {
     makeAutoObservable(this, {
@@ -84,11 +85,21 @@ export class ViewerStore {
   }
 
   setPreReservedSeats(seatIds: string[]): void {
-    this.preReservedSeats = [...seatIds];
-    // Remove any pre-reserved seats from current selection
-    this.selectedSeatsForReservation = this.selectedSeatsForReservation.filter(
-      id => !this.preReservedSeats.includes(id)
-    );
+    runInAction(() => {
+      this.preReservedSeats = [...seatIds];
+      // Remove any pre-reserved seats from current selection
+      // Mark as programmatic update to prevent selectedSeatsChange event emission
+      this.isUpdatingProgrammatically = true;
+      this.selectedSeatsForReservation = this.selectedSeatsForReservation.filter(
+        id => !this.preReservedSeats.includes(id)
+      );
+      // Reset flag on next tick to ensure the reaction has time to check it
+      Promise.resolve().then(() => {
+        runInAction(() => {
+          this.isUpdatingProgrammatically = false;
+        });
+      });
+    });
   }
 
   isPreReservedSeat(chairId: string): boolean {
@@ -96,17 +107,27 @@ export class ViewerStore {
   }
 
   setSeatLimit(limit: number | null): void {
-    this.seatLimit = limit;
+    runInAction(() => {
+      this.seatLimit = limit;
 
-    // If setting a limit > 0 and current selection exceeds it, truncate selection
-    if (limit !== null && limit > 0 && this.selectedSeatsForReservation.length > limit) {
-      // Keep only the first 'limit' number of selected seats
-      this.selectedSeatsForReservation = this.selectedSeatsForReservation.slice(0, limit);
-      this.addNotification({
-        message: `Selection reduced to ${limit} seat(s) due to seat limit`,
-        type: 'info'
-      });
-    }
+      // If setting a limit > 0 and current selection exceeds it, truncate selection
+      if (limit !== null && limit > 0 && this.selectedSeatsForReservation.length > limit) {
+        // Keep only the first 'limit' number of selected seats
+        // Mark as programmatic update to prevent selectedSeatsChange event emission
+        this.isUpdatingProgrammatically = true;
+        this.selectedSeatsForReservation = this.selectedSeatsForReservation.slice(0, limit);
+        this.addNotification({
+          message: `Selection reduced to ${limit} seat(s) due to seat limit`,
+          type: 'info'
+        });
+        // Reset flag on next tick to ensure the reaction has time to check it
+        Promise.resolve().then(() => {
+          runInAction(() => {
+            this.isUpdatingProgrammatically = false;
+          });
+        });
+      }
+    });
   }
 
   selectSeatForReservation(chairId: string): void {
@@ -140,6 +161,10 @@ export class ViewerStore {
 
   clearSelectedSeats(): void {
     this.selectedSeatsForReservation.length = 0;
+  }
+
+  get isProgrammaticUpdate(): boolean {
+    return this.isUpdatingProgrammatically;
   }
 
   updateCustomerInfo(info: Partial<{ name: string; email?: string; phone?: string }>): void {
