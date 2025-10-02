@@ -195,48 +195,54 @@ export class ElementBoundsService {
     const chairWidth = 20;
     const chairHeight = 20;
     const padding = 20;
-    
-    // Calculate actual row dimensions
-    const rowLength = element.seatCount > 0 
-      ? (element.seatCount - 1) * element.seatSpacing + chairWidth 
+
+    // Calculate actual row dimensions in LOCAL coordinate system (relative to start point)
+    // The row rotates around (element.x, element.y), which is treated as origin (0, 0) locally
+    const rowLength = element.seatCount > 0
+      ? (element.seatCount - 1) * element.seatSpacing + chairWidth
       : chairWidth;
-    
-    // Start position includes label
-    const startX = element.x - labelOffset;
-    const endX = element.x + rowLength;
-    
-    // Calculate bounds
-    const left = startX - padding;
-    const right = endX + padding;
-    const top = element.y - chairHeight / 2 - padding;
-    const bottom = element.y + chairHeight / 2 + padding;
-    
-    const centerX = (left + right) / 2;
-    const centerY = element.y;
-    
+
+    // Local bounds (in the row's coordinate system where start point is 0,0)
+    const localLeft = -labelOffset - padding;
+    const localRight = rowLength + padding;
+    const localTop = -chairHeight / 2 - padding;
+    const localBottom = chairHeight / 2 + padding;
+
+    // Center in local coordinate system
+    const localCenterX = (localLeft + localRight) / 2;
+    const localCenterY = (localTop + localBottom) / 2;
+
+    // Convert to world coordinates by adding the rotation origin
+    const left = element.x + localLeft;
+    const right = element.x + localRight;
+    const top = element.y + localTop;
+    const bottom = element.y + localBottom;
+    const centerX = element.x + localCenterX;
+    const centerY = element.y + localCenterY;
+
     return {
       // Core bounds
-      left: startX,
+      left: element.x - labelOffset,
       top: element.y - chairHeight / 2,
-      right: endX,
+      right: element.x + rowLength,
       bottom: element.y + chairHeight / 2,
-      width: endX - startX,
+      width: rowLength + labelOffset,
       height: chairHeight,
-      
-      // Center
+
+      // Center (in world coordinates, but represents center of unrotated box)
       centerX,
       centerY,
-      
+
       // Rotation
       rotation: element.rotation || 0,
       rotationOrigin: { x: element.x, y: element.y },
-      
-      // Visual bounds
+
+      // Visual bounds (in world coordinates, unrotated)
       visualLeft: left,
       visualTop: top,
       visualRight: right,
       visualBottom: bottom,
-      
+
       // Reference
       elementId: element.id,
       elementType: element.type as any

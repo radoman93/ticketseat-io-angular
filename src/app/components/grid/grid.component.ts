@@ -1553,17 +1553,27 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
       case 'seatingRow':
         const seatingBounds = this.elementBoundsService.getElementBounds(element);
-        const centerX = (seatingBounds.visualLeft + seatingBounds.visualRight) / 2;
-        const centerY = (seatingBounds.visualTop + seatingBounds.visualBottom) / 2;
-        
+
+        // For rotated rows, we need to position the selection box correctly:
+        // - The box center (x, y) is the center of the unrotated bounding box
+        // - The rotation happens around the rotation origin (start point of the row)
+        // - Width and height are the dimensions of the unrotated bounding box
+
+        // Center of the unrotated bounding box (in world coordinates)
+        const boxCenterX = (seatingBounds.visualLeft + seatingBounds.visualRight) / 2;
+        const boxCenterY = (seatingBounds.visualTop + seatingBounds.visualBottom) / 2;
+
         box = {
           id: element.id,
-          x: (centerX * zoom) + panX,
-          y: (centerY * zoom) + panY,
+          x: (boxCenterX * zoom) + panX,
+          y: (boxCenterY * zoom) + panY,
           width: (seatingBounds.visualRight - seatingBounds.visualLeft + 10) * zoom,
           height: (seatingBounds.visualBottom - seatingBounds.visualTop + 10) * zoom,
           rotation: element.rotation || 0,
-          type: 'row'
+          type: 'row',
+          // Rotation origin is the start point of the row (where it pivots)
+          centerX: (seatingBounds.rotationOrigin.x * zoom) + panX,
+          centerY: (seatingBounds.rotationOrigin.y * zoom) + panY
         };
         break;
 
