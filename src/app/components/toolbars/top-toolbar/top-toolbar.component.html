@@ -1,19 +1,14 @@
-<div class="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm z-10">
-  <!-- Left Section: Clean minimalist space -->
-  <div class="flex items-center">
-    <!-- Intentionally minimal for clean design -->
-  </div>
-
-  <!-- Center Section: Editor Controls -->
-  <div class="hidden md:flex flex-1 items-center justify-start gap-8 text-sm pl-6">
-    <!-- Grid Size -->
-    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+<div class="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm z-10">
+  <!-- Left Section: Grid Controls -->
+  <div class="hidden lg:flex items-center gap-3">
+    <!-- Grid Size Dropdown -->
+    <div class="flex items-center gap-2">
       <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16m-7-7v14"></path>
       </svg>
-      <label for="grid-size" class="text-sm font-medium text-gray-700">Grid:</label>
+      <label for="grid-size" class="text-xs font-medium text-gray-600">Grid:</label>
       <select id="grid-size"
-              class="bg-transparent border-none text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
+              class="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
               [value]="store.gridSize"
               (change)="updateGridSize($event)"
               *mobxAutorun>
@@ -21,101 +16,88 @@
       </select>
     </div>
 
-    <!-- Show Grid Toggle -->
-    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
-      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM5 5h14v2H5V5zM5 9h14v2H5V9zM5 13h14v2H5v-2zM5 17h14v2H5v-2z"></path>
-      </svg>
-      <label for="show-grid" class="text-sm font-medium text-gray-700 cursor-pointer">Show Grid</label>
-      <input type="checkbox"
-             id="show-grid"
-             [checked]="store.showGrid"
-             (change)="store.toggleGrid()"
-             class="toggle toggle-sm toggle-primary" />
-    </div>
-
-    <!-- Snap to Grid Toggle -->
-    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
-      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m0 0V7a2 2 0 012-2h3a2 2 0 012 2v3l-4 4z"></path>
-      </svg>
-      <label for="snap-to-grid" class="text-sm font-medium text-gray-700 cursor-pointer">Snap to Grid</label>
-      <input type="checkbox"
-             id="snap-to-grid"
-             [checked]="store.snapToGrid"
-             (change)="store.toggleSnapToGrid()"
-             class="toggle toggle-sm toggle-secondary" />
-    </div>
-
-    <!-- Snap to Objects Toggle -->
-    <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
-      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-      </svg>
-      <label for="snap-to-objects" class="text-sm font-medium text-gray-700 cursor-pointer">Snap to Objects</label>
-      <input type="checkbox"
-             id="snap-to-objects"
-             [checked]="snappingStore.config.enableSnapping"
-             (change)="snappingStore.toggleSnapping()"
-             class="toggle toggle-sm toggle-info" />
-    </div>
-
-    <!-- Undo/Redo -->
-    <div class="flex items-center gap-1 rounded-lg bg-gray-50 p-1">
-      <button (click)="historyStore.undo()"
-              [disabled]="!historyStore.canUndo"
-              class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Undo (Ctrl+Z)">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"/>
-        </svg>
-        <span class="text-sm font-medium text-gray-700">Undo</span>
-      </button>
-      <div class="h-6 w-px bg-gray-300"></div>
-      <button (click)="historyStore.redo()"
-              [disabled]="!historyStore.canRedo"
-              class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Redo (Ctrl+Y)">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2m18-10l-4-4m4 4l-4 4"/>
-        </svg>
-        <span class="text-sm font-medium text-gray-700">Redo</span>
-      </button>
+    <!-- Toggles -->
+    <div class="flex items-center gap-2 border-l border-gray-200 pl-3">
+      <label class="flex items-center gap-1.5 cursor-pointer" *mobxAutorun>
+        <input type="checkbox" [checked]="store.showGrid" (change)="store.toggleGrid()" class="toggle toggle-xs" />
+        <span class="text-xs text-gray-600">Show Grid</span>
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer" *mobxAutorun>
+        <input type="checkbox" [checked]="store.snapToGrid" (change)="store.toggleSnapToGrid()" class="toggle toggle-xs" />
+        <span class="text-xs text-gray-600">Snap to Grid</span>
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer" *mobxAutorun>
+        <input type="checkbox" [checked]="snappingStore.config.enableSnapping" (change)="snappingStore.toggleSnapping()" class="toggle toggle-xs" />
+        <span class="text-xs text-gray-600">Snap to Objects</span>
+      </label>
     </div>
   </div>
 
-  <!-- Right Section: Actions and Info -->
-  <div class="flex items-center gap-4">
-    <!-- Table Count -->
-    <div *mobxAutorun class="hidden sm:flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+  <!-- Center Section: Undo/Redo -->
+  <div class="hidden lg:flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+    <button (click)="historyStore.undo()"
+            [disabled]="!historyStore.canUndo"
+            class="px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Undo (Ctrl+Z)">
+      <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"/>
+      </svg>
+    </button>
+    <div class="h-6 w-px bg-gray-200"></div>
+    <button (click)="historyStore.redo()"
+            [disabled]="!historyStore.canRedo"
+            class="px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Redo (Ctrl+Y)">
+      <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2m18-10l-4-4m4 4l-4 4"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Right Section: Info & Actions -->
+  <div class="flex items-center gap-3">
+    <!-- Coordinates -->
+    <div class="hidden xl:flex items-center text-xs text-gray-600 font-mono" *mobxAutorun>
+      X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
+    </div>
+
+    <!-- Zoom -->
+    <div class="hidden md:flex items-center border border-gray-200 rounded-lg overflow-hidden" *mobxAutorun>
+      <button (click)="store.adjustZoom(-5)" class="px-2.5 py-1 hover:bg-gray-50 transition-colors">
+        <span class="text-sm font-medium text-gray-600">−</span>
+      </button>
+      <span class="text-xs px-2 py-1 font-medium text-gray-700 bg-gray-50 min-w-[3.5rem] text-center">{{ store.zoomLevel.toFixed(0) }}%</span>
+      <button (click)="store.adjustZoom(5)" class="px-2.5 py-1 hover:bg-gray-50 transition-colors">
+        <span class="text-sm font-medium text-gray-600">+</span>
+      </button>
+    </div>
+
+    <!-- Tables Count -->
+    <div class="hidden sm:flex items-center gap-2 border-l border-gray-200 pl-3" *mobxAutorun>
       <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
       </svg>
-      <span class="text-sm font-medium text-gray-700">Tables:</span>
-      <span class="inline-flex items-center justify-center rounded-full bg-blue-500 px-2.5 py-1 text-white text-sm font-semibold min-w-[2rem]">
-        {{ layoutStore.tableCount }}
-      </span>
+      <span class="text-xs text-gray-600">Tables:</span>
+      <span class="bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-semibold min-w-[1.75rem] text-center">{{ layoutStore.tableCount }}</span>
     </div>
 
     <!-- Import/Export -->
-    <div class="hidden sm:flex items-center gap-2">
-      <button (click)="openImportDialog()" class="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+    <div class="hidden lg:flex items-center gap-2 border-l border-gray-200 pl-3">
+      <button (click)="openImportDialog()" class="p-1.5 hover:bg-gray-50 rounded transition-colors" title="Import">
         <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
         </svg>
-        <span class="text-sm font-medium text-gray-700">Import</span>
       </button>
-      <button (click)="openExportDialog()" class="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+      <button (click)="openExportDialog()" class="p-1.5 hover:bg-gray-50 rounded transition-colors" title="Export">
         <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <span class="text-sm font-medium text-gray-700">Export</span>
       </button>
     </div>
 
-    <!-- Hamburger Menu (Mobile) -->
-    <button class="md:hidden p-3 hover:bg-gray-50 rounded-lg transition-colors duration-200" (click)="toggleMenu()">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <!-- Mobile Menu Toggle -->
+    <button class="lg:hidden p-2 hover:bg-gray-50 rounded-lg transition-colors" (click)="toggleMenu()">
+      <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
       </svg>
     </button>
@@ -124,6 +106,22 @@
 
 <!-- Mobile Menu (Collapsible) -->
 <div class="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-4" [class.hidden]="!isMobileMenuOpen">
+  <!-- Mobile Coordinates and Zoom -->
+  <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
+    <span class="text-xs font-medium text-gray-700">
+      X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
+    </span>
+  </div>
+  <div class="flex items-center justify-between bg-gray-50 rounded-lg" *mobxAutorun>
+    <button (click)="store.adjustZoom(-5)" class="px-3 py-2 hover:bg-gray-100 rounded-l-lg transition-colors duration-200">
+      <span class="text-lg font-semibold text-gray-700">-</span>
+    </button>
+    <span class="text-xs px-3 py-2 font-medium text-gray-700">{{ store.zoomLevel.toFixed(0) }}%</span>
+    <button (click)="store.adjustZoom(5)" class="px-3 py-2 hover:bg-gray-100 rounded-r-lg transition-colors duration-200">
+      <span class="text-lg font-semibold text-gray-700">+</span>
+    </button>
+  </div>
+
   <!-- Mobile Grid Controls -->
   <div class="flex items-center justify-between">
     <span class="text-sm font-medium text-gray-700">Grid Size:</span>
