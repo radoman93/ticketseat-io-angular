@@ -30,9 +30,9 @@ export class GridStore {
       toggleGrid: action,
       toggleGuides: action,
       toggleSnapToGrid: action,
+      registerRedrawCallback: action,
+      unregisterRedrawCallback: action,
       snapCoordinateToGrid: false,
-      registerRedrawCallback: false,
-      unregisterRedrawCallback: false,
       triggerRedraw: false
     });
   }
@@ -129,16 +129,14 @@ export class GridStore {
   }
 
   // Methods for managing redraw callbacks
-  registerRedrawCallback(callback: () => void) {
+  registerRedrawCallback = action('registerRedrawCallback', (callback: () => void) => {
     this.redrawCallbacks.push(callback);
-  }
+  });
 
-  unregisterRedrawCallback(callback: () => void) {
-    const index = this.redrawCallbacks.indexOf(callback);
-    if (index !== -1) {
-      this.redrawCallbacks.splice(index, 1);
-    }
-  }
+  unregisterRedrawCallback = action('unregisterRedrawCallback', (callback: () => void) => {
+    // Use filter to create a new array without the callback
+    this.redrawCallbacks = this.redrawCallbacks.filter(cb => cb !== callback);
+  });
 
   triggerRedraw() {
     for (const callback of this.redrawCallbacks) {

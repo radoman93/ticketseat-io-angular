@@ -24,6 +24,13 @@
     "verify": "node verify-package.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:coverage": "ng test --code-coverage --watch=false --browsers=ChromeHeadlessCI",
+    "test:watch": "ng test --watch=true",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:debug": "playwright test --debug",
+    "test:visual": "playwright test visual-regression.spec.ts",
+    "test:all": "npm run test:coverage && npm run e2e",
     "pack": "npm pack dist",
     "publish:github": "cd dist && npm publish --registry=https://npm.pkg.github.com"
   },
@@ -75,6 +82,7 @@
     "@angular/platform-browser": "^19.2.0",
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
+    "@playwright/test": "^1.55.1",
     "@types/jasmine": "~5.1.0",
     "@types/uuid": "^9.0.8",
     "autoprefixer": "^10.4.21",
@@ -87,6 +95,7 @@
     "mobx": "^6.13.7",
     "mobx-angular": "^4.8.0",
     "ng-packagr": "^19.0.0",
+    "pixelmatch": "^7.1.0",
     "typescript": "~5.7.2"
   }
 }

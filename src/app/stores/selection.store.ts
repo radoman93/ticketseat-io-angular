@@ -9,13 +9,13 @@ export class SelectionStore {
     makeAutoObservable(this, {
       // Specify computed properties explicitly
       hasSelection: true,
-      registerDeleteHandler: false,
-      unregisterDeleteHandler: false,
       // Explicitly mark actions
       selectItem: action,
       deselectItem: action,
       requestDeleteItem: action,
-      deleteSelectedItem: action
+      deleteSelectedItem: action,
+      registerDeleteHandler: action,
+      unregisterDeleteHandler: action
     });
   }
   
@@ -44,7 +44,7 @@ export class SelectionStore {
   requestDeleteItem = action('requestDeleteItem', (item: Selectable) => {
     // Notify all registered handlers
     this.deleteHandlers.forEach(handler => handler(item));
-    
+
     // Deselect after delete
     this.deselectItem();
   });
@@ -57,17 +57,15 @@ export class SelectionStore {
   });
   
   // Allow components to register delete handlers
-  registerDeleteHandler(handler: (item: Selectable) => void): void {
+  registerDeleteHandler = action('registerDeleteHandler', (handler: (item: Selectable) => void) => {
     this.deleteHandlers.push(handler);
-  }
-  
+  });
+
   // Allow components to unregister delete handlers
-  unregisterDeleteHandler(handler: (item: Selectable) => void): void {
-    const index = this.deleteHandlers.indexOf(handler);
-    if (index !== -1) {
-      this.deleteHandlers.splice(index, 1);
-    }
-  }
+  unregisterDeleteHandler = action('unregisterDeleteHandler', (handler: (item: Selectable) => void) => {
+    // Use filter to create a new array without the handler
+    this.deleteHandlers = this.deleteHandlers.filter(h => h !== handler);
+  });
 }
 
 // Create singleton instance
