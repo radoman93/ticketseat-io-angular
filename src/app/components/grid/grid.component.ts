@@ -69,6 +69,17 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
   private previousTool: ToolType = ToolType.None;
 
+  // Touch/Pointer tracking for mobile support
+  private pointerCache: PointerEvent[] = [];
+  private initialPinchDistance = 0;
+  private initialZoomLevel = 100;
+  private lastPanPosition = { x: 0, y: 0 };
+  public isTouchPanning = false; // Public for template access
+  private tapStartTime = 0;
+  private tapStartPosition = { x: 0, y: 0 };
+  private readonly TAP_THRESHOLD_TIME = 200; // ms
+  private readonly TAP_THRESHOLD_DISTANCE = 10; // px
+
   // Segmented seating row state (used for both regular and segmented rows)
   isCreatingSegmentedRow: boolean = false;
   isCreatingRegularRow: boolean = false; // Add separate state for regular row click-mode
@@ -1363,7 +1374,202 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       event.preventDefault();
       const zoomAmount = event.deltaY > 0 ? -5 : 5;
       this.store.adjustZoom(zoomAmount);
+      this.drawGrid();
     }
+  }
+
+  // ========== POINTER EVENTS FOR MOBILE TOUCH SUPPORT ==========
+
+  @HostListener('pointerdown', ['$event'])
+  onPointerDown(event: PointerEvent): void {
+    // Only handle touch and pen inputs for pointer events
+    // Mouse events are handled by existing mousedown handler
+    if (event.pointerType === 'mouse') {
+      return;
+    }
+
+    // Add to pointer cache for multi-touch tracking
+    this.pointerCache.push(event);
+
+    // Capture the pointer for consistent tracking
+    (event.target as HTMLElement)?.setPointerCapture?.(event.pointerId);
+
+    if (this.pointerCache.length === 1) {
+      // Single touch - prepare for pan or tap
+      this.tapStartTime = Date.now();
+      this.tapStartPosition = { x: event.clientX, y: event.clientY };
+      this.lastPanPosition = { x: event.clientX, y: event.clientY };
+      this.isTouchPanning = false;
+
+      // Start panning in viewer mode
+      if (this.viewerStore.isViewerMode) {
+        this.store.startPanning(event.clientX, event.clientY);
+      }
+    } else if (this.pointerCache.length === 2) {
+      // Two fingers - prepare for pinch zoom
+      this.initialPinchDistance = this.getPointerDistance();
+      this.initialZoomLevel = this.store.zoomLevel;
+      this.isTouchPanning = false;
+      this.store.stopPanning(); // Stop panning when pinching
+    }
+
+    event.preventDefault();
+  }
+
+  @HostListener('pointermove', ['$event'])
+  onPointerMove(event: PointerEvent): void {
+    // Only handle touch and pen inputs
+    if (event.pointerType === 'mouse') {
+      return;
+    }
+
+    // Update the pointer in cache
+    const index = this.pointerCache.findIndex(p => p.pointerId === event.pointerId);
+    if (index !== -1) {
+      this.pointerCache[index] = event;
+    }
+
+    if (this.pointerCache.length === 2) {
+      // Two-finger pinch zoom
+      this.handlePinchZoom();
+    } else if (this.pointerCache.length === 1) {
+      // Single finger pan
+      const dx = event.clientX - this.tapStartPosition.x;
+      const dy = event.clientY - this.tapStartPosition.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Check if this is a pan gesture (moved beyond tap threshold)
+      if (distance > this.TAP_THRESHOLD_DISTANCE) {
+        this.isTouchPanning = true;
+      }
+
+      if (this.isTouchPanning || this.store.isPanning) {
+        // Perform panning
+        const panDx = event.clientX - this.lastPanPosition.x;
+        const panDy = event.clientY - this.lastPanPosition.y;
+
+        this.store.panOffset.x += panDx;
+        this.store.panOffset.y += panDy;
+
+        this.lastPanPosition = { x: event.clientX, y: event.clientY };
+
+        // Redraw grid during pan
+        this.drawGrid();
+      }
+    }
+
+    event.preventDefault();
+  }
+
+  @HostListener('pointerup', ['$event'])
+  @HostListener('pointercancel', ['$event'])
+  onPointerUp(event: PointerEvent): void {
+    // Only handle touch and pen inputs
+    if (event.pointerType === 'mouse') {
+      return;
+    }
+
+    // Release pointer capture
+    (event.target as HTMLElement)?.releasePointerCapture?.(event.pointerId);
+
+    // Remove from cache
+    const index = this.pointerCache.findIndex(p => p.pointerId === event.pointerId);
+    if (index !== -1) {
+      this.pointerCache.splice(index, 1);
+    }
+
+    // Check if this was a tap (short duration, small movement)
+    if (this.pointerCache.length === 0) {
+      const tapDuration = Date.now() - this.tapStartTime;
+      const dx = event.clientX - this.tapStartPosition.x;
+      const dy = event.clientY - this.tapStartPosition.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (tapDuration < this.TAP_THRESHOLD_TIME && distance < this.TAP_THRESHOLD_DISTANCE) {
+        // This was a tap - simulate click for seat selection
+        // The click event will be handled by existing handlers
+      }
+
+      // Stop panning
+      this.store.stopPanning();
+      this.isTouchPanning = false;
+    }
+
+    // Reset pinch state when going from 2 fingers to 1
+    if (this.pointerCache.length === 1) {
+      this.lastPanPosition = { x: this.pointerCache[0].clientX, y: this.pointerCache[0].clientY };
+      this.store.startPanning(this.pointerCache[0].clientX, this.pointerCache[0].clientY);
+    }
+
+    event.preventDefault();
+  }
+
+  /**
+   * Calculate distance between two pointers for pinch zoom
+   */
+  private getPointerDistance(): number {
+    if (this.pointerCache.length < 2) return 0;
+
+    const dx = this.pointerCache[0].clientX - this.pointerCache[1].clientX;
+    const dy = this.pointerCache[0].clientY - this.pointerCache[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /**
+   * Get center point between two pointers
+   */
+  private getPointerCenter(): { x: number, y: number } {
+    if (this.pointerCache.length < 2) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: (this.pointerCache[0].clientX + this.pointerCache[1].clientX) / 2,
+      y: (this.pointerCache[0].clientY + this.pointerCache[1].clientY) / 2
+    };
+  }
+
+  /**
+   * Handle pinch zoom gesture
+   */
+  private handlePinchZoom(): void {
+    if (this.pointerCache.length !== 2) return;
+
+    const currentDistance = this.getPointerDistance();
+    if (this.initialPinchDistance === 0) return;
+
+    // Calculate zoom scale based on pinch
+    const scale = currentDistance / this.initialPinchDistance;
+    let newZoom = this.initialZoomLevel * scale;
+
+    // Clamp zoom level between 25% and 200%
+    newZoom = Math.max(25, Math.min(200, newZoom));
+
+    // Get pinch center for zoom towards point
+    const center = this.getPointerCenter();
+
+    // Calculate the world position under the pinch center before zoom
+    const containerRect = this.gridContainerRef?.nativeElement.getBoundingClientRect();
+    if (!containerRect) return;
+
+    const containerX = center.x - containerRect.left;
+    const containerY = center.y - containerRect.top;
+
+    // World position before zoom
+    const oldZoomFactor = this.store.zoomLevel / 100;
+    const worldX = (containerX - this.store.panOffset.x) / oldZoomFactor;
+    const worldY = (containerY - this.store.panOffset.y) / oldZoomFactor;
+
+    // Apply new zoom level
+    this.store.zoomLevel = newZoom;
+
+    // Calculate new pan offset to keep the pinch center at the same world position
+    const newZoomFactor = newZoom / 100;
+    this.store.panOffset.x = containerX - (worldX * newZoomFactor);
+    this.store.panOffset.y = containerY - (worldY * newZoomFactor);
+
+    // Redraw grid
+    this.drawGrid();
   }
 
 

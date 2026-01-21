@@ -1,3 +1,64 @@
+/* ========== TOUCH/MOBILE SUPPORT ========== */
+
+/* Prevent browser default touch gestures to enable custom pan/zoom */
+:host {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.grid-container,
+.table-container {
+  touch-action: none;
+}
+
+/* Touch-friendly seat selection (remove 300ms tap delay) */
+.chair,
+.seat,
+.chair-circle {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Active state feedback for touch on seats */
+.chair:active,
+.seat:active,
+.chair-circle:active {
+  transform: scale(0.92);
+  transition: transform 0.1s ease;
+}
+
+/* Deep selector for child components */
+::ng-deep .chair:active,
+::ng-deep .seat:active,
+::ng-deep .chair-circle:active {
+  transform: scale(0.92);
+}
+
+/* Visual feedback when panning on mobile */
+.is-touch-panning {
+  cursor: grabbing;
+}
+
+/* Ensure seats in viewer mode have pointer cursor */
+:host-context(.viewer-mode) .chair,
+:host-context(.viewer-mode) .seat,
+:host-context(.viewer-mode) .chair-circle {
+  cursor: pointer;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  /* Slightly larger touch targets on mobile */
+  ::ng-deep .chair-circle {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+/* ========== END TOUCH/MOBILE SUPPORT ========== */
+
 .preview-table ::ng-deep .table-circle {
   border-style: dashed;
   border-color: #3b82f6;

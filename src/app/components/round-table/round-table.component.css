@@ -17,5 +17,26 @@
 
 .seat {
     /* Styles for the seats */
-    transition: background-color 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+/* Touch feedback for seat selection */
+.seat:active,
+.chair-circle:active {
+    transform: scale(0.92);
+}
+
+/* Hover state for desktop */
+@media (hover: hover) {
+    .seat:hover:not(.reserved):not(.selected) {
+        transform: scale(1.05);
+    }
+}
+
+/* Chair/seat container touch optimization */
+.chair-circle {
+    touch-action: manipulation;
+    cursor: pointer;
 } 

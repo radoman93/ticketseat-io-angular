@@ -40,6 +40,7 @@ export * from './app/components/properties-panel/properties-panel.component';
 export * from './app/components/chair-properties-panel/chair-properties-panel.component';
 export * from './app/components/reservation-panel/reservation-panel.component';
 export * from './app/components/notifications/notifications.component';
+export * from './app/components/navigation-controls/navigation-controls.component';
 
 // Store exports
 // export * from './app/stores/drag.store';

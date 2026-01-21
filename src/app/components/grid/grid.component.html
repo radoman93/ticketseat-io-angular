@@ -1,6 +1,8 @@
-<div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full" *mobxAutorun
+<div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full grid-container" *mobxAutorun
   [class.cursor-grab]="viewerStore.isViewerMode" [class.cursor-grabbing]="viewerStore.isViewerMode && store.isPanning"
-  (click)="handleCanvasClick()">
+  [class.is-touch-panning]="isTouchPanning"
+  (click)="handleCanvasClick()"
+  style="touch-action: none;">
   <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full" style="will-change: transform; transform: translateZ(0);"></canvas>
   <!-- Canvas overlay for selection rendering -->
   <canvas #selectionCanvas class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10; will-change: transform; transform: translateZ(0);"></canvas>
