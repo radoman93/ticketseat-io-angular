@@ -39,6 +39,10 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   store = rootStore;
   viewerStore = viewerStore;
   private logger = sharedLogger;
+
+  // Cache for committed segment data to avoid recalculation during preview mousemove
+  private _cachedSegmentData: any[] = [];
+  private _cachedSegmentKey: string = '';
   
   constructor() {
     makeAutoObservable(this, {
@@ -46,6 +50,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       segmentData: computed,
       previewSegmentData: computed,
       completedSegments: computed,
+      segmentLabelOffsets: computed,
       // Internal observable properties
       _seatingRowData: observable,
       _isSelected: observable,
@@ -101,12 +106,24 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     if (!this._seatingRowData || !this._seatingRowData.segments) {
       return [];
     }
-    
-    return this._seatingRowData.segments.map((segment, index) => ({
-      styles: this.getSegmentStyles(segment),
-      width: this.getSegmentWidth(segment),
-      chairs: this.getSegmentChairStyles(segment, index)
-    }));
+
+    // Build a cache key from segment count + positions so cache invalidates on drag/resize
+    const segments = this._seatingRowData.segments;
+    let key = `${segments.length}`;
+    for (const s of segments) {
+      key += `:${s.startX},${s.startY},${s.endX},${s.endY},${s.seatCount}`;
+    }
+
+    if (key !== this._cachedSegmentKey) {
+      this._cachedSegmentData = segments.map((segment, index) => ({
+        styles: this.getSegmentStyles(segment),
+        width: this.getSegmentWidth(segment),
+        chairs: this.getSegmentChairStyles(segment, index)
+      }));
+      this._cachedSegmentKey = key;
+    }
+
+    return this._cachedSegmentData;
   }
 
   get previewSegmentData() {
@@ -124,6 +141,19 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   // Get completed segments from seatingRowData
   get completedSegments(): SegmentProperties[] {
     return this._seatingRowData?.segments || [];
+  }
+
+  // Pre-compute cumulative chair offsets per segment for O(1) label lookups
+  get segmentLabelOffsets(): number[] {
+    const segments = this._seatingRowData?.segments;
+    if (!segments) return [];
+    const offsets: number[] = [0];
+    let cumulative = 0;
+    for (let i = 0; i < segments.length; i++) {
+      cumulative += i > 0 ? segments[i].seatCount - 1 : segments[i].seatCount;
+      offsets.push(cumulative);
+    }
+    return offsets;
   }
 
   // Calculate styles for a segment (position, rotation)
@@ -179,31 +209,15 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     return chairsArray;
   }
   
-  // Calculate a global chair label across all segments
+  // Calculate a global chair label across all segments — O(1) using cached offsets
   private calculateGlobalChairLabel(currentSegmentIndex: number, chairIndexInSegment: number): string {
-    // For regular rows, just use the chair index + 1
     if (this._seatingRowData!.type === 'seatingRow') {
       return (chairIndexInSegment + 1).toString();
     }
-    
-    // For segmented rows, calculate across all segments
-    let globalIndex = chairIndexInSegment + 1; // Make it 1-indexed
-    
-    // For each previous segment, add its chair count
-    for (let i = 0; i < currentSegmentIndex; i++) {
-      // For segments after the first one, we count one less chair to account for the overlap
-      const adjustedChairCount = i > 0 ? 
-        this._seatingRowData!.segments![i].seatCount - 1 :
-        this._seatingRowData!.segments![i].seatCount;
-      
-      globalIndex += adjustedChairCount;
-    }
-    
-    // If this is not the first segment, subtract 1 to account for the overlapped chair
-    if (currentSegmentIndex > 0) {
-      globalIndex -= 1;
-    }
-    
+
+    const offsets = this.segmentLabelOffsets;
+    const offset = offsets[currentSegmentIndex] || 0;
+    const globalIndex = offset + chairIndexInSegment + 1 - (currentSegmentIndex > 0 ? 1 : 0);
     return globalIndex.toString();
   }
 
@@ -227,26 +241,22 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
 
   getPreviewSegmentChairStyles() {
     if (!this._previewSegment) return [];
-    
+
     const chairsArray = [];
     const isNewSegmentAfterExisting = this._seatingRowData?.segments && this._seatingRowData.segments.length > 0;
     const startOffset = isNewSegmentAfterExisting ? 1 : 0;
     const chairSpacing = this._previewSegment.seatSpacing;
-    
+
+    // Use cached offsets instead of looping all segments per chair
+    const offsets = this.segmentLabelOffsets;
+    const totalPreviousChairs = isNewSegmentAfterExisting ? (offsets[offsets.length - 1] || 0) : 0;
+
     for (let i = startOffset; i < this._previewSegment.seatCount; i++) {
-      let x = (this._previewSegment.seatCount === 1) ? 0 : i * chairSpacing;
-      
-      let label = (i + 1).toString();
-      if (isNewSegmentAfterExisting) {
-        let totalPreviousChairs = 0;
-        for (let j = 0; j < this._seatingRowData!.segments!.length; j++) {
-          totalPreviousChairs += (j > 0) 
-            ? this._seatingRowData!.segments![j].seatCount - 1
-            : this._seatingRowData!.segments![j].seatCount;
-        }
-        label = (totalPreviousChairs + i).toString();
-      }
-      
+      const x = (this._previewSegment.seatCount === 1) ? 0 : i * chairSpacing;
+      const label = isNewSegmentAfterExisting
+        ? (totalPreviousChairs + i).toString()
+        : (i + 1).toString();
+
       chairsArray.push({
         id: `preview-chair-${i}`,
         transform: `translate(${x}px, 0px)`,
@@ -304,6 +314,10 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
       }
     }
   }
+
+  // TrackBy functions for *ngFor performance
+  trackByIndex(index: number): number { return index; }
+  trackByChairId(index: number, chair: any): string { return chair.id; }
 
   // Chair interaction methods
   onChairClick(event: Event, chairData: any, segmentIndex: number): void {

@@ -3,7 +3,7 @@
   <ng-content></ng-content>
 
   <!-- Completed Segments -->
-  <div *ngFor="let data of segmentData; let segmentIndex = index"
+  <div *ngFor="let data of segmentData; let segmentIndex = index; trackBy: trackByIndex"
        class="absolute"
        [ngStyle]="data.styles">
     
@@ -18,30 +18,28 @@
     <!-- Chairs for this segment -->
     <div class="absolute w-full h-full left-0 top-0">
       <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5" 
-           *ngFor="let chair of data.chairs"
+           *ngFor="let chair of data.chairs; trackBy: trackByChairId"
            [style.transform]="chair.transform">
-        <div *mobxAutorun>
-          <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
-              [ngClass]="getChairClasses(chair)"
-              (click)="!isPreview && onChairClick($event, chair, segmentIndex)"
-              (mousedown)="!isPreview && onChairMouseDown($event, chair)"
-              (mouseenter)="!isPreview && onChairHover(chair)"
-              [title]="getSeatTitle(chair)">
-            <span *ngIf="chairLabelVisible" 
-                  [class]="getSeatLabelClasses(chair)">
-              {{ chair.label }}
-            </span>
-            <!-- Enhanced Selection glow effect for editor mode -->
-            <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode" 
-                 class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
-            <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode" 
-                 class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
-            <!-- Selection glow effect for viewer mode -->
-            <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
-                 class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
-            <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
-                 class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
-          </div>
+        <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+            [ngClass]="getChairClasses(chair)"
+            (click)="!isPreview && onChairClick($event, chair, segmentIndex)"
+            (mousedown)="!isPreview && onChairMouseDown($event, chair)"
+            (mouseenter)="!isPreview && onChairHover(chair)"
+            [title]="getSeatTitle(chair)">
+          <span *ngIf="chairLabelVisible"
+                [class]="getSeatLabelClasses(chair)">
+            {{ chair.label }}
+          </span>
+          <!-- Enhanced Selection glow effect for editor mode -->
+          <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode"
+               class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
+          <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode"
+               class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
+          <!-- Selection glow effect for viewer mode -->
+          <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
+               class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
+          <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
+               class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
         </div>
       </div>
     </div>
@@ -62,7 +60,7 @@
     <!-- Preview chairs for this segment -->
     <div class="absolute w-full h-full left-0 top-0">
       <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5" 
-           *ngFor="let chair of previewSegmentData.chairs" 
+           *ngFor="let chair of previewSegmentData.chairs; trackBy: trackByChairId"
            [style.transform]="chair.transform">
         <div class="chair-circle rounded-full transition-all duration-300 flex justify-center items-center relative"
              [ngClass]="getChairClasses(chair)"
