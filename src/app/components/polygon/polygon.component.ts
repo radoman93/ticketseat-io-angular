@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { makeAutoObservable, observable, computed, action } from 'mobx';
@@ -11,7 +11,8 @@ import { PolygonElement } from '../../models/elements.model';
   standalone: true,
   imports: [CommonModule, MobxAngularModule],
   templateUrl: './polygon.component.html',
-  styleUrls: ['./polygon.component.css']
+  styleUrls: ['./polygon.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PolygonComponent implements OnInit, OnChanges {
   @Input() points: Array<{x: number, y: number}> = [];

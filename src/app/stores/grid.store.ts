@@ -138,6 +138,10 @@ export class GridStore {
     this.redrawCallbacks = this.redrawCallbacks.filter(cb => cb !== callback);
   });
 
+  clearAllRedrawCallbacks() {
+    this.redrawCallbacks = [];
+  }
+
   triggerRedraw() {
     for (const callback of this.redrawCallbacks) {
       callback();

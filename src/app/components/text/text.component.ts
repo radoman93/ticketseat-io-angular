@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MobxAngularModule } from 'mobx-angular';
@@ -12,7 +12,8 @@ import { TextElement } from '../../models/elements.model';
   standalone: true,
   imports: [CommonModule, FormsModule, MobxAngularModule],
   templateUrl: './text.component.html',
-  styleUrls: ['./text.component.css']
+  styleUrls: ['./text.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TextComponent implements OnInit, OnChanges {
   @Input() x: number = 0;

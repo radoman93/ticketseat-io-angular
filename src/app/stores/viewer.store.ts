@@ -18,6 +18,7 @@ export class ViewerStore {
   notifications: Notification[] = [];
   seatLimit: number | null = 0; // 0 means unlimited, null means no limit set (same as 0)
   private isUpdatingProgrammatically: boolean = false; // Track if changes are programmatic vs user-initiated
+  private notificationTimeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   constructor() {
     makeAutoObservable(this, {
@@ -93,8 +94,8 @@ export class ViewerStore {
       this.selectedSeatsForReservation = this.selectedSeatsForReservation.filter(
         id => !this.preReservedSeats.includes(id)
       );
-      // Reset flag on next tick to ensure the reaction has time to check it
-      Promise.resolve().then(() => {
+      // Reset flag on next microtask to ensure the reaction has time to check it
+      queueMicrotask(() => {
         runInAction(() => {
           this.isUpdatingProgrammatically = false;
         });
@@ -222,16 +223,27 @@ export class ViewerStore {
     this.notifications.push(newNotification);
 
     // Auto-remove after 3 seconds
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
+      this.notificationTimeouts.delete(newNotification.id);
       this.removeNotification(newNotification.id);
     }, 3000);
+    this.notificationTimeouts.set(newNotification.id, timeoutId);
   }
 
   removeNotification(id: string): void {
+    // Clear the timeout if it exists
+    const timeoutId = this.notificationTimeouts.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.notificationTimeouts.delete(id);
+    }
     this.notifications = this.notifications.filter(n => n.id !== id);
   }
 
   clearNotifications(): void {
+    // Clear all pending timeouts
+    this.notificationTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    this.notificationTimeouts.clear();
     this.notifications = [];
   }
 

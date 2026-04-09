@@ -107,6 +107,12 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   contextMenuY: number = 0;
   contextMenuElement: any = null;
 
+  // RAF batching for mouse/pointer events
+  private mouseMoveRafId: number | null = null;
+  private pendingMouseEvent: MouseEvent | null = null;
+  private pointerMoveRafId: number | null = null;
+  private pendingPointerEvent: PointerEvent | null = null;
+
   constructor(
     private historyStore: HistoryStore,
     private segmentedSeatingRowService: SegmentedSeatingRowService,
@@ -433,6 +439,11 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     return bounds.visualRight - bounds.visualLeft + padding;
   }
 
+  // TrackBy function for *ngFor to prevent DOM thrashing on array mutations
+  trackByElementId(index: number, element: any): string {
+    return element.id;
+  }
+
   // Calculate selection indicator height for different table types
   getSelectionHeight(table: any): number {
     const bounds = this.elementBoundsService.getElementBounds(table);
@@ -459,6 +470,16 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   }
 
   protected override onMobXDestroy(): void {
+    // Cancel any pending RAF callbacks
+    if (this.mouseMoveRafId !== null) {
+      cancelAnimationFrame(this.mouseMoveRafId);
+      this.mouseMoveRafId = null;
+    }
+    if (this.pointerMoveRafId !== null) {
+      cancelAnimationFrame(this.pointerMoveRafId);
+      this.pointerMoveRafId = null;
+    }
+
     // Unregister the callback when component is destroyed
     this.store.unregisterRedrawCallback(this.drawGrid.bind(this));
 
@@ -745,6 +766,21 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
   @HostListener('mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
+    // Batch mousemove processing with requestAnimationFrame to avoid 60+ updates/sec
+    this.pendingMouseEvent = event;
+    if (this.mouseMoveRafId === null) {
+      this.mouseMoveRafId = requestAnimationFrame(() => {
+        this.mouseMoveRafId = null;
+        const e = this.pendingMouseEvent;
+        if (e) {
+          this.pendingMouseEvent = null;
+          this.processMouseMove(e);
+        }
+      });
+    }
+  }
+
+  private processMouseMove(event: MouseEvent): void {
     // Update grid store mouse coordinates for any listeners
     this.store.setMousePosition(event.clientX, event.clientY);
 
@@ -1423,12 +1459,29 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       return;
     }
 
-    // Update the pointer in cache
+    // Update the pointer in cache immediately (needed for pinch distance calculations)
     const index = this.pointerCache.findIndex(p => p.pointerId === event.pointerId);
     if (index !== -1) {
       this.pointerCache[index] = event;
     }
 
+    // Batch the rest with RAF
+    this.pendingPointerEvent = event;
+    if (this.pointerMoveRafId === null) {
+      this.pointerMoveRafId = requestAnimationFrame(() => {
+        this.pointerMoveRafId = null;
+        const e = this.pendingPointerEvent;
+        if (e) {
+          this.pendingPointerEvent = null;
+          this.processPointerMove(e);
+        }
+      });
+    }
+
+    event.preventDefault();
+  }
+
+  private processPointerMove(event: PointerEvent): void {
     if (this.pointerCache.length === 2) {
       // Two-finger pinch zoom
       this.handlePinchZoom();
@@ -1457,8 +1510,6 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         this.drawGrid();
       }
     }
-
-    event.preventDefault();
   }
 
   @HostListener('pointerup', ['$event'])

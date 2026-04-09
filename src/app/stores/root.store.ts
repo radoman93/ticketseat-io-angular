@@ -1,4 +1,4 @@
-import { makeAutoObservable, action, reaction } from 'mobx';
+import { makeAutoObservable, action, reaction, IReactionDisposer } from 'mobx';
 import { LayoutStore, layoutStore } from './layout.store';
 import { SelectionStore, selectionStore } from './selection.store';
 import { ToolStore, toolStore } from './tool.store';
@@ -31,7 +31,10 @@ export class RootStore {
   // Managers
   transactionManager: TransactionManager;
   persistenceManager: PersistenceManager;
-  
+
+  // Reaction disposers for cleanup
+  private reactionDisposers: IReactionDisposer[] = [];
+
   constructor() {
     // Use existing singleton stores
     this.layoutStore = layoutStore;
@@ -75,15 +78,25 @@ export class RootStore {
   
   private setupSnappingReactions() {
     // Rebuild spatial index when elements are added/removed
-    reaction(
+    const disposer = reaction(
       () => this.layoutStore.elements.length,
       () => {
         this.snappingStore.rebuildSpatialIndex();
       }
     );
-    
+    this.reactionDisposers.push(disposer);
+
     // Update spatial index when elements move (after drag ends)
     // This is handled in the drag store when endDragging is called
+  }
+
+  /**
+   * Dispose all reactions to prevent memory leaks.
+   * Call this when the root store is no longer needed.
+   */
+  dispose() {
+    this.reactionDisposers.forEach(disposer => disposer());
+    this.reactionDisposers = [];
   }
   
   // Helper method to reset application state

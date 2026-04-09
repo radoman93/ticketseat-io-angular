@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { RectangleTableProperties } from '../../services/selection.service';
@@ -12,7 +12,8 @@ import viewerStore from '../../stores/viewer.store';
   standalone: true,
   imports: [CommonModule, MobxAngularModule],
   templateUrl: './rectangle-table.component.html',
-  styleUrls: []
+  styleUrls: [],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RectangleTableComponent implements OnInit, OnChanges {
   @Input() x: number = 0;

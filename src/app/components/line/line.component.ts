@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, HostBinding, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { makeAutoObservable, observable, computed, action } from 'mobx';
@@ -11,7 +11,8 @@ import { LineElement } from '../../models/elements.model';
   standalone: true,
   imports: [CommonModule, MobxAngularModule],
   templateUrl: './line.component.html',
-  styleUrls: ['./line.component.css']
+  styleUrls: ['./line.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LineComponent implements OnInit, OnChanges {
   @Input() startX: number = 0;

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MobxAngularModule } from 'mobx-angular';
 import { SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
@@ -15,7 +15,8 @@ import { LoggerService } from '../../services/logger.service';
     CommonModule,
     MobxAngularModule
   ],
-  templateUrl: './segmented-seating-row.component.html'
+  templateUrl: './segmented-seating-row.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   @Input() seatingRowData!: SeatingRowProperties;

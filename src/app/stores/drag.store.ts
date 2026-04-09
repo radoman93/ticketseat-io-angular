@@ -32,7 +32,8 @@ export class DragStore {
 
     // Track when dragging has just ended (to prevent immediate deselection)
     justEndedDragging = false;
-    
+    private justEndedDraggingTimeout: ReturnType<typeof setTimeout> | null = null;
+
     // Movement threshold for snapped objects
     private movementThreshold = 5; // pixels - base threshold
     private unsnapThreshold = 12; // pixels - higher threshold for breaking snap
@@ -414,8 +415,12 @@ export class DragStore {
         snappingStore.setActiveGuides([]);
         snappingStore.clearSnapState();
 
-        // Reset the flag after a short delay
-        setTimeout(() => {
+        // Reset the flag after a short delay, clearing any previous timeout
+        if (this.justEndedDraggingTimeout) {
+            clearTimeout(this.justEndedDraggingTimeout);
+        }
+        this.justEndedDraggingTimeout = setTimeout(() => {
+            this.justEndedDraggingTimeout = null;
             this.resetJustEndedDragging();
         }, 100);
 

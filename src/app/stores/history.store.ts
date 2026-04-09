@@ -6,6 +6,7 @@ import { Command } from '../models/command.interface';
 export class HistoryStore {
   private undoStack: Command[] = [];
   private redoStack: Command[] = [];
+  private readonly MAX_HISTORY_SIZE = 100;
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
@@ -23,6 +24,11 @@ export class HistoryStore {
     command.execute();
     this.undoStack.push(command);
     this.redoStack = [];
+
+    // Evict oldest commands when stack exceeds limit
+    if (this.undoStack.length > this.MAX_HISTORY_SIZE) {
+      this.undoStack.splice(0, this.undoStack.length - this.MAX_HISTORY_SIZE);
+    }
   }
 
   undo(): void {

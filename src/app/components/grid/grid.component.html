@@ -14,7 +14,7 @@
     [style.transform]="'translate(' + store.panOffset.x + 'px, ' + store.panOffset.y + 'px) scale(' + store.zoomLevel / 100 + ')'"
     [style.transform-origin]="'0 0'">
     <!-- Tables from MobX store -->
-    <div *ngFor="let table of layoutStore.elements" (mousedown)="selectTable(table, $event)" class="selection-container"
+    <div *ngFor="let table of layoutStore.elements; trackBy: trackByElementId" (mousedown)="selectTable(table, $event)" class="selection-container"
       [class.draggable]="!viewerStore.isViewerMode && toolStore.activeTool !== ToolType.RoundTable"
       [class.dragging]="!viewerStore.isViewerMode && dragStore.isDragging && dragStore.draggedItem?.id === table.id">
       <!-- Rectangular selection indicator that includes table and chairs - Hidden in viewer mode and when canvas renderer is active -->

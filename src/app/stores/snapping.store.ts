@@ -165,6 +165,24 @@ export class SnappingStore {
   clearCache = () => {
     this.boundsCache.clear();
   };
+
+  /**
+   * Remove a specific element from the spatial index and bounds cache.
+   * Call this when an element is deleted.
+   */
+  removeElement = (elementId: string) => {
+    const bounds = this.boundsCache.get(elementId);
+    if (bounds && this.spatialIndex) {
+      this.spatialIndex.remove({
+        id: elementId,
+        left: bounds.visualLeft,
+        top: bounds.visualTop,
+        right: bounds.visualRight,
+        bottom: bounds.visualBottom
+      } as SpatialElement);
+    }
+    this.boundsCache.delete(elementId);
+  };
   
   /**
    * Clear snap state (call when drag ends)
