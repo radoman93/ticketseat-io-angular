@@ -6,7 +6,7 @@ import { makeAutoObservable, computed, observable, action } from 'mobx';
 import { rootStore } from '../../stores';
 import { Chair } from '../../models/chair.model';
 import viewerStore from '../../stores/viewer.store';
-import { LoggerService } from '../../services/logger.service';
+import { sharedLogger } from '../../services/logger.service';
 
 @Component({
   selector: 'app-segmented-seating-row',
@@ -38,7 +38,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   
   store = rootStore;
   viewerStore = viewerStore;
-  private logger = new LoggerService();
+  private logger = sharedLogger;
   
   constructor() {
     makeAutoObservable(this, {

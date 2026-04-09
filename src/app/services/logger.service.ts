@@ -276,3 +276,9 @@ export class LoggerService {
     this.flushLogs(); // Final flush
   }
 }
+
+/**
+ * Shared singleton logger instance for use in stores and non-DI contexts.
+ * Prefer Angular DI (@Injectable) in components and services that support it.
+ */
+export const sharedLogger = new LoggerService();

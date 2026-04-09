@@ -217,24 +217,54 @@ export class LayoutExportImportService {
   }
 
   /**
-   * Validate layout data structure
+   * Validate layout data structure with deep element-level checks
    */
-  private validateLayoutData(data: any): data is LayoutExportData | LegacyLayoutExportData {
-    const hasBasicStructure = (
-      data &&
-      typeof data === 'object' &&
-      data.meta &&
-      typeof data.meta.version === 'string' &&
-      typeof data.meta.name === 'string' &&
-      data.settings &&
-      typeof data.settings.gridSize === 'number' &&
-      typeof data.settings.showGrid === 'boolean' &&
-      typeof data.settings.showGuides === 'boolean' &&
-      Array.isArray(data.elements)
-    );
+  validateLayoutData(data: any): data is LayoutExportData | LegacyLayoutExportData {
+    if (!data || typeof data !== 'object') return false;
 
-    // Accept both old format (with chairs array) and new format (without)
-    return hasBasicStructure;
+    // Top-level structure
+    if (!data.meta || typeof data.meta.version !== 'string' || typeof data.meta.name !== 'string') return false;
+    if (!data.settings || typeof data.settings.gridSize !== 'number' ||
+        typeof data.settings.showGrid !== 'boolean' || typeof data.settings.showGuides !== 'boolean') return false;
+    if (!Array.isArray(data.elements)) return false;
+
+    // Element-level validation
+    const validTypes = ['roundTable', 'rectangleTable', 'seatingRow', 'segmentedSeatingRow', 'line', 'polygon', 'text'];
+    for (const element of data.elements) {
+      if (!element || typeof element !== 'object') return false;
+      if (typeof element.id !== 'string' || !element.id) return false;
+      if (!validTypes.includes(element.type)) return false;
+
+      // Coordinate validation (x/y required for all except line which uses startX/startY)
+      if (element.type === 'line') {
+        if (typeof element.startX !== 'number' || typeof element.startY !== 'number' ||
+            typeof element.endX !== 'number' || typeof element.endY !== 'number') return false;
+      } else if (element.type === 'polygon') {
+        if (!Array.isArray(element.points)) return false;
+      } else {
+        if (typeof element.x !== 'number' || typeof element.y !== 'number') return false;
+      }
+
+      // Validate nested chairs if present
+      if (element.chairs !== undefined) {
+        if (!Array.isArray(element.chairs)) return false;
+        for (const chair of element.chairs) {
+          if (!chair || typeof chair !== 'object') return false;
+          if (typeof chair.id !== 'string' || typeof chair.tableId !== 'string') return false;
+        }
+      }
+    }
+
+    // Validate legacy chairs array if present
+    if ('chairs' in data && data.chairs !== undefined) {
+      if (!Array.isArray(data.chairs)) return false;
+      for (const chair of data.chairs) {
+        if (!chair || typeof chair !== 'object') return false;
+        if (typeof chair.id !== 'string' || typeof chair.tableId !== 'string') return false;
+      }
+    }
+
+    return true;
   }
 
   /**

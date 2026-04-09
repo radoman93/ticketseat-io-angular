@@ -323,58 +323,65 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   private drawGrid(): void {
     if (!this.ctx) return;
 
-    const canvas = this.canvasRef.nativeElement;
-    const { width, height } = canvas;
-    this.ctx.clearRect(0, 0, width, height);
-    
-    // Only draw the grid if showGrid is true
-    if (!this.store.showGrid) return;
+    try {
+      const canvas = this.canvasRef.nativeElement;
+      const { width, height } = canvas;
+      this.ctx.clearRect(0, 0, width, height);
 
-    this.ctx.save();
+      // Only draw the grid if showGrid is true
+      if (!this.store.showGrid) return;
 
-    this.ctx.translate(this.store.panOffset.x, this.store.panOffset.y);
-    this.ctx.scale(this.store.zoomLevel / 100, this.store.zoomLevel / 100);
+      this.ctx.save();
 
-    const startX =
-      Math.floor(-this.store.panOffset.x / (this.store.gridSize * (this.store.zoomLevel / 100))) *
-      this.store.gridSize;
-    const startY =
-      Math.floor(-this.store.panOffset.y / (this.store.gridSize * (this.store.zoomLevel / 100))) *
-      this.store.gridSize;
-    const endX = width / (this.store.zoomLevel / 100) + startX + this.store.gridSize;
-    const endY = height / (this.store.zoomLevel / 100) + startY + this.store.gridSize;
+      this.ctx.translate(this.store.panOffset.x, this.store.panOffset.y);
+      this.ctx.scale(this.store.zoomLevel / 100, this.store.zoomLevel / 100);
 
-    this.ctx.strokeStyle = 'rgb(200, 200, 200)';
-    this.ctx.lineWidth = 0.5;
+      const startX =
+        Math.floor(-this.store.panOffset.x / (this.store.gridSize * (this.store.zoomLevel / 100))) *
+        this.store.gridSize;
+      const startY =
+        Math.floor(-this.store.panOffset.y / (this.store.gridSize * (this.store.zoomLevel / 100))) *
+        this.store.gridSize;
+      const endX = width / (this.store.zoomLevel / 100) + startX + this.store.gridSize;
+      const endY = height / (this.store.zoomLevel / 100) + startY + this.store.gridSize;
 
-    for (let x = startX; x <= endX; x += this.store.gridSize) {
+      this.ctx.strokeStyle = 'rgb(200, 200, 200)';
+      this.ctx.lineWidth = 0.5;
+
+      for (let x = startX; x <= endX; x += this.store.gridSize) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, startY);
+        this.ctx.lineTo(x, endY);
+        this.ctx.stroke();
+      }
+
+      for (let y = startY; y <= endY; y += this.store.gridSize) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, y);
+        this.ctx.lineTo(endX, y);
+        this.ctx.stroke();
+      }
+
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+      this.ctx.lineWidth = 1;
+
       this.ctx.beginPath();
-      this.ctx.moveTo(x, startY);
-      this.ctx.lineTo(x, endY);
+      this.ctx.moveTo(startX, 0);
+      this.ctx.lineTo(endX, 0);
       this.ctx.stroke();
-    }
 
-    for (let y = startY; y <= endY; y += this.store.gridSize) {
       this.ctx.beginPath();
-      this.ctx.moveTo(startX, y);
-      this.ctx.lineTo(endX, y);
+      this.ctx.moveTo(0, startY);
+      this.ctx.lineTo(0, endY);
       this.ctx.stroke();
+
+      this.ctx.restore();
+    } catch (error) {
+      this.logger.error('Canvas drawing failed', error instanceof Error ? error : new Error(String(error)), {
+        component: 'GridComponent',
+        action: 'drawGrid'
+      });
     }
-
-    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-    this.ctx.lineWidth = 1;
-
-    this.ctx.beginPath();
-    this.ctx.moveTo(startX, 0);
-    this.ctx.lineTo(endX, 0);
-    this.ctx.stroke();
-
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, startY);
-    this.ctx.lineTo(0, endY);
-    this.ctx.stroke();
-
-    this.ctx.restore();
   }
 
   @HostListener('window:resize')

@@ -1,17 +1,16 @@
 import { action, runInAction } from 'mobx';
 import { layoutStore } from './layout.store';
 import { selectionStore } from './selection.store';
-import { LoggerService } from '../services/logger.service';
+import { sharedLogger } from '../services/logger.service';
 
 /**
  * TransactionManager handles complex multi-step operations
  * that need to be treated as a single transaction.
  */
 export class TransactionManager {
-  private logger: LoggerService;
+  private logger = sharedLogger;
 
   constructor() {
-    this.logger = new LoggerService();
   }
 
   /**

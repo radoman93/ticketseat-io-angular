@@ -37,6 +37,7 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() design?: LayoutExportData | string | null;
   @Output() layoutUpdated = new EventEmitter<LayoutExportData>();
+  @Output() designLoadError = new EventEmitter<string>();
 
   private disposers: IReactionDisposer[] = [];
 
@@ -95,7 +96,9 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
       } catch (error) {
-        this.logger.error('Failed to load design in editor', error instanceof Error ? error : new Error(String(error)), { component: 'EventEditorComponent', action: 'loadDesignIfProvided' });
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error('Failed to load design in editor', error instanceof Error ? error : new Error(message), { component: 'EventEditorComponent', action: 'loadDesignIfProvided' });
+        this.designLoadError.emit(message);
       }
     }
   }

@@ -186,6 +186,7 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showReservationPanel: boolean = false; // Control reservation panel visibility
 
   @Output() selectedSeatsChange = new EventEmitter<Chair[]>(); // Emits selected chair objects
+  @Output() designLoadError = new EventEmitter<string>();
 
   constructor(
     private layoutImportService: LayoutExportImportService,
@@ -287,7 +288,9 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
         // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
       } catch (error) {
-        this.logger.error('Failed to load design in viewer', error instanceof Error ? error : new Error(String(error)), { component: 'EventViewerComponent', action: 'loadDesignIfProvided' });
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error('Failed to load design in viewer', error instanceof Error ? error : new Error(message), { component: 'EventViewerComponent', action: 'loadDesignIfProvided' });
+        this.designLoadError.emit(message);
       }
     }
   }

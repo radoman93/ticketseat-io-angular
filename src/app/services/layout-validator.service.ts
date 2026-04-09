@@ -26,7 +26,7 @@ export class LayoutValidatorService {
 
     // Validate each element
     if (layout.elements && Array.isArray(layout.elements)) {
-      layout.elements.forEach((element, index) => {
+      layout.elements.forEach((element: any, index: number) => {
         const elementErrors = this.validateElement(element);
         if (elementErrors.length > 0) {
           errors.push(`Element at index ${index} has errors: ${elementErrors.join(', ')}`);

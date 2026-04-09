@@ -7,7 +7,7 @@ import { MoveObjectCommand } from '../commands/move-object.command';
 import { HistoryStore } from './history.store';
 import { SegmentProperties } from '../models/elements.model';
 import { TableElement } from './layout.store';
-import { LoggerService } from '../services/logger.service';
+import { LoggerService, sharedLogger } from '../services/logger.service';
 
 export class DragStore {
     // Track dragging state
@@ -45,7 +45,7 @@ export class DragStore {
     private logger: LoggerService;
 
     constructor() {
-        this.logger = new LoggerService();
+        this.logger = sharedLogger;
         makeAutoObservable(this, {
             // Actions
             prepareForDragging: action,
