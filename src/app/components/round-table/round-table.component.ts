@@ -259,7 +259,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
   }
 
   getSeatClasses(seat: any): string {
-    if (!seat.chair) return 'w-5 h-5 bg-gray-200 border border-gray-400';
+    if (!seat.chair) return 'w-5 h-5 ts-seat-empty';
 
     const baseClasses = 'w-5 h-5 transition-all duration-200';
 
@@ -268,22 +268,22 @@ export class RoundTableComponent implements OnInit, OnChanges {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
 
       if (reservationStatus === 'pre-reserved') {
-        return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
+        return `${baseClasses} ts-seat-sold cursor-not-allowed shadow-md`;
       } else if (reservationStatus === 'reserved') {
-        return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
+        return `${baseClasses} ts-seat-sold cursor-not-allowed shadow-md`;
       } else if (reservationStatus === 'selected-for-reservation') {
-        return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
+        return `w-6 h-6 ts-seat-selected shadow-lg text-white animate-pulse font-bold`;
       } else {
-        return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
+        return `${baseClasses} ts-seat-avail cursor-pointer hover:scale-105 hover:shadow-md`;
       }
     }
 
     // In editor mode, show selection status
     if (seat.isSelected) {
-      return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
+      return `w-6 h-6 ts-seat-selected shadow-lg text-white animate-pulse font-bold`;
     }
 
-    return `${baseClasses} bg-blue-200 border border-blue-300 hover:bg-blue-300 hover:scale-105 cursor-pointer`;
+    return `${baseClasses} ts-seat-avail-editor cursor-pointer hover:scale-105`;
   }
 
   getSeatTitle(seat: any): string {
@@ -306,17 +306,17 @@ export class RoundTableComponent implements OnInit, OnChanges {
   }
 
   getSeatLabelClasses(seat: any): string {
-    if (!seat.chair) return 'text-xs text-gray-700';
+    if (!seat.chair) return 'text-xs ts-seat-label';
 
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(seat.chair);
       if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
         return 'text-xs text-white font-bold';
       }
-      return 'text-xs text-gray-700';
+      return 'text-xs ts-seat-label';
     }
 
-    return seat.isSelected ? 'text-xs text-white font-bold' : 'text-xs text-gray-700';
+    return seat.isSelected ? 'text-xs text-white font-bold' : 'text-xs ts-seat-label';
   }
 
   private selectChair(chair: Chair, clickX?: number, clickY?: number): void {

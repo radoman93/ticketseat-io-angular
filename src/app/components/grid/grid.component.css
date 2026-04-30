@@ -61,8 +61,7 @@
 
 .preview-table ::ng-deep .table-circle {
   border-style: dashed;
-  border-color: #3b82f6;
-  /* blue-500 */
+  border-color: var(--ts-accent);
 }
 
 .preview-table ::ng-deep .seat-circle {
@@ -71,12 +70,12 @@
 
 /* Seating row preview specific styles */
 .preview-table.seating-row {
-  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+  filter: drop-shadow(0 2px 4px rgba(184, 51, 28, 0.2));
 }
 
 .preview-table ::ng-deep .chair-circle {
   border-style: dashed;
-  border-color: #3b82f6;
+  border-color: var(--ts-accent);
 }
 
 /* Selection container styling */
@@ -87,7 +86,7 @@
 /* Common selection indicator styles */
 .selection-indicator {
   position: absolute;
-  border: 2px dashed #3498db;
+  border: 2px dashed #B8331C !important;
   border-radius: 10px;
   pointer-events: none;
   z-index: 0;
@@ -96,16 +95,26 @@
 
 /* Rectangular selection for all table types */
 .table-selection {
+  border: 2px dashed #B8331C !important;
   border-radius: 8px;
-  background-color: rgba(59, 130, 246, 0.03);
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+  background-color: rgba(184, 51, 28, 0.03) !important;
+  box-shadow: 0 0 0 1px rgba(184, 51, 28, 0.12);
   transform-origin: center center;
 }
 
 /* Highlight effect for selected elements */
 .selected ::ng-deep .table-circle {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-  /* blue-500 with alpha */
+  box-shadow: 0 0 0 2px rgba(184, 51, 28, 0.25);
+}
+
+.selected ::ng-deep .ts-table-circle {
+  border-color: #B8331C;
+  box-shadow: 0 0 0 4px rgba(184, 51, 28, 0.15);
+}
+
+.selected ::ng-deep .ts-rect-table {
+  border-color: #B8331C;
+  box-shadow: 0 0 0 4px rgba(184, 51, 28, 0.15);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -113,8 +122,8 @@
     background-image: repeating-linear-gradient(-45deg,
         transparent,
         transparent 8px,
-        rgba(59, 130, 246, 0.05) 8px,
-        rgba(59, 130, 246, 0.05) 16px);
+        rgba(184, 51, 28, 0.05) 8px,
+        rgba(184, 51, 28, 0.05) 16px) !important;
     background-size: 24px 24px;
     animation: moveStripes 3s linear infinite;
   }
@@ -185,8 +194,7 @@
 }
 
 .table-boundary.selected {
-  box-shadow: 0 0 0 3px #3b82f6, 0 0 0 5px rgba(59, 130, 246, 0.3);
-  /* Tailwind blue-500 */
+  box-shadow: 0 0 0 3px var(--ts-accent), 0 0 0 5px rgba(184, 51, 28, 0.2);
 }
 
 .seat {

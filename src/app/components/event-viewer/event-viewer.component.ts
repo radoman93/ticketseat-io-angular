@@ -24,142 +24,374 @@ import { LoggerService } from '../../services/logger.service';
     MobxAngularModule
   ],
   template: `
-    <div class="flex flex-col h-screen viewer-mode" *mobxAutorun>
-      <!-- Viewer Header -->
-
-      <div *ngIf="showReservationPanel" class="viewer-header flex flex-row h-12 justify-between items-center px-4 border-b shadow-sm bg-green-50 relative z-10">
-        <!-- Logo -->
-        <div class="text-lg font-bold text-green-600 logo-text">TicketSeats Viewer</div>
-
-        <!-- Viewer Mode Indicator - Hidden on very small screens -->
-        <div class="flex items-center gap-2 mode-indicator">
-          <div class="w-2 h-2 rounded-full bg-green-500"></div>
-          <span class="text-sm text-green-700 font-medium">Seat Selection & Reservation</span>
-          <span class="text-xs text-green-600 ml-2 nav-hint">{{ getNavigationHint() }}</span>
+    <div class="ts-viewer viewer-mode" *mobxAutorun>
+      <!-- Viewer Card -->
+      <div class="ts-viewer-card">
+        <!-- Header -->
+        <div class="ts-viewer-header" *ngIf="showReservationPanel">
+          <div class="ts-viewer-header-left">
+            <div class="ts-viewer-pill">
+              {{ getNavigationHint() }}
+            </div>
+            <h1 class="ts-viewer-title">Select your seats</h1>
+          </div>
+          <div class="ts-viewer-header-right" *mobxAutorun>
+            <div class="ts-viewer-meta">{{ viewerStore.selectedSeatsCount }}{{ getSeatLimitDisplay() }} seats selected</div>
+          </div>
         </div>
 
-        <!-- Selected Seats Summary -->
-        <div class="bg-green-100 border border-green-200 rounded-lg px-4 py-2 flex items-center gap-4 seats-summary" *mobxAutorun>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-green-700 font-medium seats-label">Selected Seats:</span>
-            <span class="bg-green-600 text-white px-2 py-1 rounded-full text-sm font-bold">
-              {{ viewerStore.selectedSeatsCount }}{{ getSeatLimitDisplay() }}
+        <!-- Layout Area -->
+        <div #gridContainer class="ts-viewer-layout">
+          <div class="ts-viewer-grid-wrap">
+            <app-grid></app-grid>
+          </div>
+
+          <!-- Reservation Panel (side) -->
+          <div class="ts-viewer-reservation" *ngIf="showReservationPanel">
+            <app-reservation-panel></app-reservation-panel>
+          </div>
+        </div>
+
+        <!-- Legend Row -->
+        <div class="ts-viewer-legend" *ngIf="showReservationPanel">
+          <div class="ts-legend-items">
+            <span class="ts-legend-dot">
+              <span class="ts-dot ts-dot-avail"></span> Available
+            </span>
+            <span class="ts-legend-dot">
+              <span class="ts-dot ts-dot-selected"></span> Your selection
+            </span>
+            <span class="ts-legend-dot">
+              <span class="ts-dot ts-dot-held"></span> Held
+            </span>
+            <span class="ts-legend-dot">
+              <span class="ts-dot ts-dot-sold"></span> Reserved
             </span>
           </div>
-          <div class="text-sm text-green-600 instructions-text">
-            {{ getSelectionInstructions() }}
+          <div class="ts-hold-pill" *mobxAutorun>
+            <span class="ts-hold-indicator"></span>
+            {{ viewerStore.selectedSeatsCount }} seat{{ viewerStore.selectedSeatsCount !== 1 ? 's' : '' }} selected
           </div>
         </div>
+
+        <!-- Checkout Bar -->
+        <div class="ts-viewer-checkout" *ngIf="showReservationPanel">
+          <div class="ts-checkout-info">
+            <div class="ts-checkout-count">
+              {{ viewerStore.selectedSeatsCount }} {{ viewerStore.selectedSeatsCount === 1 ? 'SEAT' : 'SEATS' }}
+              <span *ngIf="viewerStore.selectedSeatsCount > 0" class="ts-checkout-ids">
+                · {{ getSelectedSeatLabels() }}
+              </span>
+            </div>
+            <div class="ts-checkout-total">\${{ getTotalPrice().toFixed(2) }}</div>
+          </div>
+          <button class="ts-checkout-btn"
+                  [class.ts-checkout-btn-disabled]="viewerStore.selectedSeatsCount === 0"
+                  [disabled]="viewerStore.selectedSeatsCount === 0">
+            Continue to checkout →
+          </button>
+        </div>
       </div>
 
-      <!-- Main Content Area -->
-      <div #gridContainer class="flex flex-row h-full overflow-hidden">
-        <!-- Grid/Layout Area -->
-        <div class="flex-1 h-full overflow-hidden">
-          <app-grid></app-grid>
-        </div>
-
-        <!-- Reservation Panel -->
-        <div class="h-full" *ngIf="showReservationPanel">
-          <app-reservation-panel></app-reservation-panel>
-        </div>
-      </div>
-
-      <!-- Navigation Controls - Always visible -->
+      <!-- Navigation Controls -->
       <app-navigation-controls
         [containerRef]="gridContainer"
         [compact]="isCompactMode">
       </app-navigation-controls>
 
       <!-- Notifications -->
-       <div class="h-full" *ngIf="showReservationPanel">
-      <app-notifications></app-notifications>
-      <div></div>
+      <div *ngIf="showReservationPanel">
+        <app-notifications></app-notifications>
+      </div>
     </div>
   `,
   styles: [`
-    .viewer-mode {
-      background-color: #f0fdf4; /* Very light green background */
-    }
-
-    .viewer-mode .table-container {
-      cursor: grab;
-    }
-
-    .viewer-mode .table-container:active {
-      cursor: grabbing;
-    }
-
     :host {
       display: block;
       height: 100%;
     }
 
-    /* Responsive header styles */
-    .viewer-header {
-      flex-wrap: wrap;
-      gap: 8px;
-      min-height: 48px;
-      height: auto;
-      padding: 8px 16px;
-    }
-
-    .mode-indicator {
+    .ts-viewer {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--ts-bg, #F4EFE6);
+      font-family: var(--ts-font, 'Inter', system-ui, sans-serif);
+      color: var(--ts-ink, #1C160C);
+      padding: 24px;
     }
 
-    .nav-hint {
-      display: inline;
+    .ts-viewer-card {
+      width: 100%;
+      max-width: 1280px;
+      background: var(--ts-panel, #FDFBF7);
+      border-radius: 16px;
+      box-shadow:
+        0 1px 0 rgba(28,22,12,0.04),
+        0 24px 60px -20px rgba(28,22,12,0.18),
+        0 8px 24px -12px rgba(28,22,12,0.08);
+      border: 1px solid rgba(28,22,12,0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
-    .instructions-text {
-      display: block;
+    /* Header */
+    .ts-viewer-header {
+      padding: 28px 36px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      flex-wrap: wrap;
     }
 
-    /* Tablet styles */
-    @media (max-width: 1024px) {
-      .instructions-text {
-        display: none;
-      }
+    .ts-viewer-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    /* Mobile styles */
+    .ts-viewer-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--ts-panel-alt, #F8F3E8);
+      border: 1px solid var(--ts-border, rgba(28,22,12,0.08));
+      font-size: 12px;
+      color: var(--ts-ink-soft, #5C5446);
+      font-weight: 500;
+      width: fit-content;
+    }
+
+    .ts-viewer-title {
+      font-size: 28px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      margin: 0;
+      color: var(--ts-ink, #1C160C);
+    }
+
+    .ts-viewer-header-right {
+      text-align: right;
+      font-size: 13px;
+      color: var(--ts-ink-soft, #5C5446);
+      line-height: 1.6;
+      padding-top: 4px;
+    }
+
+    .ts-viewer-meta {
+      font-family: var(--ts-mono, 'JetBrains Mono', monospace);
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Layout Area */
+    .ts-viewer-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 400px;
+    }
+
+    .ts-viewer-grid-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ts-viewer-reservation {
+      flex-shrink: 0;
+    }
+
+    /* Legend Row */
+    .ts-viewer-legend {
+      padding: 16px 36px;
+      border-top: 1px solid var(--ts-border, rgba(28,22,12,0.08));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .ts-legend-items {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 12px;
+      color: var(--ts-ink-soft, #5C5446);
+    }
+
+    .ts-legend-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ts-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .ts-dot-avail {
+      background: var(--ts-seat-avail, #E8DCC4);
+      border: 1px solid var(--ts-seat-avail-edge, #D9CCB0);
+    }
+
+    .ts-dot-selected {
+      background: var(--ts-accent, #B8331C);
+      border: 1px solid var(--ts-accent-deep, #962513);
+    }
+
+    .ts-dot-held {
+      background: var(--ts-seat-held, #D89A3C);
+      border: 1px solid var(--ts-seat-held-edge, #B07F2A);
+    }
+
+    .ts-dot-sold {
+      background: var(--ts-seat-sold, #C9C2B5);
+      border: 1px solid var(--ts-seat-sold-edge, #B8B0A2);
+    }
+
+    .ts-hold-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--ts-accent-soft, #F4DDD4);
+      color: var(--ts-accent, #B8331C);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .ts-hold-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ts-accent, #B8331C);
+    }
+
+    /* Checkout Bar */
+    .ts-viewer-checkout {
+      padding: 20px 36px;
+      background: var(--ts-panel-alt, #F8F3E8);
+      border-top: 1px solid var(--ts-border, rgba(28,22,12,0.08));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .ts-checkout-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ts-checkout-count {
+      font-family: var(--ts-mono, 'JetBrains Mono', monospace);
+      font-size: 11px;
+      color: var(--ts-ink-soft, #5C5446);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .ts-checkout-ids {
+      font-weight: 400;
+    }
+
+    .ts-checkout-total {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .ts-checkout-btn {
+      height: 44px;
+      padding: 0 20px;
+      border: none;
+      border-radius: 8px;
+      background: var(--ts-accent, #B8331C);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--ts-font, 'Inter', system-ui, sans-serif);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 2px 4px rgba(184,51,28,0.18);
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .ts-checkout-btn:hover {
+      background: var(--ts-accent-deep, #962513);
+    }
+
+    .ts-checkout-btn-disabled {
+      background: var(--ts-seat-avail-edge, #D9CCB0);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .ts-checkout-btn-disabled:hover {
+      background: var(--ts-seat-avail-edge, #D9CCB0);
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .viewer-header {
-        justify-content: space-between;
-        padding: 8px 12px;
+      .ts-viewer {
+        padding: 12px;
       }
 
-      .logo-text {
-        font-size: 14px;
+      .ts-viewer-header {
+        padding: 20px 20px 16px;
       }
 
-      .mode-indicator {
-        display: none;
+      .ts-viewer-title {
+        font-size: 22px;
       }
 
-      .seats-summary {
-        padding: 6px 12px;
-        gap: 8px;
+      .ts-viewer-legend {
+        padding: 12px 20px;
       }
 
-      .seats-label {
-        display: none;
+      .ts-viewer-checkout {
+        padding: 16px 20px;
+      }
+
+      .ts-legend-items {
+        gap: 12px;
+        font-size: 11px;
+      }
+
+      .ts-viewer-layout {
+        flex-direction: column;
+      }
+
+      .ts-checkout-btn {
+        width: 100%;
+        justify-content: center;
       }
     }
 
-    /* Very small screens */
-    @media (max-width: 375px) {
-      .viewer-header {
-        padding: 6px 8px;
+    @media (max-width: 480px) {
+      .ts-viewer-header-right {
+        display: none;
       }
 
-      .logo-text {
-        font-size: 12px;
-      }
-
-      .seats-summary {
-        padding: 4px 8px;
+      .ts-viewer-pill {
+        font-size: 11px;
       }
     }
   `]
@@ -171,28 +403,25 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
 
   private selectionReactionDisposer?: () => void;
 
-  // Touch device detection
   isTouchDevice = false;
   isCompactMode = false;
 
-  // Getter for grid container element
   get gridContainer(): HTMLElement | undefined {
     return this.gridContainerRef?.nativeElement;
   }
 
   @Input() design?: LayoutExportData | string | null;
   @Input() reservedIds?: string[] | null;
-  @Input() seatLimit?: number; // New property to limit seat selection
-  @Input() showReservationPanel: boolean = false; // Control reservation panel visibility
+  @Input() seatLimit?: number;
+  @Input() showReservationPanel: boolean = false;
 
-  @Output() selectedSeatsChange = new EventEmitter<Chair[]>(); // Emits selected chair objects
+  @Output() selectedSeatsChange = new EventEmitter<Chair[]>();
   @Output() designLoadError = new EventEmitter<string>();
 
   constructor(
     private layoutImportService: LayoutExportImportService,
     private logger: LoggerService
   ) {
-    // Ensure we're in viewer mode when this component is used
     this.viewerStore.setMode('viewer');
   }
 
@@ -203,18 +432,13 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
     this.setupSelectionReaction();
     this.detectTouchDevice();
     this.detectCompactMode();
-
-    // Listen for window resize to update compact mode
     window.addEventListener('resize', this.handleResize.bind(this));
   }
 
   ngOnDestroy(): void {
-    // Clean up the reaction when component is destroyed
     if (this.selectionReactionDisposer) {
       this.selectionReactionDisposer();
     }
-
-    // Clean up resize listener
     window.removeEventListener('resize', this.handleResize.bind(this));
   }
 
@@ -234,17 +458,15 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
 
   getNavigationHint(): string {
     if (this.isTouchDevice) {
-      return '• Drag to pan, pinch to zoom';
+      return 'Drag to pan, pinch to zoom';
     }
-    return '• Drag to pan view';
+    return 'Click seats to select · Drag to pan';
   }
 
   private setupSelectionReaction(): void {
-    // Set up a reaction to emit selected chairs when selection changes
     this.selectionReactionDisposer = reaction(
-      () => this.viewerStore.selectedSeatsForReservation.slice(), // Observe the selection array
+      () => this.viewerStore.selectedSeatsForReservation.slice(),
       (selectedSeatIds) => {
-        // Only emit if the change is user-initiated, not programmatic
         if (!this.viewerStore.isProgrammaticUpdate) {
           const selectedChairs = this.getSelectedChairObjects(selectedSeatIds);
           this.selectedSeatsChange.emit(selectedChairs);
@@ -259,15 +481,33 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
       .filter((chair): chair is Chair => chair !== undefined);
   }
 
+  getSelectedSeatLabels(): string {
+    return this.viewerStore.selectedSeatsForReservation
+      .map(id => {
+        const chair = rootStore.chairStore.chairs.get(id);
+        return chair ? chair.label : id;
+      })
+      .join(', ');
+  }
+
+  getTotalPrice(): number {
+    let total = 0;
+    this.viewerStore.selectedSeatsForReservation.forEach(seatId => {
+      const chair = rootStore.chairStore.chairs.get(seatId);
+      if (chair) {
+        total += chair.price;
+      }
+    });
+    return total;
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['design'] && !changes['design'].firstChange) {
       this.loadDesignIfProvided();
     }
-
     if (changes['reservedIds']) {
       this.setReservedSeatsIfProvided();
     }
-
     if (changes['seatLimit']) {
       this.setSeatLimitIfProvided();
     }
@@ -277,15 +517,11 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
     if (this.design) {
       try {
         let designData: LayoutExportData;
-
-        // Handle both string and object inputs
         if (typeof this.design === 'string') {
           designData = JSON.parse(this.design);
         } else {
           designData = this.design;
         }
-
-        // Import the design using the layout import service
         this.layoutImportService.importLayout(designData, 'replace');
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -299,7 +535,6 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
     if (this.reservedIds && Array.isArray(this.reservedIds)) {
       this.viewerStore.setPreReservedSeats(this.reservedIds);
     } else {
-      // Clear pre-reserved seats if no IDs provided
       this.viewerStore.setPreReservedSeats([]);
     }
   }
@@ -307,32 +542,9 @@ export class EventViewerComponent implements OnInit, OnChanges, OnDestroy {
   private setSeatLimitIfProvided(): void {
     if (this.seatLimit !== undefined) {
       this.viewerStore.setSeatLimit(this.seatLimit);
-      if (this.seatLimit === 0) {
-      } else {
-      }
     } else {
-      // Default to unlimited (0) if not provided
       this.viewerStore.setSeatLimit(0);
     }
-  }
-
-  getSelectionInstructions(): string {
-    const tapOrClick = this.isTouchDevice ? 'Tap' : 'Click';
-    const navigationHint = this.isTouchDevice
-      ? 'Drag to pan, pinch to zoom.'
-      : 'Drag to pan view, scroll to zoom.';
-
-    if (this.viewerStore.selectedSeatsCount === 0) {
-      const limitText = this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0
-        ? ` (max ${this.viewerStore.seatLimit})`
-        : '';
-      return `${tapOrClick} on available seats to select them for reservation${limitText}. ${navigationHint}`;
-    }
-
-    const remainingText = this.viewerStore.seatLimit && this.viewerStore.seatLimit > 0
-      ? ` (${this.viewerStore.remainingSeats} remaining)`
-      : '';
-    return `Ready to reserve ${this.viewerStore.selectedSeatsCount} seat(s)${remainingText}. ${navigationHint}`;
   }
 
   getSeatLimitDisplay(): string {

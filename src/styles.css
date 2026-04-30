@@ -1,3 +1,245 @@
+/* Fonts — must come before Tailwind */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
+
+/* TicketSeat Design Tokens — Studio direction */
+:root {
+  --ts-bg: #F4EFE6;
+  --ts-panel: #FDFBF7;
+  --ts-panel-alt: #F8F3E8;
+  --ts-border: rgba(28, 22, 12, 0.08);
+  --ts-border-strong: rgba(28, 22, 12, 0.14);
+  --ts-ink: #1C160C;
+  --ts-ink-soft: #5C5446;
+  --ts-ink-mute: #9A9286;
+  --ts-seat-avail: #E8DCC4;
+  --ts-seat-avail-edge: #D9CCB0;
+  --ts-seat-held: #D89A3C;
+  --ts-seat-held-edge: #B07F2A;
+  --ts-seat-held-soft: #F2D9A6;
+  --ts-seat-sold: #C9C2B5;
+  --ts-seat-sold-edge: #B8B0A2;
+  --ts-accent: #B8331C;
+  --ts-accent-soft: #F4DDD4;
+  --ts-accent-deep: #962513;
+  --ts-good: #3F7A4D;
+  --ts-warn: #D89A3C;
+  --ts-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --ts-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html, body {
+  font-family: var(--ts-font);
+}
+
+/* === Table element styles (global so child components can see them) === */
+.ts-table-circle {
+  background: #FFFFFF;
+  border: 1.5px solid var(--ts-border-strong);
+}
+.ts-table-circle.ts-table-selected {
+  border-color: var(--ts-accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 4px var(--ts-accent-soft);
+}
+.ts-table-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ts-ink);
+  font-family: var(--ts-font);
+  text-align: center;
+}
+.ts-rect-table {
+  background: #FFFFFF;
+  border: 1.5px solid var(--ts-border-strong);
+}
+.ts-rect-table.ts-table-selected {
+  border-color: var(--ts-accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 4px var(--ts-accent-soft);
+}
+
+/* === Seat state classes (global) === */
+.ts-seat-empty {
+  background: var(--ts-panel-alt);
+  border: 1px solid var(--ts-border-strong);
+}
+.ts-seat-avail {
+  background: var(--ts-seat-avail);
+  border: 1px solid var(--ts-seat-avail-edge);
+}
+.ts-seat-avail:hover {
+  background: #DDD0B8;
+  border-color: #C8B99E;
+}
+.ts-seat-avail-editor {
+  background: var(--ts-seat-avail);
+  border: 1px solid var(--ts-seat-avail-edge);
+}
+.ts-seat-avail-editor:hover {
+  background: #DDD0B8;
+  border-color: #C8B99E;
+}
+.ts-seat-selected {
+  background: var(--ts-accent) !important;
+  border: 2px solid var(--ts-accent-deep) !important;
+  color: white;
+}
+.ts-seat-held {
+  background: var(--ts-seat-held);
+  border: 1px solid var(--ts-seat-held-edge);
+  cursor: not-allowed;
+}
+.ts-seat-sold {
+  background: var(--ts-seat-sold);
+  border: 1px solid var(--ts-seat-sold-edge);
+  cursor: not-allowed;
+}
+.ts-seat-label {
+  color: var(--ts-ink-soft);
+}
+
+/* Selection glow effects */
+.ts-glow-accent {
+  background-color: var(--ts-accent);
+}
+.ts-glow-accent-soft {
+  background-color: var(--ts-accent-soft);
+}
+
+/* Selection indicators — global override to ensure oxblood */
+.selection-indicator,
+.selection-indicator.table-selection {
+  border-color: #B8331C !important;
+}
+.table-selection {
+  background-color: rgba(184, 51, 28, 0.03) !important;
+  box-shadow: 0 0 0 1px rgba(184, 51, 28, 0.12) !important;
+}
+
+/* === Inspector / Properties Panel === */
+.ts-inspector-panel {
+  background: var(--ts-panel);
+  border-left: 1px solid var(--ts-border);
+  color: var(--ts-ink);
+  font-family: var(--ts-font);
+  font-size: 13px;
+}
+
+.ts-inspector-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ts-border);
+  font-family: var(--ts-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ts-ink-mute);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ts-inspector-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ts-border);
+}
+
+.ts-section-title {
+  font-family: var(--ts-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ts-ink-mute);
+  font-weight: 500;
+}
+
+.ts-field-label {
+  font-size: 12px;
+  color: var(--ts-ink-soft);
+}
+
+.ts-inspector-info {
+  padding: 8px 16px;
+  font-family: var(--ts-mono);
+  font-size: 11px;
+  color: var(--ts-ink-mute);
+  background: var(--ts-panel-alt);
+}
+
+.ts-btn-delete {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ts-border);
+  border-radius: 6px;
+  background: var(--ts-panel);
+  color: var(--ts-ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--ts-font);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ts-btn-delete:hover {
+  background: var(--ts-accent-soft);
+  color: var(--ts-accent);
+  border-color: var(--ts-accent);
+}
+
+/* DaisyUI overrides for warm theme */
+.ts-inspector-panel .join-item.btn {
+  background: var(--ts-panel-alt);
+  border-color: var(--ts-border);
+  color: var(--ts-ink);
+  font-size: 12px;
+}
+.ts-inspector-panel .join-item.btn:hover {
+  background: var(--ts-border-strong);
+}
+.ts-inspector-panel .input {
+  background: var(--ts-panel-alt);
+  border-color: var(--ts-border);
+  color: var(--ts-ink);
+  font-family: var(--ts-mono);
+  font-size: 11px;
+}
+.ts-inspector-panel .input:focus {
+  border-color: var(--ts-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ts-accent-soft);
+}
+.ts-inspector-panel .select {
+  background: var(--ts-panel-alt);
+  border-color: var(--ts-border);
+  color: var(--ts-ink);
+  font-size: 12px;
+}
+.ts-inspector-panel .toggle {
+  --tglbg: var(--ts-border-strong);
+}
+.ts-inspector-panel .toggle:checked {
+  --tglbg: var(--ts-ink);
+  border-color: var(--ts-ink);
+}
+.ts-inspector-panel .textarea {
+  background: var(--ts-panel-alt);
+  border-color: var(--ts-border);
+  color: var(--ts-ink);
+  font-size: 12px;
+}
+
+/* Peer-checked toggle overrides for seating row */
+.ts-inspector-panel .peer-checked\:bg-blue-600 {
+  background-color: var(--ts-ink) !important;
+}
+.ts-inspector-panel .peer-focus\:ring-blue-300 {
+  --tw-ring-color: var(--ts-accent-soft) !important;
+}

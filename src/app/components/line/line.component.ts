@@ -20,7 +20,7 @@ export class LineComponent implements OnInit, OnChanges {
   @Input() endX: number = 100;
   @Input() endY: number = 0;
   @Input() thickness: number = 2;
-  @Input() color: string = '#000000';
+  @Input() color: string = '#1C160C';
   @Input() lineData!: LineElement;
   @Input() isSelected: boolean = false;
   @Input() isPreview: boolean = false;

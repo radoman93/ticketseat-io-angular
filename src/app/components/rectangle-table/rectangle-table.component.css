@@ -6,7 +6,6 @@
   transform-origin: center center;
 }
 
-/* Touch feedback for seat selection */
 .seat,
 .chair-circle {
   transition: transform 0.1s ease, background-color 0.2s ease-in-out;
@@ -19,10 +18,9 @@
   transform: scale(0.92);
 }
 
-/* Hover state for desktop */
 @media (hover: hover) {
   .seat:hover:not(.reserved):not(.selected),
   .chair-circle:hover:not(.reserved):not(.selected) {
     transform: scale(1.05);
   }
-} 
+}

@@ -1,9 +1,44 @@
-<div class="flex flex-col h-screen editor-mode">
-    <app-top-toolbar></app-top-toolbar>
-    <div class="flex flex-row h-full overflow-hidden">
-        <div class="h-full"><app-main-toolbar></app-main-toolbar></div>
-        <div class="flex-1 h-full overflow-hidden"><app-grid></app-grid></div>
-        <div class="h-full"><app-properties-panel></app-properties-panel></div>
+<div class="ts-editor editor-mode">
+    <app-top-toolbar (toggleLayers)="showLayers = !showLayers"></app-top-toolbar>
+    <div class="ts-editor-body">
+        <div class="ts-tool-rail"><app-main-toolbar></app-main-toolbar></div>
+
+        <!-- Objects / Layers Panel -->
+        <div class="ts-layers-panel" *ngIf="showLayers">
+            <div class="ts-layers-header">
+                <span class="ts-layers-title">OBJECTS</span>
+                <span class="ts-layers-count">{{ layoutStore.elements.length }}</span>
+            </div>
+            <div class="ts-layers-list">
+                <div *ngFor="let el of layoutStore.elements; trackBy: trackById"
+                     class="ts-layer-item"
+                     [class.ts-layer-active]="selectionStore.isItemSelected(el.id)"
+                     (click)="selectElement(el)">
+                    <span class="ts-layer-icon">
+                        <svg *ngIf="el.type === 'roundTable'" width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                        <svg *ngIf="el.type === 'rectangleTable'" width="12" height="12" viewBox="0 0 24 24"><rect x="6" y="8" width="12" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                        <svg *ngIf="el.type === 'seatingRow'" width="12" height="12" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                        <svg *ngIf="el.type === 'segmentedSeatingRow'" width="12" height="12" viewBox="0 0 24 24"><path d="M4 16 L10 10 L14 14 L20 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        <svg *ngIf="el.type === 'line'" width="12" height="12" viewBox="0 0 24 24"><path d="M5 19 L19 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        <svg *ngIf="el.type === 'polygon'" width="12" height="12" viewBox="0 0 24 24"><path d="M12 4 L20 10 L17 19 L7 19 L4 10 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                        <svg *ngIf="el.type === 'text'" width="12" height="12" viewBox="0 0 24 24"><path d="M5 6 H19 M12 6 V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <span class="ts-layer-name">{{ el.name || el.type }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ts-canvas-area"><app-grid></app-grid></div>
+        <!-- Desktop inspector (inline) -->
+        <div class="ts-inspector ts-inspector-desktop"><app-properties-panel></app-properties-panel></div>
+    </div>
+
+    <!-- Mobile inspector (bottom sheet overlay) -->
+    <div class="ts-mobile-sheet" [class.ts-mobile-sheet-open]="selectionStore.selectedItem" *mobxAutorun>
+        <div class="ts-sheet-handle" (click)="closeMobileSheet()"><span class="ts-handle-bar"></span></div>
+        <div class="ts-sheet-body">
+            <app-properties-panel></app-properties-panel>
+        </div>
     </div>
     <app-chair-properties-panel></app-chair-properties-panel>
     <app-notifications></app-notifications>

@@ -1,8 +1,9 @@
-<div #gridContainer class="relative flex-1 bg-gray-100 overflow-auto w-full h-full grid-container" *mobxAutorun
+<div #gridContainer class="relative flex-1 overflow-auto w-full h-full grid-container" *mobxAutorun
+  style="background-color: #FAF9F6; touch-action: none;"
   [class.cursor-grab]="viewerStore.isViewerMode" [class.cursor-grabbing]="viewerStore.isViewerMode && store.isPanning"
   [class.is-touch-panning]="isTouchPanning"
   (click)="handleCanvasClick()"
-  style="touch-action: none;">
+>
   <canvas #gridCanvas class="absolute top-0 left-0 w-full h-full" style="will-change: transform; transform: translateZ(0);"></canvas>
   <!-- Canvas overlay for selection rendering -->
   <canvas #selectionCanvas class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10; will-change: transform; transform: translateZ(0);"></canvas>
@@ -153,7 +154,7 @@
       <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Line && isDrawingLine && previewTable.type === 'line'"
            class="absolute pointer-events-none opacity-70">
         <!-- Simple CSS-based line preview -->
-        <div class="absolute bg-gray-800"
+        <div class="absolute" style="background: #1C160C;"
              [style.left.px]="$any(previewTable).startX"
              [style.top.px]="$any(previewTable).startY"
              [style.width.px]="getLinePreviewLength()"
@@ -162,13 +163,13 @@
              [style.transform-origin]="'0 50%'">
         </div>
         <!-- Start point -->
-        <div class="absolute w-2 h-2 bg-gray-800 rounded-full"
+        <div class="absolute w-2 h-2 rounded-full" style="background: #1C160C;"
              [style.left.px]="$any(previewTable).startX"
              [style.top.px]="$any(previewTable).startY"
              [style.transform]="'translate(-50%, -50%)'">
         </div>
         <!-- End point -->
-        <div class="absolute w-2 h-2 bg-gray-800 rounded-full"
+        <div class="absolute w-2 h-2 rounded-full" style="background: #1C160C;"
              [style.left.px]="$any(previewTable).endX"
              [style.top.px]="$any(previewTable).endY"
              [style.transform]="'translate(-50%, -50%)'">
@@ -191,8 +192,8 @@
                   [attr.y1]="polygonPoints[i-1].y"
                   [attr.x2]="point.x"
                   [attr.y2]="point.y"
-                  stroke="#000000"
-                  stroke-width="3"
+                  stroke="#5C5446"
+                  stroke-width="2"
                   fill="none"
                   opacity="0.8">
             </line>
@@ -204,7 +205,7 @@
                 [attr.y1]="polygonPoints[polygonPoints.length - 1].y"
                 [attr.x2]="$any(previewTable).points[$any(previewTable).points.length - 1].x"
                 [attr.y2]="$any(previewTable).points[$any(previewTable).points.length - 1].y"
-                stroke="#666666"
+                stroke="#9A9286"
                 stroke-width="2"
                 stroke-dasharray="5,5"
                 fill="none"
@@ -212,22 +213,22 @@
           </line>
           
           <!-- Vertex indicators as SVG circles -->
-          <circle *ngFor="let point of polygonPoints; let i = index" 
+          <circle *ngFor="let point of polygonPoints; let i = index"
                   [attr.cx]="point.x"
                   [attr.cy]="point.y"
                   r="4"
-                  fill="#374151"
-                  stroke="#ffffff"
+                  fill="#1C160C"
+                  stroke="#FDFBF7"
                   stroke-width="2">
           </circle>
-          
-          <!-- Starting point indicator (red circle, larger when hovering) -->
-          <circle *ngIf="polygonPoints.length > 0" 
+
+          <!-- Starting point indicator (accent circle, larger when hovering) -->
+          <circle *ngIf="polygonPoints.length > 0"
                   [attr.cx]="polygonPoints[0].x"
                   [attr.cy]="polygonPoints[0].y"
                   [attr.r]="isHoveringStartPoint ? 8 : 6"
-                  fill="#ef4444"
-                  stroke="#ffffff"
+                  fill="#B8331C"
+                  stroke="#FDFBF7"
                   stroke-width="2"
                   [attr.opacity]="isHoveringStartPoint ? 1 : 0.9">
           </circle>
@@ -265,23 +266,28 @@
 </div>
 
 <!-- Context Menu -->
-<div *ngIf="showContextMenuFlag" 
-     class="fixed bg-white shadow-lg rounded-md py-1 z-50 min-w-[160px]"
+<div *ngIf="showContextMenuFlag"
+     class="fixed rounded-md py-1 z-50 min-w-[160px]"
+     style="background: var(--ts-panel); border: 1px solid var(--ts-border); box-shadow: 0 8px 24px -12px rgba(28,22,12,0.15);"
      [style.left.px]="contextMenuX"
      [style.top.px]="contextMenuY">
-  <button (click)="sendElementForward()" 
-          class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2">
+  <button (click)="sendElementForward()"
+          class="w-full px-4 py-2 text-sm text-left flex items-center gap-2"
+          style="color: var(--ts-ink-soft);"
+          onmouseover="this.style.background='var(--ts-panel-alt)'"
+          onmouseout="this.style.background='transparent'">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-            d="M5 15l7-7 7 7"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
     </svg>
     Send Forward
   </button>
-  <button (click)="sendElementBackward()" 
-          class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2">
+  <button (click)="sendElementBackward()"
+          class="w-full px-4 py-2 text-sm text-left flex items-center gap-2"
+          style="color: var(--ts-ink-soft);"
+          onmouseover="this.style.background='var(--ts-panel-alt)'"
+          onmouseout="this.style.background='transparent'">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-            d="M19 9l-7 7-7-7"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
     </svg>
     Send Backward
   </button>

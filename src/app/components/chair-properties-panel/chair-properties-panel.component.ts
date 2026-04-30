@@ -12,11 +12,12 @@ import { debounce } from '../../utils/debounce.util';
   template: `
     <div *mobxAutorun>
       <div *ngIf="store.chairStore.selectedChair"
-           class="chair-properties-panel bg-white border border-gray-300 rounded-lg shadow-xl p-4 w-64"
+           class="chair-properties-panel rounded-lg p-4 w-64"
+           style="background: var(--ts-panel); border: 1px solid var(--ts-border); box-shadow: 0 8px 24px -12px rgba(28,22,12,0.15); font-family: var(--ts-font);"
            [style.left]="(store.chairStore.panelPosition?.x || 20) + 'px'"
            [style.top]="(store.chairStore.panelPosition?.y || 20) + 'px'">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold text-gray-800">Chair Properties</h3>
+          <h3 class="text-lg font-semibold" style="color: var(--ts-ink)">Chair Properties</h3>
           <button (click)="closePanel()" 
                   class="text-gray-400 hover:text-gray-600 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

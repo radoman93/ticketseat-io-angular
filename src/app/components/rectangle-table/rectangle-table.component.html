@@ -1,39 +1,39 @@
 <div class="absolute" *mobxAutorun
-     [style.left]="x + 'px'" 
-     [style.top]="y + 'px'" 
+     [style.left]="x + 'px'"
+     [style.top]="y + 'px'"
      [style.transform]="'translate(-50%, -50%) rotate(' + rotation + 'deg)'">
-  <div class="table-rectangle bg-gray-100 border-2 border-gray-300 flex justify-center items-center z-10" 
-       [style.width]="(width) + 'px'" 
+  <div class="table-rectangle ts-rect-table flex justify-center items-center z-10"
+       [style.width]="(width) + 'px'"
        [style.height]="(height) + 'px'"
-       [class.border-blue-500]="tableData && tableData.id && store.selectionStore.isItemSelected(tableData.id)">
-    <span *ngIf="tableLabelVisible" class="text-sm font-bold text-gray-700 text-center">{{ name }}</span>
+       [class.ts-table-selected]="tableData && tableData.id && store.selectionStore.isItemSelected(tableData.id)">
+    <span *ngIf="tableLabelVisible" class="ts-table-label">{{ name }}</span>
   </div>
-  
+
   <!-- Rectangle Table Chairs -->
   <div class="absolute w-full h-full left-0 top-0">
-    <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5" 
-         *ngFor="let chair of chairStyles; let i = index" 
+    <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5"
+         *ngFor="let chair of chairStyles; let i = index"
          [style.transform]="chair.transform">
-      <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+      <div class="chair-circle rounded-full transition-all duration-200 hover:cursor-pointer flex justify-center items-center relative"
            [class]="getSeatClasses(chair)"
            (click)="onChairClick($event, chair)"
            (mousedown)="onChairMouseDown($event, chair)"
            (mouseenter)="onChairHover(chair)"
            [title]="getSeatTitle(chair)">
-        <span *ngIf="chairLabelVisible" 
+        <span *ngIf="chairLabelVisible"
               [class]="getSeatLabelClasses(chair)">
           {{ chair.label }}
         </span>
         <!-- Selection glow effect for editor mode -->
-        <div *ngIf="chair.isSelected && viewerStore.isEditorMode" 
-             class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
-        <div *ngIf="chair.isSelected && viewerStore.isEditorMode" 
-             class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
+        <div *ngIf="chair.isSelected && viewerStore.isEditorMode"
+             class="absolute inset-0 rounded-full ts-glow-accent opacity-40 animate-ping z-0"></div>
+        <div *ngIf="chair.isSelected && viewerStore.isEditorMode"
+             class="absolute -inset-2 rounded-full ts-glow-accent-soft blur-sm animate-pulse z-0"></div>
         <!-- Selection glow effect for viewer mode -->
-        <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
-             class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
-        <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)" 
-             class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
+        <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
+             class="absolute inset-0 rounded-full ts-glow-accent opacity-50 animate-ping z-0"></div>
+        <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
+             class="absolute -inset-3 rounded-full ts-glow-accent-soft blur-md animate-pulse z-0"></div>
       </div>
     </div>
   </div>

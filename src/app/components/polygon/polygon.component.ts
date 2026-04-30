@@ -16,9 +16,9 @@ import { PolygonElement } from '../../models/elements.model';
 })
 export class PolygonComponent implements OnInit, OnChanges {
   @Input() points: Array<{x: number, y: number}> = [];
-  @Input() fillColor: string = '#0000ff';
-  @Input() fillOpacity: number = 0.3;
-  @Input() borderColor: string = '#000000';
+  @Input() fillColor: string = '#E8DCC4';
+  @Input() fillOpacity: number = 0.35;
+  @Input() borderColor: string = '#5C5446';
   @Input() borderThickness: number = 2;
   @Input() showBorder: boolean = true;
   @Input() polygonData!: PolygonElement;
@@ -187,6 +187,21 @@ export class PolygonComponent implements OnInit, OnChanges {
 
   getSvgY(y: number): number {
     return y - this.svgTop;
+  }
+
+  // Label position — centroid of polygon in SVG coords
+  getLabelX(): number {
+    const pts = this.effectivePoints;
+    if (pts.length === 0) return 0;
+    const avg = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+    return this.getSvgX(avg);
+  }
+
+  getLabelY(): number {
+    const pts = this.effectivePoints;
+    if (pts.length === 0) return 0;
+    const avg = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
+    return this.getSvgY(avg);
   }
 
   // Generate SVG path data for the polygon

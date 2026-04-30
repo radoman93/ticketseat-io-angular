@@ -11,7 +11,17 @@ import { AssetService } from '../../../services/asset.service';
   styleUrl: './main-toolbar.component.css'
 })
 export class MainToolbarComponent {
-  ToolType = ToolType; // Make enum available in template
+  ToolType = ToolType;
+
+  tools = [
+    { type: ToolType.RoundTable, icon: 'round-table-tool', label: 'Round Table' },
+    { type: ToolType.RectangleTable, icon: 'rectangular-table-tool', label: 'Rectangle Table' },
+    { type: ToolType.SeatingRow, icon: 'row-tool', label: 'Seating Row' },
+    { type: ToolType.SegmentedSeatingRow, icon: 'segmented-row-tool', label: 'Segmented Row' },
+    { type: ToolType.Line, icon: 'line-tool', label: 'Line' },
+    { type: ToolType.Polygon, icon: 'polygon-tool', label: 'Polygon' },
+    { type: ToolType.Text, icon: '20. Text tool', label: 'Text' },
+  ];
 
   constructor(
     private toolService: ToolService,
@@ -19,11 +29,9 @@ export class MainToolbarComponent {
   ) { }
 
   toggleTool(tool: ToolType): void {
-    // If the tool is already active, deactivate it
     if (this.toolService.getActiveTool() === tool) {
       this.toolService.setActiveTool(ToolType.None);
     } else {
-      // Otherwise, activate the selected tool
       this.toolService.setActiveTool(tool);
     }
   }

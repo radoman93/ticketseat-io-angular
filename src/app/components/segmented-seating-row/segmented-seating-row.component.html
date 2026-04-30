@@ -6,21 +6,22 @@
   <div *ngFor="let data of segmentData; let segmentIndex = index; trackBy: trackByIndex"
        class="absolute"
        [ngStyle]="data.styles">
-    
+
     <!-- Segment line (visual indicator) -->
     <div class="absolute h-0.5"
-         [ngClass]="{'bg-green-400 opacity-50': !isSelected, 'bg-blue-400 opacity-70': isSelected}"
          [style.width.px]="data.width"
          [style.left.px]="0"
-         [style.top.px]="-1">
+         [style.top.px]="-1"
+         [style.background]="isSelected ? 'var(--ts-accent)' : 'var(--ts-border-strong)'"
+         [style.opacity]="isSelected ? '0.7' : '0.5'">
     </div>
-    
+
     <!-- Chairs for this segment -->
     <div class="absolute w-full h-full left-0 top-0">
-      <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5" 
+      <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5"
            *ngFor="let chair of data.chairs; trackBy: trackByChairId"
            [style.transform]="chair.transform">
-        <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+        <div class="chair-circle rounded-full transition-all duration-200 hover:cursor-pointer flex justify-center items-center relative"
             [ngClass]="getChairClasses(chair)"
             (click)="!isPreview && onChairClick($event, chair, segmentIndex)"
             (mousedown)="!isPreview && onChairMouseDown($event, chair)"
@@ -30,42 +31,43 @@
                 [class]="getSeatLabelClasses(chair)">
             {{ chair.label }}
           </span>
-          <!-- Enhanced Selection glow effect for editor mode -->
+          <!-- Selection glow effect for editor mode -->
           <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode"
-               class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
+               class="absolute inset-0 rounded-full ts-glow-accent opacity-40 animate-ping z-0"></div>
           <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode"
-               class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
+               class="absolute -inset-2 rounded-full ts-glow-accent-soft blur-sm animate-pulse z-0"></div>
           <!-- Selection glow effect for viewer mode -->
           <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
-               class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
+               class="absolute inset-0 rounded-full ts-glow-accent opacity-50 animate-ping z-0"></div>
           <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
-               class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
+               class="absolute -inset-3 rounded-full ts-glow-accent-soft blur-md animate-pulse z-0"></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Preview Segment (currently being drawn) -->
-  <div *ngIf="previewSegmentData" 
+  <div *ngIf="previewSegmentData"
        class="absolute"
        [ngStyle]="previewSegmentData.styles">
-    
+
     <!-- Preview segment line -->
-    <div class="absolute h-0.5 bg-blue-400 opacity-70"
+    <div class="absolute h-0.5"
+         style="background: var(--ts-accent); opacity: 0.5;"
          [style.width.px]="previewSegmentData.width"
          [style.left.px]="0"
          [style.top.px]="-1">
     </div>
-    
+
     <!-- Preview chairs for this segment -->
     <div class="absolute w-full h-full left-0 top-0">
-      <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5" 
+      <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5"
            *ngFor="let chair of previewSegmentData.chairs; trackBy: trackByChairId"
            [style.transform]="chair.transform">
-        <div class="chair-circle rounded-full transition-all duration-300 flex justify-center items-center relative"
+        <div class="chair-circle rounded-full transition-all duration-200 flex justify-center items-center relative"
              [ngClass]="getChairClasses(chair)"
              [title]="getSeatTitle(chair)">
-          <span *ngIf="chairLabelVisible" 
+          <span *ngIf="chairLabelVisible"
                 [class]="getSeatLabelClasses(chair)">
             {{ chair.label }}
           </span>
@@ -75,16 +77,17 @@
 
     <!-- Preview info display -->
     <div *ngIf="isPreview && previewSegment"
-         class="absolute text-xs text-blue-600 font-medium whitespace-nowrap bg-white/90 px-2 py-1 rounded shadow-lg"
-         style="left: 20px; top: -25px;">
+         class="absolute text-xs font-medium whitespace-nowrap px-2 py-1 rounded shadow-lg"
+         style="left: 20px; top: -25px; color: var(--ts-accent); background: var(--ts-panel);">
       Segment {{ (completedSegments.length || 0) + 1 }}: {{ previewSegment.seatCount }} seats
     </div>
   </div>
 
   <!-- Row label -->
   <div *ngIf="rowLabelVisible && seatingRowData.name && !isPreview"
-       class="absolute text-xs text-gray-600 font-medium whitespace-nowrap"
+       class="absolute text-xs font-medium whitespace-nowrap"
+       style="color: var(--ts-ink-soft)"
        [ngStyle]="getRowLabelPosition()">
     {{ seatingRowData.name }}
   </div>
-</div> 
+</div>

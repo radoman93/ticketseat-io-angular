@@ -10,18 +10,18 @@ import { rootStore } from '../../stores/root.store';
   standalone: true,
   imports: [CommonModule, MobxAngularModule, FormsModule],
   template: `
-    <div class="w-80 h-full bg-white shadow-lg flex flex-col" *mobxAutorun>
+    <div class="w-80 h-full flex flex-col" style="background: var(--ts-panel); border-left: 1px solid var(--ts-border); font-family: var(--ts-font);" *mobxAutorun>
       <!-- Header -->
-      <div class="px-4 py-3 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800">Seat Reservation</h2>
-        <p class="text-sm text-gray-600">Select seats and enter customer details</p>
+      <div class="px-4 py-3" style="border-bottom: 1px solid var(--ts-border);">
+        <h2 class="text-lg font-semibold" style="color: var(--ts-ink);">Seat Reservation</h2>
+        <p class="text-sm" style="color: var(--ts-ink-soft);">Select seats and enter customer details</p>
       </div>
 
       <!-- Selected Seats Summary -->
-      <div class="px-4 py-3 border-b border-gray-100" *ngIf="viewerStore.selectedSeatsCount > 0">
+      <div class="px-4 py-3" style="border-bottom: 1px solid var(--ts-border);" *ngIf="viewerStore.selectedSeatsCount > 0">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-gray-700">Selected Seats</span>
-          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">
+          <span class="text-sm font-medium" style="color: var(--ts-ink);">Selected Seats</span>
+          <span class="px-2 py-1 rounded-full text-xs font-bold" style="background: var(--ts-accent-soft); color: var(--ts-accent);">
             {{ viewerStore.selectedSeatsCount }}
           </span>
         </div>
@@ -84,14 +84,14 @@ import { rootStore } from '../../stores/root.store';
       </div>
 
       <!-- Reservation Summary & Action -->
-      <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+      <div class="px-4 py-3" style="border-top: 1px solid var(--ts-border); background: var(--ts-panel-alt);">
         <!-- Pricing Summary -->
         <div class="mb-3" *ngIf="viewerStore.selectedSeatsCount > 0">
-          <div class="flex justify-between text-sm">
+          <div class="flex justify-between text-sm" style="color: var(--ts-ink-soft);">
             <span>{{ viewerStore.selectedSeatsCount }} seat(s)</span>
             <span>\${{ getTotalPrice() }}</span>
           </div>
-          <div class="flex justify-between font-medium text-gray-900">
+          <div class="flex justify-between font-medium" style="color: var(--ts-ink);">
             <span>Total</span>
             <span>\${{ getTotalPrice() }}</span>
           </div>
@@ -101,17 +101,14 @@ import { rootStore } from '../../stores/root.store';
         <button (click)="makeReservation()"
                 [disabled]="!viewerStore.canReserveSeats"
                 class="w-full py-2 px-4 rounded-md font-medium text-sm transition-colors duration-200"
-                [class.bg-green-600]="viewerStore.canReserveSeats"
-                [class.hover:bg-green-700]="viewerStore.canReserveSeats"
-                [class.text-white]="viewerStore.canReserveSeats"
-                [class.bg-gray-300]="!viewerStore.canReserveSeats"
-                [class.text-gray-500]="!viewerStore.canReserveSeats"
-                [class.cursor-not-allowed]="!viewerStore.canReserveSeats">
+                [style.background]="viewerStore.canReserveSeats ? 'var(--ts-accent)' : 'var(--ts-seat-avail-edge)'"
+                [style.color]="viewerStore.canReserveSeats ? '#fff' : 'var(--ts-ink-mute)'"
+                [style.cursor]="viewerStore.canReserveSeats ? 'pointer' : 'not-allowed'">
           {{ getReserveButtonText() }}
         </button>
 
         <!-- Instructions -->
-        <p class="text-xs text-gray-500 mt-2 text-center">
+        <p class="text-xs mt-2 text-center" style="color: var(--ts-ink-mute);">
           {{ getInstructionText() }}
         </p>
       </div>

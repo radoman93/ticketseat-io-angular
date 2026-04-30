@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { gridStore } from '../../../stores/grid.store';
 import { layoutStore } from '../../../stores/layout.store';
 import { selectionStore } from '../../../stores/selection.store';
@@ -25,11 +25,10 @@ export class TopToolbarComponent implements OnInit {
   snappingStore = snappingStore;
   historyStore: HistoryStore;
   
+  @Output() toggleLayers = new EventEmitter<void>();
+
   gridSizes = [25, 50, 75, 100];
-  
-  // Mobile menu state
-  isMobileMenuOpen = false;
-  
+
   // Dialog states
   showExportDialog = false;
   showImportDialog = false;
@@ -47,17 +46,11 @@ export class TopToolbarComponent implements OnInit {
     this.store.setGridSize(Number(target.value));
   }
 
-  toggleMenu(): void {
-    this.isMobileMenuOpen = !this.isMobileMenuOpen;
-  }
-
   openExportDialog(): void {
     this.showExportDialog = true;
-    this.isMobileMenuOpen = false; // Close mobile menu if open
   }
 
   openImportDialog(): void {
     this.showImportDialog = true;
-    this.isMobileMenuOpen = false; // Close mobile menu if open
   }
 }

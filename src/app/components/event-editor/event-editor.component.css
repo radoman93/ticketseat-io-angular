@@ -1,0 +1,220 @@
+/* TicketSeat Editor — Studio theme */
+.ts-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--ts-bg);
+  color: var(--ts-ink);
+  font-family: var(--ts-font);
+  font-size: 13px;
+}
+
+.ts-editor-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ts-tool-rail {
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.ts-canvas-area {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.ts-inspector {
+  flex-shrink: 0;
+  height: 100%;
+}
+
+/* === Layers / Objects Panel === */
+.ts-layers-panel {
+  width: 200px;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--ts-panel);
+  border-right: 1px solid var(--ts-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ts-layers-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ts-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ts-layers-title {
+  font-family: var(--ts-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--ts-ink-soft);
+}
+
+.ts-layers-count {
+  font-family: var(--ts-mono);
+  font-size: 10px;
+  color: var(--ts-ink-mute);
+}
+
+.ts-layers-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.ts-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ts-ink-soft);
+  border-left: 2px solid transparent;
+  transition: background 0.1s, color 0.1s;
+}
+
+.ts-layer-item:hover {
+  background: var(--ts-panel-alt);
+}
+
+.ts-layer-item.ts-layer-active {
+  background: var(--ts-accent-soft);
+  border-left-color: var(--ts-accent);
+  color: var(--ts-ink);
+}
+
+.ts-layer-icon {
+  width: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--ts-ink-mute);
+  flex-shrink: 0;
+}
+
+.ts-layer-active .ts-layer-icon {
+  color: var(--ts-accent);
+}
+
+.ts-layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive — hide layers on small screens */
+@media (max-width: 1024px) {
+  .ts-layers-panel {
+    width: 160px;
+  }
+}
+
+/* === Mobile Bottom Sheet === */
+.ts-mobile-sheet {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 768px) {
+  .ts-layers-panel {
+    display: none;
+  }
+
+  .ts-tool-rail {
+    display: none;
+  }
+
+  /* Hide the desktop inline inspector on mobile */
+  .ts-inspector-desktop {
+    display: none !important;
+  }
+
+  /* Mobile bottom sheet */
+  .ts-mobile-sheet {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 100;
+    background: var(--ts-panel);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -12px 40px rgba(28, 22, 12, 0.2);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 66vh;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .ts-mobile-sheet.ts-mobile-sheet-open {
+    transform: translateY(0);
+  }
+
+  .ts-sheet-handle {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 6px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ts-handle-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--ts-border-strong);
+  }
+
+  .ts-sheet-body {
+    overflow-y: auto;
+    max-height: calc(66vh - 30px);
+    -webkit-overflow-scrolling: touch;
+    padding: 0 20px 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Force the properties-panel host to stretch */
+  .ts-sheet-body ::ng-deep app-properties-panel {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Force ALL elements inside to respect full width */
+  .ts-sheet-body ::ng-deep * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .ts-sheet-body ::ng-deep .w-72,
+  .ts-sheet-body ::ng-deep .w-64,
+  .ts-sheet-body ::ng-deep [class*="w-6"],
+  .ts-sheet-body ::ng-deep [class*="w-7"],
+  .ts-sheet-body ::ng-deep .ts-inspector-panel {
+    width: 100% !important;
+    height: auto !important;
+    border-left: none !important;
+    box-shadow: none !important;
+  }
+
+  .ts-sheet-body ::ng-deep .ts-inspector-panel {
+    max-height: none;
+    overflow: visible;
+    padding: 0 !important;
+  }
+
+  /* Field rows: label left, controls right */
+  .ts-sheet-body ::ng-deep .flex.items-center.justify-between {
+    width: 100% !important;
+  }
+}

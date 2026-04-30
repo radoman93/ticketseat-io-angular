@@ -122,8 +122,9 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   updateProperty(property: string, value: any): void {
     if (!this.selectedItem) return;
 
-    // Convert string numbers to actual numbers
-    if (typeof value === 'string' && !isNaN(Number(value))) {
+    // Convert string numbers to actual numbers, but NOT for text/label/color properties
+    const textProperties = ['name', 'label', 'text', 'color', 'fillColor', 'borderColor', 'backgroundColor', 'fontFamily', 'fontWeight', 'fontStyle', 'textAlign', 'labelPosition'];
+    if (typeof value === 'string' && !textProperties.includes(property) && value !== '' && !isNaN(Number(value))) {
       value = Number(value);
     }
 

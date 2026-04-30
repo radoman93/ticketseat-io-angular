@@ -28,21 +28,21 @@
     *ngIf="_isSelected && !viewerStore.isViewerMode && effectivePoints.length >= 3"
     [attr.d]="pathData"
     fill="none"
-    stroke="rgb(59, 130, 246)"
+    stroke="#B8331C"
     [attr.stroke-width]="effectiveBorderThickness + 4"
-    stroke-opacity="0.5"
+    stroke-opacity="0.3"
     style="pointer-events: none">
   </path>
-  
+
   <!-- Vertex points (show during preview or when selected) -->
   <g *ngIf="(_isPreview || (_isSelected && !viewerStore.isViewerMode)) && effectivePoints.length > 0">
-    <circle 
+    <circle
       *ngFor="let point of effectivePoints; let i = index"
       [attr.cx]="getSvgX(point.x)"
       [attr.cy]="getSvgY(point.y)"
       r="4"
-      [attr.fill]="i === 0 ? '#ff0000' : effectiveBorderColor"
-      stroke="#9ca3af"
+      [attr.fill]="i === 0 ? '#B8331C' : effectiveBorderColor"
+      stroke="#9A9286"
       stroke-width="1"
       [attr.opacity]="_isPreview ? 0.7 : 1"
       class="cursor-pointer"
@@ -52,6 +52,21 @@
     </circle>
   </g>
   
+  <!-- Name label at centroid -->
+  <text
+    *ngIf="_polygonData && _polygonData.name && !_isPreview && effectivePoints.length >= 3"
+    [attr.x]="getLabelX()"
+    [attr.y]="getLabelY()"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-size="11"
+    font-family="Inter, system-ui, sans-serif"
+    font-weight="500"
+    fill="#5C5446"
+    style="pointer-events: none;">
+    {{ _polygonData!.name }}
+  </text>
+
   <!-- Preview lines connecting vertices (show during preview) -->
   <g *ngIf="_isPreview && effectivePoints.length > 1">
     <line 

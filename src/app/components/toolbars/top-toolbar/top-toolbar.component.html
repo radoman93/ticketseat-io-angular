@@ -1,172 +1,80 @@
-<div class="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm z-10">
-  <!-- Left Section: Grid Controls -->
-  <div class="hidden lg:flex items-center gap-3">
-    <!-- Grid Size Dropdown -->
-    <div class="flex items-center gap-2">
-      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16m-7-7v14"></path>
-      </svg>
-      <label for="grid-size" class="text-xs font-medium text-gray-600">Grid:</label>
-      <select id="grid-size"
-              class="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
-              [value]="store.gridSize"
-              (change)="updateGridSize($event)"
-              *mobxAutorun>
-        <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
-      </select>
-    </div>
-
-    <!-- Toggles -->
-    <div class="flex items-center gap-2 border-l border-gray-200 pl-3">
-      <label class="flex items-center gap-1.5 cursor-pointer" *mobxAutorun>
-        <input type="checkbox" [checked]="store.showGrid" (change)="store.toggleGrid()" class="toggle toggle-xs" />
-        <span class="text-xs text-gray-600">Show Grid</span>
-      </label>
-      <label class="flex items-center gap-1.5 cursor-pointer" *mobxAutorun>
-        <input type="checkbox" [checked]="store.snapToGrid" (change)="store.toggleSnapToGrid()" class="toggle toggle-xs" />
-        <span class="text-xs text-gray-600">Snap to Grid</span>
-      </label>
-      <label class="flex items-center gap-1.5 cursor-pointer" *mobxAutorun>
-        <input type="checkbox" [checked]="snappingStore.config.enableSnapping" (change)="snappingStore.toggleSnapping()" class="toggle toggle-xs" />
-        <span class="text-xs text-gray-600">Snap to Objects</span>
-      </label>
-    </div>
+<!-- === TOP BAR === -->
+<div class="ts-topbar">
+  <div class="ts-topbar-left">
+    <div class="ts-logo">T</div>
+    <span class="ts-topbar-title">Layout Editor</span>
+    <span class="ts-topbar-subtitle" *mobxAutorun>· {{ layoutStore.tableCount }} tables</span>
   </div>
-
-  <!-- Center Section: Undo/Redo -->
-  <div class="hidden lg:flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-    <button (click)="historyStore.undo()"
-            [disabled]="!historyStore.canUndo"
-            class="px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title="Undo (Ctrl+Z)">
-      <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"/>
-      </svg>
-    </button>
-    <div class="h-6 w-px bg-gray-200"></div>
-    <button (click)="historyStore.redo()"
-            [disabled]="!historyStore.canRedo"
-            class="px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title="Redo (Ctrl+Y)">
-      <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2m18-10l-4-4m4 4l-4 4"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Right Section: Info & Actions -->
-  <div class="flex items-center gap-3">
-    <!-- Coordinates -->
-    <div class="hidden xl:flex items-center text-xs text-gray-600 font-mono" *mobxAutorun>
-      X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
-    </div>
-
-    <!-- Zoom -->
-    <div class="hidden md:flex items-center border border-gray-200 rounded-lg overflow-hidden" *mobxAutorun>
-      <button (click)="store.adjustZoom(-5)" class="px-2.5 py-1 hover:bg-gray-50 transition-colors">
-        <span class="text-sm font-medium text-gray-600">−</span>
-      </button>
-      <span class="text-xs px-2 py-1 font-medium text-gray-700 bg-gray-50 min-w-[3.5rem] text-center">{{ store.zoomLevel.toFixed(0) }}%</span>
-      <button (click)="store.adjustZoom(5)" class="px-2.5 py-1 hover:bg-gray-50 transition-colors">
-        <span class="text-sm font-medium text-gray-600">+</span>
-      </button>
-    </div>
-
-    <!-- Tables Count -->
-    <div class="hidden sm:flex items-center gap-2 border-l border-gray-200 pl-3" *mobxAutorun>
-      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-      </svg>
-      <span class="text-xs text-gray-600">Tables:</span>
-      <span class="bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-semibold min-w-[1.75rem] text-center">{{ layoutStore.tableCount }}</span>
-    </div>
-
-    <!-- Import/Export -->
-    <div class="hidden lg:flex items-center gap-2 border-l border-gray-200 pl-3">
-      <button (click)="openImportDialog()" class="p-1.5 hover:bg-gray-50 rounded transition-colors" title="Import">
-        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-        </svg>
-      </button>
-      <button (click)="openExportDialog()" class="p-1.5 hover:bg-gray-50 rounded transition-colors" title="Export">
-        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Mobile Menu Toggle -->
-    <button class="lg:hidden p-2 hover:bg-gray-50 rounded-lg transition-colors" (click)="toggleMenu()">
-      <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
+  <div class="ts-topbar-right">
+    <span class="ts-autosave">Auto-saved</span>
+    <button class="ts-btn" (click)="openExportDialog()" title="Export">Export</button>
+    <button class="ts-btn ts-btn-primary" (click)="openImportDialog()" title="Import">Import</button>
   </div>
 </div>
 
-<!-- Mobile Menu (Collapsible) -->
-<div class="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-4" [class.hidden]="!isMobileMenuOpen">
-  <!-- Mobile Coordinates and Zoom -->
-  <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2" *mobxAutorun>
-    <span class="text-xs font-medium text-gray-700">
-      X: {{ store.mousePosition.x.toFixed(0) }}, Y: {{ store.mousePosition.y.toFixed(0) }}
-    </span>
-  </div>
-  <div class="flex items-center justify-between bg-gray-50 rounded-lg" *mobxAutorun>
-    <button (click)="store.adjustZoom(-5)" class="px-3 py-2 hover:bg-gray-100 rounded-l-lg transition-colors duration-200">
-      <span class="text-lg font-semibold text-gray-700">-</span>
+<!-- === SUB-TOOLBAR === -->
+<div class="ts-subtoolbar">
+  <!-- Undo/Redo -->
+  <div class="ts-toolbar-group">
+    <button class="ts-icon-btn" (click)="historyStore.undo()" [disabled]="!historyStore.canUndo" title="Undo (Ctrl+Z)">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 110 12H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <span class="text-xs px-3 py-2 font-medium text-gray-700">{{ store.zoomLevel.toFixed(0) }}%</span>
-    <button (click)="store.adjustZoom(5)" class="px-3 py-2 hover:bg-gray-100 rounded-r-lg transition-colors duration-200">
-      <span class="text-lg font-semibold text-gray-700">+</span>
+    <button class="ts-icon-btn" (click)="historyStore.redo()" [disabled]="!historyStore.canRedo" title="Redo (Ctrl+Y)">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 100 12h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
 
-  <!-- Mobile Grid Controls -->
-  <div class="flex items-center justify-between">
-    <span class="text-sm font-medium text-gray-700">Grid Size:</span>
-    <select class="select select-bordered select-sm max-w-xs"
+  <div class="ts-divider"></div>
+
+  <!-- Grid Controls -->
+  <div class="ts-toolbar-group" *mobxAutorun>
+    <span class="ts-mono-label">GRID</span>
+    <select class="ts-field-inline"
             [value]="store.gridSize"
-            (change)="updateGridSize($event)"
-            *mobxAutorun>
-      <option *ngFor="let size of gridSizes" [value]="size">{{ size }}px</option>
+            (change)="updateGridSize($event)">
+      <option *ngFor="let size of gridSizes" [value]="size">{{ size }} px</option>
     </select>
-  </div>
-  <div class="flex items-center justify-between" *mobxAutorun>
-    <span class="text-sm font-medium text-gray-700">Show Grid:</span>
-    <input type="checkbox"
-           [checked]="store.showGrid"
-           (change)="store.toggleGrid()"
-           class="toggle toggle-sm toggle-success" />
-  </div>
-  <div class="flex items-center justify-between" *mobxAutorun>
-    <span class="text-sm font-medium text-gray-700">Snap to Grid:</span>
-    <input type="checkbox"
-           [checked]="store.snapToGrid"
-           (change)="store.toggleSnapToGrid()"
-           class="toggle toggle-sm toggle-warning" />
-  </div>
-  <div class="flex items-center justify-between" *mobxAutorun>
-    <span class="text-sm font-medium text-gray-700">Snap to Objects:</span>
-    <input type="checkbox"
-           [checked]="snappingStore.config.enableSnapping"
-           (change)="snappingStore.toggleSnapping()"
-           class="toggle toggle-sm toggle-info" />
+    <label class="ts-toggle-label">
+      <span class="ts-toggle-track" [class.ts-toggle-on]="store.showGrid" (click)="store.toggleGrid()">
+        <span class="ts-toggle-thumb"></span>
+      </span>
+      <span class="ts-mono-label">SHOW</span>
+    </label>
+    <label class="ts-toggle-label">
+      <span class="ts-toggle-track" [class.ts-toggle-on]="store.snapToGrid" (click)="store.toggleSnapToGrid()">
+        <span class="ts-toggle-thumb"></span>
+      </span>
+      <span class="ts-mono-label">SNAP</span>
+    </label>
   </div>
 
-  <!-- Mobile Action Buttons -->
-  <div class="flex flex-col gap-2 pt-2">
-    <button (click)="openImportDialog(); toggleMenu();" class="btn btn-sm btn-outline w-full">Import</button>
-    <button (click)="openExportDialog(); toggleMenu();" class="btn btn-sm btn-outline w-full">Export</button>
+  <div class="ts-divider"></div>
+
+  <!-- Coordinates -->
+  <div class="ts-toolbar-group hidden xl:flex" *mobxAutorun>
+    <span class="ts-mono-label">X {{ store.mousePosition.x.toFixed(0) }}  Y {{ store.mousePosition.y.toFixed(0) }}</span>
   </div>
 
-  <!-- Mobile Table Count -->
-  <div *mobxAutorun class="flex items-center justify-between text-sm pt-2 border-t">
-    <span class="font-medium text-gray-500">Tables:</span>
-    <span class="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-blue-700">
-      {{ layoutStore.tableCount }}
-    </span>
+  <div class="flex-1"></div>
+
+  <!-- Zoom -->
+  <div class="ts-toolbar-group" *mobxAutorun>
+    <button class="ts-zoom-btn" (click)="store.adjustZoom(-5)">−</button>
+    <span class="ts-mono-label ts-zoom-value">{{ store.zoomLevel.toFixed(0) }}%</span>
+    <button class="ts-zoom-btn" (click)="store.adjustZoom(5)">+</button>
   </div>
+
+  <div class="ts-divider hidden sm:block"></div>
+
+  <!-- Stats -->
+  <div class="ts-toolbar-group hidden sm:flex" *mobxAutorun>
+    <span class="ts-mono-label">{{ layoutStore.tableCount }} TABLES</span>
+  </div>
+
+  <!-- Layers / Objects Panel Toggle -->
+  <button class="ts-icon-btn" (click)="toggleLayers.emit()" title="Toggle Objects Panel">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
 </div>
 
 <!-- Dialogs -->

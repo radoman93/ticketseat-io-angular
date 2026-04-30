@@ -1,11 +1,54 @@
+/* Fonts — must come before Tailwind */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* Custom library styles can be added here */
+/* TicketSeat Design Tokens — Studio direction (warm cream / oxblood / ochre) */
+:root {
+  /* Page & Panel */
+  --ts-bg: #F4EFE6;
+  --ts-panel: #FDFBF7;
+  --ts-panel-alt: #F8F3E8;
+
+  /* Borders */
+  --ts-border: rgba(28, 22, 12, 0.08);
+  --ts-border-strong: rgba(28, 22, 12, 0.14);
+
+  /* Ink / Text */
+  --ts-ink: #1C160C;
+  --ts-ink-soft: #5C5446;
+  --ts-ink-mute: #9A9286;
+
+  /* Seat palette */
+  --ts-seat-avail: #E8DCC4;
+  --ts-seat-avail-edge: #D9CCB0;
+  --ts-seat-held: #D89A3C;
+  --ts-seat-held-edge: #B07F2A;
+  --ts-seat-held-soft: #F2D9A6;
+  --ts-seat-sold: #C9C2B5;
+  --ts-seat-sold-edge: #B8B0A2;
+
+  /* Accent (oxblood — selection) */
+  --ts-accent: #B8331C;
+  --ts-accent-soft: #F4DDD4;
+  --ts-accent-deep: #962513;
+
+  /* Status */
+  --ts-good: #3F7A4D;
+  --ts-warn: #D89A3C;
+
+  /* Typography */
+  --ts-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --ts-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Custom library styles */
 .ticketseat-container {
   position: relative;
   overflow: hidden;
+  font-family: var(--ts-font);
 }
 
 .seat-grid {
@@ -16,34 +59,190 @@
 .seat {
   width: 2rem;
   height: 2rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  border: 1px solid var(--ts-seat-avail-edge);
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .seat.available {
-  background-color: #dcfce7;
-  border-color: #86efac;
+  background-color: var(--ts-seat-avail);
+  border-color: var(--ts-seat-avail-edge);
 }
 
 .seat.available:hover {
-  background-color: #bbf7d0;
+  background-color: #DDD0B8;
+  transform: scale(1.08);
 }
 
 .seat.occupied {
-  background-color: #fecaca;
-  border-color: #fca5a5;
+  background-color: var(--ts-seat-sold);
+  border-color: var(--ts-seat-sold-edge);
   cursor: not-allowed;
 }
 
 .seat.selected {
-  background-color: #3b82f6;
-  border-color: #2563eb;
+  background-color: var(--ts-accent);
+  border-color: var(--ts-accent-deep);
   color: white;
 }
 
 .seat.reserved {
-  background-color: #fef3c7;
-  border-color: #fcd34d;
+  background-color: var(--ts-seat-held);
+  border-color: var(--ts-seat-held-edge);
+}
+
+/* === Table element styles === */
+.ts-table-circle {
+  background: #FFFFFF;
+  border: 1.5px solid var(--ts-border-strong);
+}
+
+.ts-table-circle.ts-table-selected {
+  border-color: var(--ts-accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 4px var(--ts-accent-soft);
+}
+
+.ts-table-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ts-ink);
+  font-family: var(--ts-font);
+  text-align: center;
+}
+
+/* Rectangle table */
+.ts-rect-table {
+  background: #FFFFFF;
+  border: 1.5px solid var(--ts-border-strong);
+}
+
+.ts-rect-table.ts-table-selected {
+  border-color: var(--ts-accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 4px var(--ts-accent-soft);
+}
+
+/* === Seat state classes === */
+.ts-seat-empty {
+  background: var(--ts-panel-alt);
+  border: 1px solid var(--ts-border-strong);
+}
+
+/* Available seat — viewer */
+.ts-seat-avail {
+  background: var(--ts-seat-avail);
+  border: 1px solid var(--ts-seat-avail-edge);
+}
+
+.ts-seat-avail:hover {
+  background: #DDD0B8;
+  border-color: #C8B99E;
+}
+
+/* Available seat — editor */
+.ts-seat-avail-editor {
+  background: var(--ts-seat-avail);
+  border: 1px solid var(--ts-seat-avail-edge);
+}
+
+.ts-seat-avail-editor:hover {
+  background: #DDD0B8;
+  border-color: #C8B99E;
+}
+
+/* Selected seat (oxblood) */
+.ts-seat-selected {
+  background: var(--ts-accent);
+  border: 2px solid var(--ts-accent-deep);
+  color: white;
+}
+
+/* Held seat (ochre) */
+.ts-seat-held {
+  background: var(--ts-seat-held);
+  border: 1px solid var(--ts-seat-held-edge);
+  cursor: not-allowed;
+}
+
+/* Sold / reserved seat (warm gray) */
+.ts-seat-sold {
+  background: var(--ts-seat-sold);
+  border: 1px solid var(--ts-seat-sold-edge);
+  cursor: not-allowed;
+}
+
+/* Seat label */
+.ts-seat-label {
+  color: var(--ts-ink-soft);
+}
+
+/* Selection glow effects */
+.ts-glow-accent {
+  background-color: var(--ts-accent);
+}
+
+.ts-glow-accent-soft {
+  background-color: var(--ts-accent-soft);
+}
+
+/* === Inspector / Properties Panel === */
+.ts-inspector-panel {
+  background: var(--ts-panel);
+  border-left: 1px solid var(--ts-border);
+  color: var(--ts-ink);
+  font-family: var(--ts-font);
+  font-size: 13px;
+}
+.ts-inspector-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ts-border);
+  font-family: var(--ts-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ts-ink-mute);
+}
+.ts-inspector-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ts-border);
+}
+.ts-section-title {
+  font-family: var(--ts-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ts-ink-mute);
+}
+.ts-field-label {
+  font-size: 12px;
+  color: var(--ts-ink-soft);
+}
+.ts-inspector-info {
+  padding: 8px 16px;
+  font-family: var(--ts-mono);
+  font-size: 11px;
+  color: var(--ts-ink-mute);
+  background: var(--ts-panel-alt);
+}
+.ts-btn-delete {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--ts-border);
+  border-radius: 6px;
+  background: var(--ts-panel);
+  color: var(--ts-ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ts-btn-delete:hover {
+  background: var(--ts-accent-soft);
+  color: var(--ts-accent);
+  border-color: var(--ts-accent);
 } 

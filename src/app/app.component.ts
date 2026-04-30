@@ -672,8 +672,8 @@ export class AppComponent {
           "startY": 250,
           "endX": 500,
           "endY": 300,
-          "thickness": 3,
-          "color": "#ff0000",
+          "thickness": 2,
+          "color": "#1C160C",
           "name": "Sample Line",
           "label": "Sample Line"
         },
@@ -690,9 +690,9 @@ export class AppComponent {
             {"x": 280, "y": 500},
             {"x": 150, "y": 480}
           ],
-          "fillColor": "#0000ff",
-          "fillOpacity": 0.3,
-          "borderColor": "#000080",
+          "fillColor": "#E8DCC4",
+          "fillOpacity": 0.35,
+          "borderColor": "#5C5446",
           "borderThickness": 2,
           "showBorder": true,
           "name": "Sample Polygon",

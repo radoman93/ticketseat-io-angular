@@ -334,37 +334,35 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   }
 
   getChairClasses(chairData: any): string {
-    if (!chairData) return 'w-5 h-5 bg-gray-200 border border-gray-400';
-    
+    if (!chairData) return 'w-5 h-5 ts-seat-empty';
+
     const baseClasses = 'w-5 h-5 transition-all duration-200';
-    
+
     if (chairData.isPreviewChair) {
-      return `${baseClasses} bg-blue-300 border border-blue-400`;
+      return `${baseClasses} ts-seat-avail-editor`;
     }
-    
-    if (!chairData.chair) return `${baseClasses} bg-gray-200 border border-gray-400`;
-    
-    // In viewer mode, show reservation status
+
+    if (!chairData.chair) return `${baseClasses} ts-seat-empty`;
+
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
-      
+
       if (reservationStatus === 'pre-reserved') {
-        return `${baseClasses} bg-red-600 text-white cursor-not-allowed border-2 border-red-800 shadow-md`;
+        return `${baseClasses} ts-seat-sold cursor-not-allowed shadow-md`;
       } else if (reservationStatus === 'reserved') {
-        return `${baseClasses} bg-red-500 text-white cursor-not-allowed border-2 border-red-600 shadow-md`;
+        return `${baseClasses} ts-seat-sold cursor-not-allowed shadow-md`;
       } else if (reservationStatus === 'selected-for-reservation') {
-        return `w-6 h-6 bg-green-500 border-2 border-green-700 shadow-lg text-white animate-pulse font-bold`;
+        return `w-6 h-6 ts-seat-selected shadow-lg text-white animate-pulse font-bold`;
       } else {
-        return `${baseClasses} bg-gray-200 border border-gray-400 hover:bg-green-200 hover:border-green-400 cursor-pointer hover:scale-105 hover:shadow-md`;
+        return `${baseClasses} ts-seat-avail cursor-pointer hover:scale-105 hover:shadow-md`;
       }
     }
-    
-    // In editor mode, show selection status
+
     if (chairData.isSelected) {
-      return `w-6 h-6 bg-blue-500 border-2 border-blue-700 shadow-lg text-white animate-pulse font-bold`;
+      return `w-6 h-6 ts-seat-selected shadow-lg text-white animate-pulse font-bold`;
     }
-    
-    return `${baseClasses} bg-blue-200 border border-blue-300 hover:bg-blue-300 hover:scale-105 cursor-pointer`;
+
+    return `${baseClasses} ts-seat-avail-editor cursor-pointer hover:scale-105`;
   }
 
   getSeatTitle(chairData: any): string {
@@ -387,17 +385,17 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   }
 
   getSeatLabelClasses(chairData: any): string {
-    if (!chairData.chair) return 'text-xs text-gray-700';
-    
+    if (!chairData.chair) return 'text-xs ts-seat-label';
+
     if (this.viewerStore.isViewerMode) {
       const reservationStatus = this.viewerStore.getSeatReservationStatus(chairData.chair);
       if (reservationStatus === 'pre-reserved' || reservationStatus === 'reserved' || reservationStatus === 'selected-for-reservation') {
         return 'text-xs text-white font-bold drop-shadow-sm';
       }
-      return 'text-xs text-gray-700';
+      return 'text-xs ts-seat-label';
     }
-    
-    return chairData.isSelected ? 'text-xs text-white font-bold drop-shadow-sm' : 'text-xs text-gray-700';
+
+    return chairData.isSelected ? 'text-xs text-white font-bold drop-shadow-sm' : 'text-xs ts-seat-label';
   }
   
   onChairMouseDown(event: Event, chairData: any): void {

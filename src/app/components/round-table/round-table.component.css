@@ -1,42 +1,35 @@
-/* Styles for the round table component */
+/* Round table component */
 .table-wrapper.preview {
     opacity: 0.5;
     border-style: dashed;
 }
 
 .table-boundary {
-    /* Styles for the main table circle */
     transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .table-boundary.selected {
-    box-shadow: 0 0 0 3px #3b82f6, 0 0 0 5px rgba(59, 130, 246, 0.3); /* Tailwind blue-500 */
-    /* Optional: slightly scale up selected table */
-    /* transform: scale(1.02); */
+    box-shadow: 0 0 0 3px var(--ts-accent), 0 0 0 5px rgba(184, 51, 28, 0.2);
 }
 
 .seat {
-    /* Styles for the seats */
     transition: background-color 0.2s ease-in-out, transform 0.1s ease;
     touch-action: manipulation;
     cursor: pointer;
 }
 
-/* Touch feedback for seat selection */
 .seat:active,
 .chair-circle:active {
     transform: scale(0.92);
 }
 
-/* Hover state for desktop */
 @media (hover: hover) {
     .seat:hover:not(.reserved):not(.selected) {
         transform: scale(1.05);
     }
 }
 
-/* Chair/seat container touch optimization */
 .chair-circle {
     touch-action: manipulation;
     cursor: pointer;
-} 
+}

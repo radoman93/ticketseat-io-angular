@@ -91,6 +91,9 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   segmentedRowSegments: SegmentProperties[] = [];
   previewSegment: SegmentProperties | null = null;
 
+  // Selection guard — prevents deselect on the same tap that selected
+  private justSelectedTimestamp: number = 0;
+
   // Line drawing state
   isDrawingLine: boolean = false;
   lineStartX: number = 0;
@@ -345,7 +348,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       const endX = width / (this.store.zoomLevel / 100) + startX + this.store.gridSize;
       const endY = height / (this.store.zoomLevel / 100) + startY + this.store.gridSize;
 
-      this.ctx.strokeStyle = 'rgb(200, 200, 200)';
+      // Warm paper grid lines
+      this.ctx.strokeStyle = 'rgba(20, 18, 15, 0.06)';
       this.ctx.lineWidth = 0.5;
 
       for (let x = startX; x <= endX; x += this.store.gridSize) {
@@ -362,7 +366,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         this.ctx.stroke();
       }
 
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+      // Axis lines — slightly stronger
+      this.ctx.strokeStyle = 'rgba(20, 18, 15, 0.12)';
       this.ctx.lineWidth = 1;
 
       this.ctx.beginPath();
@@ -657,7 +662,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
             endX: x,
             endY: y,
             thickness: 2,
-            color: '#000000',
+            color: '#1C160C',
             name: 'Line Preview'
           } as LineElement;
 
@@ -687,9 +692,9 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
             y: y,
             rotation: 0,
             points: [{x, y}],
-            fillColor: '#0000ff',
-            fillOpacity: 0.3,
-            borderColor: '#000000',
+            fillColor: '#E8DCC4',
+            fillOpacity: 0.35,
+            borderColor: '#5C5446',
             borderThickness: 2,
             showBorder: true,
             name: 'Polygon Preview'
@@ -1178,6 +1183,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
 
     // Set table as selected
     this.selectionStore.selectItem(table);
+    this.justSelectedTimestamp = Date.now();
 
     // Get the mouse event if available
     const mouseEvent = event as MouseEvent;
@@ -1195,6 +1201,11 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   handleCanvasClick(): void {
     // Don't deselect if we're drawing a line
     if (this.isDrawingLine) {
+      return;
+    }
+
+    // Don't deselect if we just selected something (mobile tap race condition)
+    if (Date.now() - this.justSelectedTimestamp < 300) {
       return;
     }
 
@@ -1354,7 +1365,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         endX: linePreview.endX,
         endY: linePreview.endY,
         thickness: 2,
-        color: '#000000',
+        color: '#1C160C',
         rotation: 0,
         name: `Line ${this.layoutStore.elements.length + 1}`
       };
@@ -1388,9 +1399,9 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         y: centerY,
         rotation: 0,
         points: [...this.polygonPoints],
-        fillColor: '#0000ff',
-        fillOpacity: 0.3,
-        borderColor: '#000000',
+        fillColor: '#E8DCC4',
+        fillOpacity: 0.35,
+        borderColor: '#5C5446',
         borderThickness: 2,
         showBorder: true,
         name: `Polygon ${this.layoutStore.elements.length + 1}`

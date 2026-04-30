@@ -1,41 +1,41 @@
 <div class="absolute" *mobxAutorun
-     [style.left]="x + 'px'" 
-     [style.top]="y + 'px'" 
+     [style.left]="x + 'px'"
+     [style.top]="y + 'px'"
      [style.transform]="'translate(-50%, -50%) rotate(' + rotation + 'deg)'">
-  <div class="table-circle bg-gray-100 border-2 border-gray-300 rounded-full flex justify-center items-center z-10" 
-       [style.width]="(radius * 2) + 'px'" 
+  <div class="table-circle ts-table-circle rounded-full flex justify-center items-center z-10"
+       [style.width]="(radius * 2) + 'px'"
        [style.height]="(radius * 2) + 'px'"
-       [class.border-blue-500]="tableData && tableData.id && store.selectionStore.isItemSelected(tableData.id)">
-    <span *ngIf="tableLabelVisible" class="text-sm font-bold text-gray-700 text-center">{{ name }}</span>
+       [class.ts-table-selected]="tableData && tableData.id && store.selectionStore.isItemSelected(tableData.id)">
+    <span *ngIf="tableLabelVisible" class="ts-table-label">{{ name }}</span>
   </div>
   <div class="absolute w-full h-full left-0 top-0">
-    <div class="absolute top-1/2 left-1/2 -ml-3 -mt-3" 
-         *ngFor="let seat of seatStyles; let i = index" 
+    <div class="absolute top-1/2 left-1/2 -ml-3 -mt-3"
+         *ngFor="let seat of seatStyles; let i = index"
          [style.transform]="seat.transform">
-      <div *ngIf="!seat.isOpenSpace" 
-           class="seat-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
+      <div *ngIf="!seat.isOpenSpace"
+           class="seat-circle rounded-full transition-all duration-200 hover:cursor-pointer flex justify-center items-center relative"
            [ngClass]="getSeatClasses(seat)"
            (click)="onChairClick($event, seat)"
            (mousedown)="onChairMouseDown($event, seat)"
            (mouseenter)="onChairHover(seat)"
            [title]="getSeatTitle(seat)">
-        <span *ngIf="chairLabelVisible" 
+        <span *ngIf="chairLabelVisible"
               [class]="getSeatLabelClasses(seat)">
           {{ seat.label }}
         </span>
         <!-- Selection glow effect for editor mode -->
-        <div *ngIf="seat.isSelected && viewerStore.isEditorMode" 
-             class="absolute inset-0 rounded-full bg-blue-400 opacity-40 animate-ping z-0"></div>
-        <div *ngIf="seat.isSelected && viewerStore.isEditorMode" 
-             class="absolute -inset-2 rounded-full bg-blue-400/40 blur-sm animate-pulse z-0"></div>
+        <div *ngIf="seat.isSelected && viewerStore.isEditorMode"
+             class="absolute inset-0 rounded-full ts-glow-accent opacity-40 animate-ping z-0"></div>
+        <div *ngIf="seat.isSelected && viewerStore.isEditorMode"
+             class="absolute -inset-2 rounded-full ts-glow-accent-soft blur-sm animate-pulse z-0"></div>
         <!-- Selection glow effect for viewer mode -->
-        <div *ngIf="seat.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(seat.chair.id)" 
-             class="absolute inset-0 rounded-full bg-green-400 opacity-50 animate-ping z-0"></div>
-        <div *ngIf="seat.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(seat.chair.id)" 
-             class="absolute -inset-3 rounded-full bg-green-400/40 blur-md animate-pulse z-0"></div>
+        <div *ngIf="seat.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(seat.chair.id)"
+             class="absolute inset-0 rounded-full ts-glow-accent opacity-50 animate-ping z-0"></div>
+        <div *ngIf="seat.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(seat.chair.id)"
+             class="absolute -inset-3 rounded-full ts-glow-accent-soft blur-md animate-pulse z-0"></div>
       </div>
-      <div *ngIf="seat.isOpenSpace" 
-           class="open-space w-5 h-5 border-2 border-dashed border-gray-300 rounded-full">
+      <div *ngIf="seat.isOpenSpace"
+           class="open-space w-5 h-5 border-2 border-dashed rounded-full" style="border-color: var(--ts-border-strong)">
       </div>
     </div>
   </div>
