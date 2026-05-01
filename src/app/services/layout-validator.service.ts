@@ -66,6 +66,12 @@ export class LayoutValidatorService {
         if (!element.seats) errors.push('Seating row missing seats count');
         if (!element.spacing) errors.push('Seating row missing spacing');
         break;
+      case ElementType.ARC_SEATING_ROW:
+        if (!element.radius) errors.push('Arc seating row missing radius');
+        if (element.startAngle === undefined) errors.push('Arc seating row missing startAngle');
+        if (element.endAngle === undefined) errors.push('Arc seating row missing endAngle');
+        if (!element.seats) errors.push('Arc seating row missing seats count');
+        break;
       default:
         errors.push(`Unknown element type: ${element.type}`);
     }

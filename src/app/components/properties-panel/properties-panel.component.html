@@ -968,4 +968,125 @@
       </button>
     </div>
   </div>
+
+  <!-- Arc Seating Row Properties Panel -->
+  <div *ngIf="selectedItem?.type === 'arcSeatingRow'" class="w-72 h-full overflow-y-auto ts-inspector-panel">
+    <div class="ts-inspector-header">Arc Seating Row</div>
+
+    <!-- Geometry -->
+    <div class="ts-inspector-section">
+      <div class="flex items-center mb-3">
+        <label class="ts-section-title">Arc Geometry</label>
+      </div>
+
+      <!-- Radius -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="ts-field-label">Radius:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementArcRadius()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-16 text-center"
+            [value]="$any(selectedItem)['radius']"
+            (change)="updatePropertyDebounced('radius', $any($event.target)['value'])" min="40" max="800">
+          <button class="join-item btn btn-xs" (click)="incrementArcRadius()">+</button>
+          <span class="text-xs text-gray-500 ml-1">px</span>
+        </div>
+      </div>
+
+      <!-- Start angle -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="ts-field-label">Start angle:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementArcStartAngle()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-16 text-center"
+            [value]="$any(selectedItem)['startAngle']"
+            (change)="updatePropertyDebounced('startAngle', $any($event.target)['value'])">
+          <button class="join-item btn btn-xs" (click)="incrementArcStartAngle()">+</button>
+          <span class="text-xs text-gray-500 ml-1">°</span>
+        </div>
+      </div>
+
+      <!-- End angle -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="ts-field-label">End angle:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementArcEndAngle()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-16 text-center"
+            [value]="$any(selectedItem)['endAngle']"
+            (change)="updatePropertyDebounced('endAngle', $any($event.target)['value'])">
+          <button class="join-item btn btn-xs" (click)="incrementArcEndAngle()">+</button>
+          <span class="text-xs text-gray-500 ml-1">°</span>
+        </div>
+      </div>
+
+      <!-- Read-only span info -->
+      <div class="text-xs text-gray-500 mt-1 mb-2">
+        Arc span: {{ arcSpan | number:'1.0-1' }}°
+      </div>
+
+      <!-- Seats -->
+      <div class="flex items-center justify-between mb-2">
+        <label class="ts-field-label">Number of seats:</label>
+        <div class="join">
+          <button class="join-item btn btn-xs" (click)="decrementArcSeats()">-</button>
+          <input type="number" class="join-item input input-bordered input-xs w-14 text-center"
+            [value]="$any(selectedItem)['seats']"
+            (change)="updatePropertyDebounced('seats', $any($event.target)['value'])" min="1" max="200">
+          <button class="join-item btn btn-xs" (click)="incrementArcSeats()">+</button>
+        </div>
+      </div>
+
+      <!-- Chair facing -->
+      <div class="mb-2">
+        <label class="text-sm text-gray-600 block mb-1">Chair facing:</label>
+        <div class="grid grid-cols-2 gap-1">
+          <button class="btn btn-xs" [class.btn-primary]="($any(selectedItem)['chairFacing'] || 'inward') === 'inward'"
+            (click)="updateProperty('chairFacing', 'inward')">Inward</button>
+          <button class="btn btn-xs" [class.btn-primary]="$any(selectedItem)['chairFacing'] === 'outward'"
+            (click)="updateProperty('chairFacing', 'outward')">Outward</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row Label Section -->
+    <div class="ts-inspector-section">
+      <div class="flex items-center mb-3">
+        <label class="ts-section-title">Row Label</label>
+      </div>
+
+      <div class="mb-2">
+        <input type="text" class="input input-bordered input-sm w-full" [value]="$any(selectedItem)['name']"
+          (input)="updatePropertyDebounced('name', $any($event.target)['value'])" placeholder="Enter row name">
+      </div>
+
+      <!-- Row Label Visibility -->
+      <div class="flex items-center justify-between mt-3">
+        <label class="ts-field-label">Show row label</label>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" [checked]="$any(selectedItem)['rowLabelVisible']"
+            (change)="updateProperty('rowLabelVisible', $any($event.target)['checked'])">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+
+      <!-- Chair labels visibility -->
+      <div class="flex items-center justify-between mt-3">
+        <label class="ts-field-label">Show seat labels</label>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" [checked]="$any(selectedItem)['chairLabelVisible']"
+            (change)="updateProperty('chairLabelVisible', $any($event.target)['checked'])">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Position info -->
+    <div class="ts-inspector-info">
+      Center: {{selectedItem?.['x'] | number:'1.0-0'}}, {{selectedItem?.['y'] | number:'1.0-0'}}
+    </div>
+
+    <!-- Delete button -->
+    <div class="px-4 py-3">
+      <button class="ts-btn-delete" (click)="deleteElement()">Delete Arc Row</button>
+    </div>
+  </div>
 </div>

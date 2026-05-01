@@ -67,6 +67,19 @@
         </div>
       </app-segmented-seating-row>
 
+      <!-- Arc Seating Row -->
+      <app-arc-seating-row *ngIf="table.type === 'arcSeatingRow'" [arcRowData]="$any(table)"
+        [x]="table.x" [y]="table.y"
+        [radius]="$any(table).radius" [startAngle]="$any(table).startAngle" [endAngle]="$any(table).endAngle"
+        [seats]="$any(table).seats" [seatRadius]="$any(table).seatRadius || 10"
+        [chairFacing]="$any(table).chairFacing || 'inward'"
+        [name]="table.name" [rotation]="table.rotation || 0"
+        [isSelected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [class.selected]="!viewerStore.isViewerMode && selectionStore.isItemSelected(table.id)"
+        [chairLabelVisible]="table['chairLabelVisible'] !== undefined ? table['chairLabelVisible'] : true"
+        [rowLabelVisible]="table['rowLabelVisible'] !== undefined ? table['rowLabelVisible'] : true">
+      </app-arc-seating-row>
+
       <!-- Line -->
       <app-line *ngIf="table.type === 'line'" [lineData]="$any(table)"
         [startX]="$any(table).startX" [startY]="$any(table).startY"
@@ -149,6 +162,17 @@
         [seatingRowData]="$any(previewTable)" [isPreview]="true" [previewSegment]="previewSegment"
         [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1" class="opacity-70 preview-table">
       </app-segmented-seating-row>
+
+      <!-- Arc Seating Row preview while tool active -->
+      <app-arc-seating-row
+        *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.ArcSeatingRow && previewTable.type === 'arcSeatingRow'"
+        [arcRowData]="$any(previewTable)" [x]="previewTable.x" [y]="previewTable.y"
+        [radius]="$any(previewTable).radius" [startAngle]="$any(previewTable).startAngle" [endAngle]="$any(previewTable).endAngle"
+        [seats]="$any(previewTable).seats" [seatRadius]="$any(previewTable).seatRadius || 10"
+        [chairFacing]="$any(previewTable).chairFacing || 'inward'"
+        [name]="previewTable.name || 'Arc Row'" [isPreview]="true"
+        class="opacity-70 preview-table">
+      </app-arc-seating-row>
 
       <!-- Line Preview (when drawing) - Hidden in viewer mode -->
       <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Line && isDrawingLine && previewTable.type === 'line'"

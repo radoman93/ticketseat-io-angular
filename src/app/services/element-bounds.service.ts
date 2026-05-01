@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ElementBounds, AlignmentPoint, AlignmentPointType } from '../models/element-bounds.model';
 import { TableElement } from '../stores/layout.store';
-import { 
-  RoundTableProperties, 
-  RectangleTableProperties, 
-  SeatingRowProperties
+import {
+  RoundTableProperties,
+  RectangleTableProperties,
+  SeatingRowProperties,
+  ArcSeatingRowProperties
 } from '../services/selection.service';
 import { 
   LineElement,
@@ -28,6 +29,8 @@ export class ElementBoundsService {
         return this.getSeatingRowBounds(element as SeatingRowProperties);
       case 'segmentedSeatingRow':
         return this.getSegmentedSeatingRowBounds(element as any);
+      case 'arcSeatingRow':
+        return this.getArcSeatingRowBounds(element as ArcSeatingRowProperties);
       case 'line':
         return this.getLineBounds(element as LineElement);
       case 'polygon':
@@ -304,6 +307,58 @@ export class ElementBoundsService {
     };
   }
   
+  /**
+   * Arc seating row bounds calculation.
+   * Uses analytical extrema along the arc: endpoints + cardinal angles (0/90/180/270) that fall in the span.
+   */
+  private getArcSeatingRowBounds(element: ArcSeatingRowProperties): ElementBounds {
+    const { x: cx, y: cy, radius, startAngle, endAngle } = element;
+    const padding = 20;
+
+    // Normalize sweep direction
+    const lo = Math.min(startAngle, endAngle);
+    const hi = Math.max(startAngle, endAngle);
+
+    const candidates: number[] = [lo, hi];
+    for (const cardinal of [0, 90, 180, 270, 360, -90, -180, -270]) {
+      if (cardinal >= lo && cardinal <= hi) candidates.push(cardinal);
+    }
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const deg of candidates) {
+      const rad = deg * Math.PI / 180;
+      const px = cx + Math.cos(rad) * radius;
+      const py = cy - Math.sin(rad) * radius; // screen-Y flipped
+      if (px < minX) minX = px;
+      if (px > maxX) maxX = px;
+      if (py < minY) minY = py;
+      if (py > maxY) maxY = py;
+    }
+
+    return {
+      left: minX,
+      top: minY,
+      right: maxX,
+      bottom: maxY,
+      width: maxX - minX,
+      height: maxY - minY,
+
+      centerX: cx,
+      centerY: cy,
+
+      rotation: element.rotation || 0,
+      rotationOrigin: { x: cx, y: cy },
+
+      visualLeft: minX - padding,
+      visualTop: minY - padding,
+      visualRight: maxX + padding,
+      visualBottom: maxY + padding,
+
+      elementId: element.id,
+      elementType: element.type as any
+    };
+  }
+
   /**
    * Line bounds calculation
    */

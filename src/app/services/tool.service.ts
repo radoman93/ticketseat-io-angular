@@ -8,6 +8,7 @@ export enum ToolType {
   RectangleTable = 'rectangleTable',
   SeatingRow = 'seatingRow',
   SegmentedSeatingRow = 'segmentedSeatingRow',
+  ArcSeatingRow = 'arcSeatingRow',
   Line = 'line',
   Polygon = 'polygon',
   Text = 'text'

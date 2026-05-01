@@ -55,7 +55,7 @@ export class LayoutExportImportService {
       if (element.type === 'line' || element.type === 'polygon' || element.type === 'text') {
         return element;
       }
-      
+
       const elementChairs = chairsByElement.get(element.id) || [];
       return {
         ...element,
@@ -65,10 +65,10 @@ export class LayoutExportImportService {
 
     const exportData: LayoutExportData = {
       meta: {
-        version: '1.0',
+        version: '1.1',
         name: name,
         created: new Date().toISOString(),
-        creator: 'TicketSeats v1.0',
+        creator: 'TicketSeats v1.1',
         description: description
       },
       settings: {
@@ -159,7 +159,7 @@ export class LayoutExportImportService {
         layoutStore.addElement(element);
 
         // Add chairs to chair store (only for elements that have chairs)
-        if (element.type !== 'line' && element.type !== 'polygon' && element.type !== 'text') {
+        if (this.elementHasChairs(element.type)) {
           const elementChairs = chairsByElement.get(element.id) || [];
           elementChairs.forEach(chair => {
             rootStore.chairStore.addChair(chair);
@@ -194,13 +194,17 @@ export class LayoutExportImportService {
         layoutStore.addElement(elementWithoutChairs);
 
         // Add chairs to chair store (only for elements that have chairs)
-        if (element.type !== 'line' && element.type !== 'polygon' && element.type !== 'text') {
+        if (this.elementHasChairs(element.type)) {
           chairs.forEach((chair: Chair) => {
             rootStore.chairStore.addChair(chair);
           });
         }
       });
     }
+  }
+
+  private elementHasChairs(type: string): boolean {
+    return type !== 'line' && type !== 'polygon' && type !== 'text';
   }
 
   /**
@@ -229,7 +233,7 @@ export class LayoutExportImportService {
     if (!Array.isArray(data.elements)) return false;
 
     // Element-level validation
-    const validTypes = ['roundTable', 'rectangleTable', 'seatingRow', 'segmentedSeatingRow', 'line', 'polygon', 'text'];
+    const validTypes = ['roundTable', 'rectangleTable', 'seatingRow', 'segmentedSeatingRow', 'arcSeatingRow', 'line', 'polygon', 'text'];
     for (const element of data.elements) {
       if (!element || typeof element !== 'object') return false;
       if (typeof element.id !== 'string' || !element.id) return false;
@@ -286,7 +290,7 @@ export class LayoutExportImportService {
     ).length;
 
     const rowCount = data.elements.filter(el =>
-      el.type === 'seatingRow' || el.type === 'segmentedSeatingRow'
+      el.type === 'seatingRow' || el.type === 'segmentedSeatingRow' || el.type === 'arcSeatingRow'
     ).length;
 
     const lineCount = data.elements.filter(el =>

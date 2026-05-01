@@ -252,14 +252,18 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     if (!this._seatingRowData) return;
 
     const totalChairs = this._seatingRowData.seatCount;
-
+    const overrides = this._seatingRowData.chairLabels;
+    const useOverride = !!overrides && overrides.length === totalChairs;
+    if (overrides && !useOverride) {
+      console.warn(`[SeatingRow] chairLabels length ${overrides.length} != seatCount ${totalChairs} for ${this._seatingRowData.id}; falling back to sequential`);
+    }
 
     // Generate chairs for the seating row
     for (let i = 0; i < totalChairs; i++) {
       const chair: Chair = {
         id: `${this._seatingRowData.id}-chair-${i}`,
         tableId: this._seatingRowData.id,
-        label: (i + 1).toString(),
+        label: useOverride ? overrides![i] : (i + 1).toString(),
         price: 0,
         position: {
           angle: 0, // Not used for seating rows

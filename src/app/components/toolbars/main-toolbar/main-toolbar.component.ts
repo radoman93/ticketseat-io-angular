@@ -18,6 +18,7 @@ export class MainToolbarComponent {
     { type: ToolType.RectangleTable, icon: 'rectangular-table-tool', label: 'Rectangle Table' },
     { type: ToolType.SeatingRow, icon: 'row-tool', label: 'Seating Row' },
     { type: ToolType.SegmentedSeatingRow, icon: 'segmented-row-tool', label: 'Segmented Row' },
+    { type: ToolType.ArcSeatingRow, icon: 'arc-row-tool', label: 'Arc Row' },
     { type: ToolType.Line, icon: 'line-tool', label: 'Line' },
     { type: ToolType.Polygon, icon: 'polygon-tool', label: 'Polygon' },
     { type: ToolType.Text, icon: '20. Text tool', label: 'Text' },

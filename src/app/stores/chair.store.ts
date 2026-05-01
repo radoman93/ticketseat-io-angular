@@ -84,24 +84,75 @@ export class ChairStore {
     return this.selectedChairId === chairId;
   }
 
-  // Helper to generate chairs for a table
-  generateChairsForTable(tableId: string, seatCount: number, radius: number): Chair[] {
+  // Helper to generate chairs for a table.
+  // chairLabels override is applied when its length matches seatCount; otherwise sequential.
+  generateChairsForTable(tableId: string, seatCount: number, radius: number, chairLabels?: string[]): Chair[] {
     const chairs: Chair[] = [];
     const angleStep = 360 / seatCount;
     const distanceToChairCenter = radius + 20;
+    const useOverride = !!chairLabels && chairLabels.length === seatCount;
+
+    if (chairLabels && !useOverride) {
+      console.warn(`[ChairStore] chairLabels length ${chairLabels.length} != seatCount ${seatCount} for ${tableId}; falling back to sequential`);
+    }
 
     for (let i = 0; i < seatCount; i++) {
       const chair: Chair = {
         id: `${tableId}-chair-${i}`,
         tableId: tableId,
-        label: (i + 1).toString(),
+        label: useOverride ? chairLabels![i] : (i + 1).toString(),
         price: 25.00, // Default price
         position: {
           angle: angleStep * i,
           distance: distanceToChairCenter
         },
         isSelected: false,
-        reservationStatus: 'free' // Default to free (matches Chair model)
+        reservationStatus: 'free'
+      };
+      chairs.push(chair);
+      this.addChair(chair);
+    }
+
+    return chairs;
+  }
+
+  // Helper to generate chairs for an arc-seating-row.
+  // Distributes chairs evenly along an arc segment from startAngle to endAngle (degrees, CCW).
+  // Position is stored as polar coordinates relative to the element's anchor (centerX, centerY).
+  generateChairsForArcRow(
+    tableId: string,
+    seatCount: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+    chairLabels?: string[]
+  ): Chair[] {
+    const chairs: Chair[] = [];
+    if (seatCount <= 0) return chairs;
+
+    const useOverride = !!chairLabels && chairLabels.length === seatCount;
+    if (chairLabels && !useOverride) {
+      console.warn(`[ChairStore] chairLabels length ${chairLabels.length} != seatCount ${seatCount} for ${tableId}; falling back to sequential`);
+    }
+
+    // Distribute N chairs along arc; for N=1 place at midpoint, else N points evenly spaced inclusive of endpoints
+    const arcSpan = endAngle - startAngle;
+    const step = seatCount === 1 ? 0 : arcSpan / (seatCount - 1);
+    const baseAngle = seatCount === 1 ? startAngle + arcSpan / 2 : startAngle;
+
+    for (let i = 0; i < seatCount; i++) {
+      const angle = baseAngle + step * i;
+      const chair: Chair = {
+        id: `${tableId}-chair-${i}`,
+        tableId: tableId,
+        label: useOverride ? chairLabels![i] : (i + 1).toString(),
+        price: 25.00,
+        position: {
+          angle: angle,
+          distance: radius
+        },
+        isSelected: false,
+        reservationStatus: 'free'
       };
       chairs.push(chair);
       this.addChair(chair);

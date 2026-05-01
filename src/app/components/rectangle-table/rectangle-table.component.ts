@@ -295,10 +295,15 @@ export class RectangleTableComponent implements OnInit, OnChanges {
 
   private generateChairsForRectangleTable(): void {
     if (!this._tableData) return;
-    
+
     const totalChairs = this.totalChairs;
+    const overrides = this._tableData.chairLabels;
+    const useOverride = !!overrides && overrides.length === totalChairs;
+    if (overrides && !useOverride) {
+      console.warn(`[RectangleTable] chairLabels length ${overrides.length} != totalChairs ${totalChairs} for ${this._tableData.id}; falling back to sequential`);
+    }
     let chairIndex = 0;
-    
+
     // Generate chairs for each side
     const sides = [
       { count: this._tableData.upChairs, name: 'up' },
@@ -306,13 +311,13 @@ export class RectangleTableComponent implements OnInit, OnChanges {
       { count: this._tableData.leftChairs, name: 'left' },
       { count: this._tableData.rightChairs, name: 'right' }
     ];
-    
+
     sides.forEach(side => {
       for (let i = 0; i < side.count; i++) {
         const chair: Chair = {
           id: `${this._tableData!.id}-chair-${chairIndex}`,
           tableId: this._tableData!.id,
-          label: (chairIndex + 1).toString(),
+          label: useOverride ? overrides![chairIndex] : (chairIndex + 1).toString(),
           price: 25.00,
           position: {
             angle: 0, // Not used for rectangle tables

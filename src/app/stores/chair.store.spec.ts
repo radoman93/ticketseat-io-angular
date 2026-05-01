@@ -296,5 +296,99 @@ describe('ChairStore', () => {
       // Distance should be radius + 20 (default chair offset)
       expect(chairs.every(c => c.position.distance === 70)).toBe(true);
     });
+
+    describe('chairLabels override', () => {
+      it('should use chairLabels override when length matches seatCount', () => {
+        const chairs = store.generateChairsForTable('table-1', 5, 50, ['A1', 'A2', 'A3', 'A4', 'A5']);
+
+        expect(chairs.map(c => c.label)).toEqual(['A1', 'A2', 'A3', 'A4', 'A5']);
+      });
+
+      it('should support non-sequential numbering (odd-only)', () => {
+        const chairs = store.generateChairsForTable('table-1', 4, 50, ['1', '3', '5', '7']);
+
+        expect(chairs.map(c => c.label)).toEqual(['1', '3', '5', '7']);
+      });
+
+      it('should fall back to sequential labels when override length mismatches', () => {
+        spyOn(console, 'warn');
+        const chairs = store.generateChairsForTable('table-1', 4, 50, ['A', 'B']);
+
+        expect(chairs.map(c => c.label)).toEqual(['1', '2', '3', '4']);
+        expect(console.warn).toHaveBeenCalled();
+      });
+
+      it('should fall back to sequential when no override is provided', () => {
+        const chairs = store.generateChairsForTable('table-1', 3, 50);
+
+        expect(chairs.map(c => c.label)).toEqual(['1', '2', '3']);
+      });
+    });
+  });
+
+  describe('generateChairsForArcRow', () => {
+    it('should generate the requested number of chairs', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 5, 200, 0, 180);
+
+      expect(chairs.length).toBe(5);
+      expect(chairs.every(c => c.tableId === 'arc-1')).toBe(true);
+    });
+
+    it('should distribute chairs evenly inclusive of endpoints (>=2 seats)', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 5, 200, 0, 180);
+
+      expect(chairs[0].position.angle).toBe(0);
+      expect(chairs[1].position.angle).toBe(45);
+      expect(chairs[2].position.angle).toBe(90);
+      expect(chairs[3].position.angle).toBe(135);
+      expect(chairs[4].position.angle).toBe(180);
+    });
+
+    it('should place a single chair at the midpoint', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 1, 200, 60, 120);
+
+      expect(chairs.length).toBe(1);
+      expect(chairs[0].position.angle).toBe(90);
+    });
+
+    it('should store radius as the position distance', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 4, 250, 0, 90);
+
+      expect(chairs.every(c => c.position.distance === 250)).toBe(true);
+    });
+
+    it('should return empty array for zero seats', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 0, 200, 0, 180);
+
+      expect(chairs).toEqual([]);
+      expect(store.chairs.size).toBe(0);
+    });
+
+    it('should assign sequential labels by default', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 3, 200, 0, 180);
+
+      expect(chairs.map(c => c.label)).toEqual(['1', '2', '3']);
+    });
+
+    it('should honor chairLabels override when length matches', () => {
+      const chairs = store.generateChairsForArcRow('arc-1', 4, 200, 0, 90, ['L1', 'L2', 'L3', 'L4']);
+
+      expect(chairs.map(c => c.label)).toEqual(['L1', 'L2', 'L3', 'L4']);
+    });
+
+    it('should fall back to sequential when chairLabels length mismatches', () => {
+      spyOn(console, 'warn');
+      const chairs = store.generateChairsForArcRow('arc-1', 3, 200, 0, 180, ['only-one']);
+
+      expect(chairs.map(c => c.label)).toEqual(['1', '2', '3']);
+      expect(console.warn).toHaveBeenCalled();
+    });
+
+    it('should add chairs to the store', () => {
+      store.generateChairsForArcRow('arc-1', 3, 200, 0, 180);
+
+      expect(store.chairs.size).toBe(3);
+      expect(store.getChairsByTable('arc-1').length).toBe(3);
+    });
   });
 });

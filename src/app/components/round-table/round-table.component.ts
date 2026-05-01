@@ -148,11 +148,12 @@ export class RoundTableComponent implements OnInit, OnChanges {
           this.store.chairStore.removeChair(chair.id);
         });
 
-        // Generate new chairs
+        // Generate new chairs (honors chairLabels override on the element)
         this.store.chairStore.generateChairsForTable(
           this._tableData.id,
           this._tableData.seats,
-          this._tableData.radius
+          this._tableData.radius,
+          this._tableData.chairLabels
         );
       }
     } else {

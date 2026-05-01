@@ -27,7 +27,7 @@ describe('LayoutExportImportService', () => {
       const result = service.exportLayout('Test Layout', 'A test');
 
       expect(result.meta).toBeDefined();
-      expect(result.meta.version).toBe('1.0');
+      expect(result.meta.version).toBe('1.1');
       expect(result.meta.name).toBe('Test Layout');
       expect(result.meta.description).toBe('A test');
       expect(result.meta.created).toBeTruthy();
@@ -349,6 +349,112 @@ describe('LayoutExportImportService', () => {
       const file = new File(['{"foo": "bar"}'], 'test.ticketseat', { type: 'application/json' });
 
       await expectAsync(service.importLayoutFromFile(file)).toBeRejectedWithError(/Failed to import layout/);
+    });
+  });
+
+  describe('chairLabels round-trip', () => {
+    it('should preserve chairLabels on round table through export', () => {
+      layoutStore.addElement({
+        id: 'rt-cl',
+        type: 'roundTable',
+        x: 0, y: 0, radius: 50, seats: 4, openSpaces: 0,
+        name: 'T', rotation: 0,
+        tableLabelVisible: true, chairLabelVisible: true,
+        chairLabels: ['1', '3', '5', '7']
+      } as any);
+
+      const exported = service.exportLayout('cl');
+
+      expect(exported.elements[0].chairLabels).toEqual(['1', '3', '5', '7']);
+    });
+
+    it('should preserve chairLabels through full export → import round-trip', () => {
+      layoutStore.addElement({
+        id: 'sr-cl',
+        type: 'seatingRow',
+        x: 0, y: 0, endX: 100, endY: 0, seatCount: 3, seatSpacing: 35,
+        name: 'R', rotation: 0,
+        chairLabelVisible: true, rowLabelVisible: true,
+        chairLabels: ['A', 'B', 'C']
+      } as any);
+
+      const exported = service.exportLayout('cl');
+      layoutStore.clearAll();
+      rootStore.chairStore.chairs.clear();
+      service.importLayout(exported);
+
+      const reimported = layoutStore.getElementById('sr-cl') as any;
+      expect(reimported.chairLabels).toEqual(['A', 'B', 'C']);
+    });
+  });
+
+  describe('arcSeatingRow round-trip', () => {
+    it('should accept arcSeatingRow as a valid element type', () => {
+      const data: LayoutExportData = {
+        meta: { version: '1.1', name: 'Arc test', created: new Date().toISOString(), creator: 'test' },
+        settings: { gridSize: 20, showGrid: true, showGuides: true },
+        elements: [{
+          id: 'arc-1',
+          type: 'arcSeatingRow',
+          x: 100, y: 100,
+          radius: 200, startAngle: 0, endAngle: 180,
+          seats: 5, seatRadius: 10, chairFacing: 'inward',
+          name: 'Arc', rotation: 0,
+          chairLabelVisible: true, rowLabelVisible: true
+        }]
+      };
+
+      expect(service.validateLayoutData(data)).toBe(true);
+    });
+
+    it('should round-trip an arcSeatingRow with full geometry', () => {
+      layoutStore.addElement({
+        id: 'arc-rt',
+        type: 'arcSeatingRow',
+        x: 50, y: 60,
+        radius: 250, startAngle: 30, endAngle: 150,
+        seats: 7, seatRadius: 12, chairFacing: 'outward',
+        name: 'Arc1', rotation: 0,
+        chairLabelVisible: true, rowLabelVisible: true,
+        chairLabels: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+      } as any);
+
+      const exported = service.exportLayout('arc-rt-test');
+      layoutStore.clearAll();
+      rootStore.chairStore.chairs.clear();
+      service.importLayout(exported);
+
+      const reimported = layoutStore.getElementById('arc-rt') as any;
+      expect(reimported).toBeTruthy();
+      expect(reimported.type).toBe('arcSeatingRow');
+      expect(reimported.radius).toBe(250);
+      expect(reimported.startAngle).toBe(30);
+      expect(reimported.endAngle).toBe(150);
+      expect(reimported.seats).toBe(7);
+      expect(reimported.chairFacing).toBe('outward');
+      expect(reimported.chairLabels).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+    });
+  });
+
+  describe('version compatibility', () => {
+    it('should accept legacy version 1.0 layouts', () => {
+      const data: LayoutExportData = {
+        meta: { version: '1.0', name: 'Old', created: new Date().toISOString(), creator: 'old' },
+        settings: { gridSize: 20, showGrid: true, showGuides: true },
+        elements: []
+      };
+
+      expect(() => service.importLayout(data)).not.toThrow();
+    });
+
+    it('should accept current version 1.1 layouts', () => {
+      const data: LayoutExportData = {
+        meta: { version: '1.1', name: 'New', created: new Date().toISOString(), creator: 'new' },
+        settings: { gridSize: 20, showGrid: true, showGuides: true },
+        elements: []
+      };
+
+      expect(() => service.importLayout(data)).not.toThrow();
     });
   });
 });

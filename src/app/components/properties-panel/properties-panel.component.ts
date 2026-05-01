@@ -7,7 +7,7 @@ import { selectionStore } from '../../stores/selection.store';
 import { layoutStore } from '../../stores/layout.store';
 import { HistoryStore } from '../../stores/history.store';
 import { DeleteObjectCommand } from '../../commands/delete-object.command';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, PolygonProperties } from '../../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, ArcSeatingRowProperties, PolygonProperties } from '../../services/selection.service';
 import { UpdateObjectCommand } from '../../commands/update-object.command';
 import { LineElement, TextElement } from '../../models/elements.model';
 import { debouncedPropertyUpdate, batchedPropertyUpdate } from '../../utils/debounce.util';
@@ -57,7 +57,7 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
             if (freshItem.chairLabelVisible === undefined) {
               this.updateProperty('chairLabelVisible', true);
             }
-          } else if (freshItem.type === 'seatingRow' || freshItem.type === 'segmentedSeatingRow') {
+          } else if (freshItem.type === 'seatingRow' || freshItem.type === 'segmentedSeatingRow' || freshItem.type === 'arcSeatingRow') {
             if (freshItem.rowLabelVisible === undefined) {
               this.updateProperty('rowLabelVisible', true);
             }
@@ -101,6 +101,11 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
   @computed
   get segmentedSeatingRowProperties(): SeatingRowProperties {
     return this.selectedItem as SeatingRowProperties;
+  }
+
+  @computed
+  get arcSeatingRowProperties(): ArcSeatingRowProperties {
+    return this.selectedItem as ArcSeatingRowProperties;
   }
 
   @computed
@@ -327,6 +332,53 @@ export class PropertiesPanelComponent implements OnInit, OnDestroy {
     if (!this.polygonProperties) return;
     const newValue = Math.max(0, (this.polygonProperties.fillOpacity || 0.3) - 0.1);
     this.updateProperty('fillOpacity', Math.round(newValue * 10) / 10);
+  }
+
+  // Arc Seating Row
+  @action incrementArcRadius(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('radius', Math.min(800, (this.arcSeatingRowProperties.radius || 0) + 10));
+  }
+
+  @action decrementArcRadius(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('radius', Math.max(40, (this.arcSeatingRowProperties.radius || 0) - 10));
+  }
+
+  @action incrementArcSeats(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('seats', Math.min(200, (this.arcSeatingRowProperties.seats || 0) + 1));
+  }
+
+  @action decrementArcSeats(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('seats', Math.max(1, (this.arcSeatingRowProperties.seats || 0) - 1));
+  }
+
+  @action incrementArcStartAngle(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('startAngle', (this.arcSeatingRowProperties.startAngle || 0) + 5);
+  }
+
+  @action decrementArcStartAngle(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('startAngle', (this.arcSeatingRowProperties.startAngle || 0) - 5);
+  }
+
+  @action incrementArcEndAngle(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('endAngle', (this.arcSeatingRowProperties.endAngle || 0) + 5);
+  }
+
+  @action decrementArcEndAngle(): void {
+    if (!this.arcSeatingRowProperties) return;
+    this.updateProperty('endAngle', (this.arcSeatingRowProperties.endAngle || 0) - 5);
+  }
+
+  @computed
+  get arcSpan(): number {
+    if (!this.arcSeatingRowProperties) return 0;
+    return (this.arcSeatingRowProperties.endAngle || 0) - (this.arcSeatingRowProperties.startAngle || 0);
   }
 
   // Text-specific methods

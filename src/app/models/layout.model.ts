@@ -14,6 +14,7 @@ export enum ElementType {
   RECTANGLE_TABLE = 'rectangleTable',
   SEATING_ROW = 'seatingRow',
   SEGMENTED_SEATING_ROW = 'segmentedSeatingRow',
+  ARC_SEATING_ROW = 'arcSeatingRow',
   LINE = 'line',
   POLYGON = 'polygon',
   TEXT = 'text'

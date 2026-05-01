@@ -5,12 +5,13 @@ import { RoundTableComponent } from '../round-table/round-table.component';
 import { RectangleTableComponent } from '../rectangle-table/rectangle-table.component';
 import { SeatingRowComponent } from '../seating-row/seating-row.component';
 import { SegmentedSeatingRowComponent } from '../segmented-seating-row/segmented-seating-row.component';
+import { ArcSeatingRowComponent } from '../arc-seating-row/arc-seating-row.component';
 import { LineComponent } from '../line/line.component';
 import { PolygonComponent } from '../polygon/polygon.component';
 import { TextComponent } from '../text/text.component';
 import { ToolType } from '../../services/tool.service';
 import { CommonModule } from '@angular/common';
-import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties } from '../../services/selection.service';
+import { Selectable, RoundTableProperties, RectangleTableProperties, SeatingRowProperties, SegmentProperties, ArcSeatingRowProperties } from '../../services/selection.service';
 import { LineElement, PolygonElement, TextElement } from '../../models/elements.model';
 import { ElementType } from '../../models/layout.model';
 import { toolStore } from '../../stores/tool.store';
@@ -30,8 +31,8 @@ import { AlignmentGuideRenderer } from '../../services/alignment-guide-renderer.
 import { ElementBoundsService } from '../../services/element-bounds.service';
 import { MobXComponentBase } from '../../base/mobx-component.base';
 
-// Use union type for table positions  
-type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement | TextElement;
+// Use union type for table positions
+type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | ArcSeatingRowProperties | LineElement | PolygonElement | TextElement;
 
 @Component({
   selector: 'app-grid',
@@ -41,6 +42,7 @@ type TablePosition = RoundTableProperties | RectangleTableProperties | SeatingRo
     RectangleTableComponent,
     SeatingRowComponent,
     SegmentedSeatingRowComponent,
+    ArcSeatingRowComponent,
     LineComponent,
     PolygonComponent,
     TextComponent,
@@ -229,6 +231,24 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
           totalSegments: 0,
           totalSeats: 0
         };
+      } else if (activeTool === ToolType.ArcSeatingRow) {
+        // Initialize preview arc seating row (1-click drop with default geometry)
+        this.previewTable = {
+          id: `arc-row-preview-${Date.now()}`,
+          type: 'arcSeatingRow',
+          x: 0,
+          y: 0,
+          radius: 200,
+          startAngle: 200,  // ~bottom-left
+          endAngle: 340,    // ~bottom-right; gives ~140° arc opening upward
+          seats: 12,
+          seatRadius: 10,
+          chairFacing: 'inward',
+          name: `Arc Row ${this.layoutStore.elements.length + 1}`,
+          rotation: 0,
+          chairLabelVisible: true,
+          rowLabelVisible: true
+        } as ArcSeatingRowProperties;
       } else if (activeTool === ToolType.Line) {
         // Initialize line drawing state
         this.isDrawingLine = false;
@@ -939,6 +959,17 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         chairLabelVisible: true
       };
       this.layoutStore.addElement(newTable);
+    } else if (this.toolStore.activeTool === ToolType.ArcSeatingRow && this.previewTable && this.previewTable.type === 'arcSeatingRow') {
+      // Create a new arc seating row at the preview position
+      const newArc: ArcSeatingRowProperties = {
+        ...this.previewTable as ArcSeatingRowProperties,
+        id: `arc-row-${Date.now()}`,
+        chairLabelVisible: true,
+        rowLabelVisible: true
+      };
+      this.layoutStore.addElement(newArc);
+      // Deselect tool after placing one arc — matches single-click feel of round/rect tables
+      this.toolStore.setActiveTool(ToolType.None);
     } else if (this.toolStore.activeTool === ToolType.SeatingRow && this.previewTable && !this.isCreatingRegularRow) {
       // Only create seating row if NOT in two-click drawing mode
       // This handles the old drag-to-create workflow (if it exists)

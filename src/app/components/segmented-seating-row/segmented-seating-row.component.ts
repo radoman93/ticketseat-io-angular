@@ -272,17 +272,25 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   // Generate chairs for all committed segments
   private generateChairsForAllSegments(): void {
     if (!this._seatingRowData?.segments) return;
-    
+
+    const totalChairs = this._seatingRowData.segments.reduce((sum, s) => sum + s.seatCount, 0);
+    const overrides = this._seatingRowData.chairLabels;
+    const useOverride = !!overrides && overrides.length === totalChairs;
+    if (overrides && !useOverride) {
+      console.warn(`[SegmentedSeatingRow] chairLabels length ${overrides.length} != totalChairs ${totalChairs} for ${this._seatingRowData.id}; falling back to sequential`);
+    }
+
     let globalChairCounter = 1;
+    let overrideIndex = 0;
     this._seatingRowData.segments.forEach((segment, segmentIndex) => {
       for (let i = 0; i < segment.seatCount; i++) {
         const chairId = `${this._seatingRowData!.id}-seg${segmentIndex}-chair-${i}`;
-        
+
         if (!this.store.chairStore.chairs.has(chairId)) {
           const chair: Chair = {
             id: chairId,
             tableId: this._seatingRowData!.id!,
-            label: globalChairCounter.toString(),
+            label: useOverride ? overrides![overrideIndex] : globalChairCounter.toString(),
             price: 0,
             position: { angle: segment.rotation, distance: 0 },
             isSelected: false
@@ -290,6 +298,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
           this.store.chairStore.addChair(chair);
         }
         globalChairCounter++;
+        overrideIndex++;
       }
     });
   }
@@ -297,17 +306,22 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
   // Generate chairs for regular rows (non-segmented)
   private generateChairsForRegularRow(): void {
     if (!this._seatingRowData?.segments || this._seatingRowData.segments.length === 0) return;
-    
+
     const segment = this._seatingRowData.segments[0]; // Regular rows only have one segment
-    
+    const overrides = this._seatingRowData.chairLabels;
+    const useOverride = !!overrides && overrides.length === segment.seatCount;
+    if (overrides && !useOverride) {
+      console.warn(`[SegmentedSeatingRow.regular] chairLabels length ${overrides.length} != seatCount ${segment.seatCount} for ${this._seatingRowData.id}; falling back to sequential`);
+    }
+
     for (let i = 0; i < segment.seatCount; i++) {
       const chairId = `${this._seatingRowData.id}-chair-${i}`;
-      
+
       if (!this.store.chairStore.chairs.has(chairId)) {
         const chair: Chair = {
           id: chairId,
           tableId: this._seatingRowData.id!,
-          label: (i + 1).toString(),
+          label: useOverride ? overrides![i] : (i + 1).toString(),
           price: 0,
           position: { angle: segment.rotation, distance: 0 },
           isSelected: false

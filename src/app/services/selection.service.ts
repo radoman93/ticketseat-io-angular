@@ -25,6 +25,7 @@ export interface RoundTableProperties extends Selectable {
   tableLabelVisible: boolean;
   chairLabelVisible: boolean;
   chairs?: ChairProperties[];
+  chairLabels?: string[];
 }
 
 export interface RectangleTableProperties extends Selectable {
@@ -41,6 +42,7 @@ export interface RectangleTableProperties extends Selectable {
   tableLabelVisible: boolean;
   chairLabelVisible: boolean;
   chairs?: ChairProperties[];
+  chairLabels?: string[];
 }
 
 export interface SegmentProperties {
@@ -68,10 +70,34 @@ export interface SeatingRowProperties extends Selectable {
   rowLabelVisible: boolean;
   labelPosition?: 'left' | 'center' | 'right';
   chairs?: ChairProperties[];
+  chairLabels?: string[];
   isSegmented?: boolean;
   segments?: SegmentProperties[];
   totalSegments?: number;
   totalSeats?: number;
+  isPreview?: boolean;
+}
+
+// ArcSeatingRow: chairs along a circular arc centered at (x, y).
+// startAngle/endAngle in degrees, CCW from +X axis.
+// chairFacing 'inward' = chair faces the arc's center (theater audience facing stage at center).
+// chairFacing 'outward' = chair faces away from center (in-the-round / arena seating).
+export interface ArcSeatingRowProperties extends Selectable {
+  x: number;
+  y: number;
+  radius: number;
+  startAngle: number;
+  endAngle: number;
+  seats: number;
+  seatRadius?: number;
+  chairFacing?: 'inward' | 'outward';
+  name: string;
+  rotation?: number;
+  chairLabelVisible: boolean;
+  rowLabelVisible: boolean;
+  labelPosition?: 'left' | 'center' | 'right';
+  chairs?: ChairProperties[];
+  chairLabels?: string[];
   isPreview?: boolean;
 }
 

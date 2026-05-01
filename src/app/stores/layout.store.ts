@@ -1,9 +1,9 @@
 import { makeAutoObservable, action } from 'mobx';
-import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties } from '../services/selection.service';
+import { RoundTableProperties, RectangleTableProperties, SeatingRowProperties, ArcSeatingRowProperties } from '../services/selection.service';
 import { LineElement, PolygonElement, TextElement } from '../models/elements.model';
 
 // Union type for all table types
-export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | LineElement | PolygonElement | TextElement;
+export type TableElement = RoundTableProperties | RectangleTableProperties | SeatingRowProperties | ArcSeatingRowProperties | LineElement | PolygonElement | TextElement;
 
 export class LayoutStore {
   elements: TableElement[] = [];
@@ -41,6 +41,11 @@ export class LayoutStore {
     } else if (newElement.type === 'seatingRow' || newElement.type === 'segmentedSeatingRow') {
       newElement.rowLabelVisible = newElement.rowLabelVisible ?? true;
       newElement.chairLabelVisible = newElement.chairLabelVisible ?? true;
+    } else if (newElement.type === 'arcSeatingRow') {
+      newElement.rowLabelVisible = newElement.rowLabelVisible ?? true;
+      newElement.chairLabelVisible = newElement.chairLabelVisible ?? true;
+      newElement.chairFacing = newElement.chairFacing ?? 'inward';
+      newElement.seatRadius = newElement.seatRadius ?? 10;
     } else if (newElement.type === 'line') {
       // Lines don't have visibility properties, but ensure required properties exist
       newElement.thickness = newElement.thickness ?? 2;
@@ -109,11 +114,12 @@ export class LayoutStore {
 
   // Computed property to get the total count of table elements (excluding lines)
   get tableCount(): number {
-    return this.elements.filter(el => 
-      el.type === 'roundTable' || 
-      el.type === 'rectangleTable' || 
-      el.type === 'seatingRow' || 
-      el.type === 'segmentedSeatingRow'
+    return this.elements.filter(el =>
+      el.type === 'roundTable' ||
+      el.type === 'rectangleTable' ||
+      el.type === 'seatingRow' ||
+      el.type === 'segmentedSeatingRow' ||
+      el.type === 'arcSeatingRow'
     ).length;
   }
 
@@ -127,10 +133,10 @@ export class LayoutStore {
     return this.elements.filter(el => el.type === 'rectangleTable').length;
   }
 
-  // Computed property to get count of seating rows (both regular and segmented)
+  // Computed property to get count of seating rows (regular, segmented, and arc)
   get seatingRowCount(): number {
-    return this.elements.filter(el => 
-      el.type === 'seatingRow' || el.type === 'segmentedSeatingRow'
+    return this.elements.filter(el =>
+      el.type === 'seatingRow' || el.type === 'segmentedSeatingRow' || el.type === 'arcSeatingRow'
     ).length;
   }
 
@@ -194,11 +200,12 @@ export class LayoutStore {
   }
 
   getTables(): TableElement[] {
-    return this.elements.filter(el => 
-      el.type === 'roundTable' || 
-      el.type === 'rectangleTable' || 
-      el.type === 'seatingRow' || 
-      el.type === 'segmentedSeatingRow'
+    return this.elements.filter(el =>
+      el.type === 'roundTable' ||
+      el.type === 'rectangleTable' ||
+      el.type === 'seatingRow' ||
+      el.type === 'segmentedSeatingRow' ||
+      el.type === 'arcSeatingRow'
     );
   }
 
