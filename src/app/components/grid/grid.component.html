@@ -141,146 +141,147 @@
         </div>
       </app-text>
 
-      <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
-      <app-round-table *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
-        [x]="previewTable.x" [y]="previewTable.y" [radius]="$any(previewTable).radius"
-        [seats]="$any(previewTable).seats" [name]="previewTable.name || 'Table'" class="opacity-70 preview-table">
-      </app-round-table>
-
-      <app-rectangle-table
-        *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RectangleTable"
-        [x]="previewTable.x" [y]="previewTable.y" [width]="$any(previewTable).width"
-        [height]="$any(previewTable).height" [upChairs]="$any(previewTable).upChairs"
-        [downChairs]="$any(previewTable).downChairs" [leftChairs]="$any(previewTable).leftChairs"
-        [rightChairs]="$any(previewTable).rightChairs" [name]="previewTable.name || 'Table'"
-        class="opacity-70 preview-table">
-      </app-rectangle-table>
-
-      <!-- Use Segmented Seating Row for both SeatingRow and SegmentedSeatingRow tools - Hidden in viewer mode -->
-      <app-segmented-seating-row
-        *ngIf="!viewerStore.isViewerMode && previewTable && (toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
-        [seatingRowData]="$any(previewTable)" [isPreview]="true" [previewSegment]="previewSegment"
-        [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1" class="opacity-70 preview-table">
-      </app-segmented-seating-row>
-
-      <!-- Arc Seating Row preview while tool active -->
-      <app-arc-seating-row
-        *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.ArcSeatingRow && previewTable.type === 'arcSeatingRow'"
-        [arcRowData]="$any(previewTable)" [x]="previewTable.x" [y]="previewTable.y"
-        [radius]="$any(previewTable).radius" [startAngle]="$any(previewTable).startAngle" [endAngle]="$any(previewTable).endAngle"
-        [seats]="$any(previewTable).seats" [seatRadius]="$any(previewTable).seatRadius || 10"
-        [chairFacing]="$any(previewTable).chairFacing || 'inward'"
-        [name]="previewTable.name || 'Arc Row'" [isPreview]="true"
-        class="opacity-70 preview-table">
-      </app-arc-seating-row>
-
-      <!-- Line Preview (when drawing) - Hidden in viewer mode -->
-      <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Line && isDrawingLine && previewTable.type === 'line'"
-           class="absolute pointer-events-none opacity-70">
-        <!-- Simple CSS-based line preview -->
-        <div class="absolute" style="background: #1C160C;"
-             [style.left.px]="$any(previewTable).startX"
-             [style.top.px]="$any(previewTable).startY"
-             [style.width.px]="getLinePreviewLength()"
-             [style.height.px]="2"
-             [style.transform]="'rotate(' + getLinePreviewAngle() + 'deg)'"
-             [style.transform-origin]="'0 50%'">
-        </div>
-        <!-- Start point -->
-        <div class="absolute w-2 h-2 rounded-full" style="background: #1C160C;"
-             [style.left.px]="$any(previewTable).startX"
-             [style.top.px]="$any(previewTable).startY"
-             [style.transform]="'translate(-50%, -50%)'">
-        </div>
-        <!-- End point -->
-        <div class="absolute w-2 h-2 rounded-full" style="background: #1C160C;"
-             [style.left.px]="$any(previewTable).endX"
-             [style.top.px]="$any(previewTable).endY"
-             [style.transform]="'translate(-50%, -50%)'">
-        </div>
-      </div>
-
-      <!-- Polygon Preview (when drawing) - Hidden in viewer mode -->
-      <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Polygon && isDrawingPolygon && previewTable.type === 'polygon'"
-           class="absolute pointer-events-none opacity-70">
-        
-        
-        <!-- SVG for polygon lines with simplified approach -->
-        <svg class="absolute pointer-events-none" 
-             style="overflow: visible; width: 100vw; height: 100vh; top: 0; left: 0; position: fixed;">
-          
-          <!-- Lines connecting existing vertices (permanent lines) -->
-          <g *ngFor="let point of polygonPoints; let i = index">
-            <line *ngIf="i > 0"
-                  [attr.x1]="polygonPoints[i-1].x"
-                  [attr.y1]="polygonPoints[i-1].y"
-                  [attr.x2]="point.x"
-                  [attr.y2]="point.y"
-                  stroke="#5C5446"
-                  stroke-width="2"
-                  fill="none"
-                  opacity="0.8">
-            </line>
-          </g>
-          
-          <!-- Preview line from last vertex to mouse cursor -->
-          <line *ngIf="polygonPoints.length > 0 && $any(previewTable).points.length > polygonPoints.length"
-                [attr.x1]="polygonPoints[polygonPoints.length - 1].x"
-                [attr.y1]="polygonPoints[polygonPoints.length - 1].y"
-                [attr.x2]="$any(previewTable).points[$any(previewTable).points.length - 1].x"
-                [attr.y2]="$any(previewTable).points[$any(previewTable).points.length - 1].y"
-                stroke="#9A9286"
-                stroke-width="2"
-                stroke-dasharray="5,5"
-                fill="none"
-                opacity="0.6">
-          </line>
-          
-          <!-- Vertex indicators as SVG circles -->
-          <circle *ngFor="let point of polygonPoints; let i = index"
-                  [attr.cx]="point.x"
-                  [attr.cy]="point.y"
-                  r="4"
-                  fill="#1C160C"
-                  stroke="#FDFBF7"
-                  stroke-width="2">
-          </circle>
-
-          <!-- Starting point indicator (accent circle, larger when hovering) -->
-          <circle *ngIf="polygonPoints.length > 0"
-                  [attr.cx]="polygonPoints[0].x"
-                  [attr.cy]="polygonPoints[0].y"
-                  [attr.r]="isHoveringStartPoint ? 8 : 6"
-                  fill="#B8331C"
-                  stroke="#FDFBF7"
-                  stroke-width="2"
-                  [attr.opacity]="isHoveringStartPoint ? 1 : 0.9">
-          </circle>
-        </svg>
-      </div>
-
-      <!-- Text Preview - Hidden in viewer mode -->
-      <app-text *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Text"
-        [x]="previewTable.x"
-        [y]="previewTable.y"
-        [textData]="$any(previewTable)"
-        [text]="$any(previewTable).text"
-        [fontSize]="$any(previewTable).fontSize"
-        [fontFamily]="$any(previewTable).fontFamily"
-        [fontWeight]="$any(previewTable).fontWeight"
-        [fontStyle]="$any(previewTable).fontStyle"
-        [textAlign]="$any(previewTable).textAlign"
-        [color]="$any(previewTable).color"
-        [backgroundColor]="$any(previewTable).backgroundColor"
-        [borderColor]="$any(previewTable).borderColor"
-        [borderWidth]="$any(previewTable).borderWidth"
-        [padding]="$any(previewTable).padding"
-        [rotation]="$any(previewTable).rotation || 0"
-        [isPreview]="true"
-        class="opacity-70 preview-text">
-      </app-text>
-
     </div>
+
+    <!-- Preview tables (semi-transparent with dashed border) - Hidden in viewer mode -->
+    <!-- NOTE: Previews must be OUTSIDE the *ngFor loop so they render on empty canvas -->
+    <app-round-table *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RoundTable"
+      [x]="previewTable.x" [y]="previewTable.y" [radius]="$any(previewTable).radius"
+      [seats]="$any(previewTable).seats" [name]="previewTable.name || 'Table'" class="opacity-70 preview-table">
+    </app-round-table>
+
+    <app-rectangle-table
+      *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.RectangleTable"
+      [x]="previewTable.x" [y]="previewTable.y" [width]="$any(previewTable).width"
+      [height]="$any(previewTable).height" [upChairs]="$any(previewTable).upChairs"
+      [downChairs]="$any(previewTable).downChairs" [leftChairs]="$any(previewTable).leftChairs"
+      [rightChairs]="$any(previewTable).rightChairs" [name]="previewTable.name || 'Table'"
+      class="opacity-70 preview-table">
+    </app-rectangle-table>
+
+    <!-- Use Segmented Seating Row for both SeatingRow and SegmentedSeatingRow tools - Hidden in viewer mode -->
+    <app-segmented-seating-row
+      *ngIf="!viewerStore.isViewerMode && previewTable && (toolStore.activeTool === ToolType.SeatingRow || toolStore.activeTool === ToolType.SegmentedSeatingRow)"
+      [seatingRowData]="$any(previewTable)" [isPreview]="true" [previewSegment]="previewSegment"
+      [maxSegments]="toolStore.activeTool === ToolType.SeatingRow ? 1 : -1" class="opacity-70 preview-table">
+    </app-segmented-seating-row>
+
+    <!-- Arc Seating Row preview while tool active -->
+    <app-arc-seating-row
+      *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.ArcSeatingRow && previewTable.type === 'arcSeatingRow'"
+      [arcRowData]="$any(previewTable)" [x]="previewTable.x" [y]="previewTable.y"
+      [radius]="$any(previewTable).radius" [startAngle]="$any(previewTable).startAngle" [endAngle]="$any(previewTable).endAngle"
+      [seats]="$any(previewTable).seats" [seatRadius]="$any(previewTable).seatRadius || 10"
+      [chairFacing]="$any(previewTable).chairFacing || 'inward'"
+      [name]="previewTable.name || 'Arc Row'" [isPreview]="true"
+      class="opacity-70 preview-table">
+    </app-arc-seating-row>
+
+    <!-- Line Preview (when drawing) - Hidden in viewer mode -->
+    <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Line && isDrawingLine && previewTable.type === 'line'"
+         class="absolute pointer-events-none opacity-70">
+      <!-- Simple CSS-based line preview -->
+      <div class="absolute" style="background: #1C160C;"
+           [style.left.px]="$any(previewTable).startX"
+           [style.top.px]="$any(previewTable).startY"
+           [style.width.px]="getLinePreviewLength()"
+           [style.height.px]="2"
+           [style.transform]="'rotate(' + getLinePreviewAngle() + 'deg)'"
+           [style.transform-origin]="'0 50%'">
+      </div>
+      <!-- Start point -->
+      <div class="absolute w-2 h-2 rounded-full" style="background: #1C160C;"
+           [style.left.px]="$any(previewTable).startX"
+           [style.top.px]="$any(previewTable).startY"
+           [style.transform]="'translate(-50%, -50%)'">
+      </div>
+      <!-- End point -->
+      <div class="absolute w-2 h-2 rounded-full" style="background: #1C160C;"
+           [style.left.px]="$any(previewTable).endX"
+           [style.top.px]="$any(previewTable).endY"
+           [style.transform]="'translate(-50%, -50%)'">
+      </div>
+    </div>
+
+    <!-- Polygon Preview (when drawing) - Hidden in viewer mode -->
+    <div *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Polygon && isDrawingPolygon && previewTable.type === 'polygon'"
+         class="absolute pointer-events-none opacity-70">
+
+
+      <!-- SVG for polygon lines with simplified approach -->
+      <svg class="absolute pointer-events-none"
+           style="overflow: visible; width: 100vw; height: 100vh; top: 0; left: 0; position: fixed;">
+
+        <!-- Lines connecting existing vertices (permanent lines) -->
+        <g *ngFor="let point of polygonPoints; let i = index">
+          <line *ngIf="i > 0"
+                [attr.x1]="polygonPoints[i-1].x"
+                [attr.y1]="polygonPoints[i-1].y"
+                [attr.x2]="point.x"
+                [attr.y2]="point.y"
+                stroke="#5C5446"
+                stroke-width="2"
+                fill="none"
+                opacity="0.8">
+          </line>
+        </g>
+
+        <!-- Preview line from last vertex to mouse cursor -->
+        <line *ngIf="polygonPoints.length > 0 && $any(previewTable).points.length > polygonPoints.length"
+              [attr.x1]="polygonPoints[polygonPoints.length - 1].x"
+              [attr.y1]="polygonPoints[polygonPoints.length - 1].y"
+              [attr.x2]="$any(previewTable).points[$any(previewTable).points.length - 1].x"
+              [attr.y2]="$any(previewTable).points[$any(previewTable).points.length - 1].y"
+              stroke="#9A9286"
+              stroke-width="2"
+              stroke-dasharray="5,5"
+              fill="none"
+              opacity="0.6">
+        </line>
+
+        <!-- Vertex indicators as SVG circles -->
+        <circle *ngFor="let point of polygonPoints; let i = index"
+                [attr.cx]="point.x"
+                [attr.cy]="point.y"
+                r="4"
+                fill="#1C160C"
+                stroke="#FDFBF7"
+                stroke-width="2">
+        </circle>
+
+        <!-- Starting point indicator (accent circle, larger when hovering) -->
+        <circle *ngIf="polygonPoints.length > 0"
+                [attr.cx]="polygonPoints[0].x"
+                [attr.cy]="polygonPoints[0].y"
+                [attr.r]="isHoveringStartPoint ? 8 : 6"
+                fill="#B8331C"
+                stroke="#FDFBF7"
+                stroke-width="2"
+                [attr.opacity]="isHoveringStartPoint ? 1 : 0.9">
+        </circle>
+      </svg>
+    </div>
+
+    <!-- Text Preview - Hidden in viewer mode -->
+    <app-text *ngIf="!viewerStore.isViewerMode && previewTable && toolStore.activeTool === ToolType.Text"
+      [x]="previewTable.x"
+      [y]="previewTable.y"
+      [textData]="$any(previewTable)"
+      [text]="$any(previewTable).text"
+      [fontSize]="$any(previewTable).fontSize"
+      [fontFamily]="$any(previewTable).fontFamily"
+      [fontWeight]="$any(previewTable).fontWeight"
+      [fontStyle]="$any(previewTable).fontStyle"
+      [textAlign]="$any(previewTable).textAlign"
+      [color]="$any(previewTable).color"
+      [backgroundColor]="$any(previewTable).backgroundColor"
+      [borderColor]="$any(previewTable).borderColor"
+      [borderWidth]="$any(previewTable).borderWidth"
+      [padding]="$any(previewTable).padding"
+      [rotation]="$any(previewTable).rotation || 0"
+      [isPreview]="true"
+      class="opacity-70 preview-text">
+    </app-text>
 
     <!-- Show cursor as crosshair when in add mode - Hidden in viewer mode -->
     <div
