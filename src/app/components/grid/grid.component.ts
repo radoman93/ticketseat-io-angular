@@ -148,7 +148,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
           type: 'roundTable',
           x: 0,
           y: 0,
-          radius: 50,
+          radius: this.getCssVarNumber('--ts-round-table-radius', 50),
           seats: 8,
           openSpaces: 0,
           name: `Table ${this.layoutStore.elements.length + 1}`,
@@ -163,8 +163,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
           type: 'rectangleTable',
           x: 0,
           y: 0,
-          width: 120,
-          height: 80,
+          width: this.getCssVarNumber('--ts-rect-table-width', 120),
+          height: this.getCssVarNumber('--ts-rect-table-height', 80),
           upChairs: 4,
           downChairs: 4,
           leftChairs: 0,
@@ -1442,11 +1442,17 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       return;
     }
 
+    // Check if touch target is a chair element — let it handle its own click
+    const target = event.target as HTMLElement;
+    const isChairTap = target.closest('.ts-chair') !== null;
+
     // Add to pointer cache for multi-touch tracking
     this.pointerCache.push(event);
 
-    // Capture the pointer for consistent tracking
-    (event.target as HTMLElement)?.setPointerCapture?.(event.pointerId);
+    // Don't capture pointer on chair taps — let click events reach the chair
+    if (!isChairTap) {
+      (event.target as HTMLElement)?.setPointerCapture?.(event.pointerId);
+    }
 
     if (this.pointerCache.length === 1) {
       // Single touch - prepare for pan or tap
@@ -1455,8 +1461,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       this.lastPanPosition = { x: event.clientX, y: event.clientY };
       this.isTouchPanning = false;
 
-      // Start panning in viewer mode
-      if (this.viewerStore.isViewerMode) {
+      // Start panning in viewer mode (but not on chair taps)
+      if (this.viewerStore.isViewerMode && !isChairTap) {
         this.store.startPanning(event.clientX, event.clientY);
       }
     } else if (this.pointerCache.length === 2) {
@@ -1467,7 +1473,10 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       this.store.stopPanning(); // Stop panning when pinching
     }
 
-    event.preventDefault();
+    // Don't preventDefault on chair taps — allows click to fire
+    if (!isChairTap) {
+      event.preventDefault();
+    }
   }
 
   @HostListener('pointermove', ['$event'])
@@ -1596,6 +1605,12 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       x: (this.pointerCache[0].clientX + this.pointerCache[1].clientX) / 2,
       y: (this.pointerCache[0].clientY + this.pointerCache[1].clientY) / 2
     };
+  }
+
+  private getCssVarNumber(name: string, fallback: number): number {
+    const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const num = parseFloat(val);
+    return isNaN(num) ? fallback : num;
   }
 
   /**

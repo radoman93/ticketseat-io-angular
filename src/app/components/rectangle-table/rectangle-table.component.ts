@@ -365,6 +365,30 @@ export class RectangleTableComponent implements OnInit, OnChanges {
     // Optional: Add hover effects here
   }
 
+  getSvgPadColors(chair: any): { fill: string; stroke: string } {
+    const avail = { fill: '#E8DCC4', stroke: '#C9B999' };
+    const selected = { fill: '#B8331C', stroke: '#962513' };
+    const sold = { fill: '#C9C2B5', stroke: '#B8B0A2' };
+    if (!chair.chair) return avail;
+    if (this.viewerStore.isViewerMode) {
+      const s = this.viewerStore.getSeatReservationStatus(chair.chair);
+      if (s === 'selected-for-reservation') return selected;
+      if (s === 'pre-reserved' || s === 'reserved') return sold;
+      return avail;
+    }
+    return chair.isSelected ? selected : avail;
+  }
+
+  getChairBackRotation(side: string): number {
+    switch (side) {
+      case 'up': return 0;
+      case 'down': return 180;
+      case 'left': return 270;
+      case 'right': return 90;
+      default: return 0;
+    }
+  }
+
   getSeatClasses(chair: any): string {
     if (!chair.chair) return 'w-5 h-5 ts-seat-empty';
 

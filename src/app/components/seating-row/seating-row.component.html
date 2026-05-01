@@ -1,54 +1,54 @@
 <div class="absolute" *mobxAutorun [ngStyle]="seatingRowStyles">
   
-  <!-- Row line (visual indicator) - only visible when not in preview mode -->
-  <div class="absolute h-0.5 transition-all duration-200"
+  <!-- Row line (visual indicator) - centered through chairs -->
+  <div class="absolute transition-all duration-200"
        *ngIf="!isEffectivePreview"
-       style="background: var(--ts-border-strong); opacity: 0.5;"
+       style="background: var(--ts-border-strong); opacity: 0.5; height: 1px; top: 0;"
        [style.width.px]="getRowWidth()"
-       [style.left.px]="0"
-       [style.top.px]="-1">
+       [style.left.px]="0">
   </div>
 
-  <!-- Preview line (visual indicator) - only visible in preview mode -->
-  <div class="absolute h-0.5 transition-all duration-200"
+  <!-- Preview line (visual indicator) - centered through chairs -->
+  <div class="absolute transition-all duration-200"
        *ngIf="isEffectivePreview"
-       style="background: var(--ts-accent); opacity: 0.5;"
+       style="background: var(--ts-accent); opacity: 0.5; height: 1px; top: 0;"
        [style.width.px]="getRowWidth()"
-       [style.left.px]="0"
-       [style.top.px]="-1">
+       [style.left.px]="0">
   </div>
   
   <!-- Seating Row Chairs -->
   <div class="absolute w-full h-full left-0 top-0">
-    <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5" 
-         *ngFor="let chair of chairStyles; let i = index" 
+    <div class="absolute top-1/2 left-1/2"
+         style="margin-left:calc(var(--ts-chair-size) / -2);margin-top:calc(var(--ts-chair-size) / -2)"
+         *ngFor="let chair of chairStyles; let i = index"
          [style.transform]="chair.transform">
-      <div class="chair-circle rounded-full transition-all duration-300 hover:cursor-pointer flex justify-center items-center relative"
-           [class]="getChairClasses(chair)"
+      <div class="ts-chair"
            (click)="onChairClick($event, chair)"
            (mousedown)="onChairMouseDown($event, chair)"
            (mouseenter)="onChairHover(chair)"
            [title]="getSeatTitle(chair)">
-        <span *ngIf="chairLabelVisible" 
-              [class]="getSeatLabelClasses(chair)">
-          {{ chair.label }}
-        </span>
-        <!-- Selection glow effect for editor mode -->
+        <svg viewBox="-17 -17 34 34" >
+          <path d="M -12 0 A 12 12 0 1 0 12 0 Z"
+                fill="#F4ECDB" stroke="#B89E70" stroke-width="1.4"/>
+          <circle cx="0" cy="0" r="6.5"
+                  [attr.fill]="getSvgPadColors(chair).fill"
+                  [attr.stroke]="getSvgPadColors(chair).stroke" stroke-width="0.8"/>
+          <text *ngIf="chairLabelVisible" x="0" y="0.5" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter,sans-serif" font-size="8" font-weight="500"
+                [attr.fill]="getSvgPadColors(chair).fill === '#B8331C' ? '#fff' : '#5C5446'">{{ chair.label }}</text>
+        </svg>
         <div *ngIf="chair.isSelected && !isEffectivePreview && viewerStore.isEditorMode"
              class="absolute inset-0 rounded-full ts-glow-accent opacity-40 animate-ping z-0"></div>
         <div *ngIf="chair.isSelected && !isEffectivePreview && viewerStore.isEditorMode"
              class="absolute -inset-2 rounded-full ts-glow-accent-soft blur-sm animate-pulse z-0"></div>
-        <!-- Selection glow effect for viewer mode -->
         <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
              class="absolute inset-0 rounded-full ts-glow-accent opacity-50 animate-ping z-0"></div>
         <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
              class="absolute -inset-3 rounded-full ts-glow-accent-soft blur-md animate-pulse z-0"></div>
       </div>
-      
-      <!-- Preview info display - positioned next to the last chair -->
       <div *ngIf="isEffectivePreview && i === chairStyles.length - 1"
            class="absolute text-xs font-medium whitespace-nowrap px-2 py-1 rounded shadow-lg"
-           style="left: 20px; top: -8px; color: var(--ts-accent); background: var(--ts-panel);">
+           style="left: 38px; top: 4px; color: var(--ts-accent); background: var(--ts-panel);">
         {{ chairStyles.length }} seats
       </div>
     </div>

@@ -25,6 +25,16 @@
   --ts-accent: #B8331C;
   --ts-accent-soft: #F4DDD4;
   --ts-accent-deep: #962513;
+  --ts-chair-back: #F4ECDB;
+  --ts-chair-stroke: #B89E70;
+  --ts-pad-stroke: #C9B999;
+  --ts-table-top: #EFE3CB;
+  --ts-table-stroke: #B89E70;
+  --ts-table-inner: rgba(184, 158, 112, 0.4);
+  --ts-chair-size: 30px;
+  --ts-round-table-radius: 50;
+  --ts-rect-table-width: 120;
+  --ts-rect-table-height: 80;
   --ts-good: #3F7A4D;
   --ts-warn: #D89A3C;
   --ts-font: 'Inter', system-ui, -apple-system, sans-serif;
@@ -37,8 +47,11 @@ html, body {
 
 /* === Table element styles (global so child components can see them) === */
 .ts-table-circle {
-  background: #FFFFFF;
-  border: 1.5px solid var(--ts-border-strong);
+  background: var(--ts-table-top);
+  border: 1.2px solid var(--ts-table-stroke);
+  position: relative;
+  outline: 0.5px solid var(--ts-table-inner);
+  outline-offset: -4px;
 }
 .ts-table-circle.ts-table-selected {
   border-color: var(--ts-accent);
@@ -46,20 +59,53 @@ html, body {
   box-shadow: 0 0 0 4px var(--ts-accent-soft);
 }
 .ts-table-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ts-ink);
   font-family: var(--ts-font);
   text-align: center;
+  z-index: 1;
+  position: relative;
 }
 .ts-rect-table {
-  background: #FFFFFF;
-  border: 1.5px solid var(--ts-border-strong);
+  background: var(--ts-table-top);
+  border: 1.2px solid var(--ts-table-stroke);
+  border-radius: 4px;
+  position: relative;
+  outline: 0.5px solid var(--ts-table-inner);
+  outline-offset: -4px;
 }
 .ts-rect-table.ts-table-selected {
   border-color: var(--ts-accent);
   border-width: 2px;
   box-shadow: 0 0 0 4px var(--ts-accent-soft);
+}
+
+/* === Chair-with-back === */
+.ts-chair {
+  position: relative;
+  width: var(--ts-chair-size);
+  height: var(--ts-chair-size);
+  cursor: pointer;
+}
+.ts-chair svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.ts-chair-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--ts-chair-size);
+  height: var(--ts-chair-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* === Seat state classes (global) === */
@@ -102,12 +148,14 @@ html, body {
   color: var(--ts-ink-soft);
 }
 
-/* Selection glow effects */
+/* Selection glow effects — pointer-events:none so they don't block adjacent chair clicks */
 .ts-glow-accent {
   background-color: var(--ts-accent);
+  pointer-events: none;
 }
 .ts-glow-accent-soft {
   background-color: var(--ts-accent-soft);
+  pointer-events: none;
 }
 
 /* Selection indicators — global override to ensure oxblood */

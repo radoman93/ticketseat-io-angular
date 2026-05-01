@@ -35,9 +35,25 @@
   --ts-accent-soft: #F4DDD4;
   --ts-accent-deep: #962513;
 
+  /* Chair-with-back design (from handoff variant 02) */
+  --ts-chair-back: #F4ECDB;
+  --ts-chair-stroke: #B89E70;
+  --ts-pad-stroke: #C9B999;
+  --ts-table-top: #EFE3CB;
+  --ts-table-stroke: #B89E70;
+  --ts-table-inner: rgba(184, 158, 112, 0.4);
+
   /* Status */
   --ts-good: #3F7A4D;
   --ts-warn: #D89A3C;
+
+  /* Chair size (change this to scale all chairs) */
+  --ts-chair-size: 24px;
+
+  /* Default table sizes (used by JS — change in :root to override) */
+  --ts-round-table-radius: 50;
+  --ts-rect-table-width: 120;
+  --ts-rect-table-height: 80;
 
   /* Typography */
   --ts-font: 'Inter', system-ui, -apple-system, sans-serif;
@@ -92,10 +108,13 @@
   border-color: var(--ts-seat-held-edge);
 }
 
-/* === Table element styles === */
+/* === Table element styles (variant 02 — chairs with backs) === */
 .ts-table-circle {
-  background: #FFFFFF;
-  border: 1.5px solid var(--ts-border-strong);
+  background: var(--ts-table-top);
+  border: 1.2px solid var(--ts-table-stroke);
+  position: relative;
+  outline: 0.5px solid var(--ts-table-inner);
+  outline-offset: -4px;
 }
 
 .ts-table-circle.ts-table-selected {
@@ -105,23 +124,58 @@
 }
 
 .ts-table-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ts-ink);
   font-family: var(--ts-font);
   text-align: center;
+  z-index: 1;
+  position: relative;
 }
 
 /* Rectangle table */
 .ts-rect-table {
-  background: #FFFFFF;
-  border: 1.5px solid var(--ts-border-strong);
+  background: var(--ts-table-top);
+  border: 1.2px solid var(--ts-table-stroke);
+  border-radius: 4px;
+  position: relative;
+  outline: 0.5px solid var(--ts-table-inner);
+  outline-offset: -4px;
 }
 
 .ts-rect-table.ts-table-selected {
   border-color: var(--ts-accent);
   border-width: 2px;
   box-shadow: 0 0 0 4px var(--ts-accent-soft);
+}
+
+/* === Chair-with-back: single wrapper === */
+.ts-chair {
+  position: relative;
+  width: var(--ts-chair-size);
+  height: var(--ts-chair-size);
+  cursor: pointer;
+}
+
+.ts-chair svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ts-chair-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--ts-chair-size);
+  height: var(--ts-chair-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* === Seat state classes === */
@@ -178,13 +232,15 @@
   color: var(--ts-ink-soft);
 }
 
-/* Selection glow effects */
+/* Selection glow effects — pointer-events:none so they don't block adjacent chair clicks */
 .ts-glow-accent {
   background-color: var(--ts-accent);
+  pointer-events: none;
 }
 
 .ts-glow-accent-soft {
   background-color: var(--ts-accent-soft);
+  pointer-events: none;
 }
 
 /* === Inspector / Properties Panel === */

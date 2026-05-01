@@ -295,6 +295,20 @@ export class SeatingRowComponent implements OnInit, OnChanges {
     // Can add hover effects here if needed
   }
 
+  getSvgPadColors(chair: any): { fill: string; stroke: string } {
+    const avail = { fill: '#E8DCC4', stroke: '#C9B999' };
+    const selected = { fill: '#B8331C', stroke: '#962513' };
+    const sold = { fill: '#C9C2B5', stroke: '#B8B0A2' };
+    if (!chair || !chair.chair) return avail;
+    if (this.viewerStore.isViewerMode) {
+      const s = this.viewerStore.getSeatReservationStatus(chair.chair);
+      if (s === 'selected-for-reservation') return selected;
+      if (s === 'pre-reserved' || s === 'reserved') return sold;
+      return avail;
+    }
+    return chair.isSelected ? selected : avail;
+  }
+
   getChairClasses(chair: any): string {
     if (!chair) return '';
 

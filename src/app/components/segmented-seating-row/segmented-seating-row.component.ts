@@ -202,6 +202,7 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
         label: chair ? chair.label : this.calculateGlobalChairLabel(segmentIndex, i),
         isSelected: chair ? chair.isSelected : false,
         chair: chair,
+        segmentRotation: segment.rotation || 0,
         index: i,
         isPreviewChair: false
       });
@@ -261,7 +262,8 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
         id: `preview-chair-${i}`,
         transform: `translate(${x}px, 0px)`,
         label: label,
-        isPreviewChair: true
+        isPreviewChair: true,
+        segmentRotation: this._previewSegment.rotation || 0,
       });
     }
     return chairsArray;
@@ -331,6 +333,20 @@ export class SegmentedSeatingRowComponent implements OnInit, OnChanges {
     } else {
       this.logger.warn('Chair not found in store', { component: 'SegmentedSeatingRowComponent', action: 'onChairClick', chairId: chairData.id });
     }
+  }
+
+  getSvgPadColors(chair: any): { fill: string; stroke: string } {
+    const avail = { fill: '#E8DCC4', stroke: '#C9B999' };
+    const selected = { fill: '#B8331C', stroke: '#962513' };
+    const sold = { fill: '#C9C2B5', stroke: '#B8B0A2' };
+    if (!chair || !chair.chair) return avail;
+    if (this.viewerStore.isViewerMode) {
+      const s = this.viewerStore.getSeatReservationStatus(chair.chair);
+      if (s === 'selected-for-reservation') return selected;
+      if (s === 'pre-reserved' || s === 'reserved') return sold;
+      return avail;
+    }
+    return chair.chair?.isSelected ? selected : avail;
   }
 
   getChairClasses(chairData: any): string {

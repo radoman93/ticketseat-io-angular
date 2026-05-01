@@ -9,33 +9,39 @@
     <span *ngIf="tableLabelVisible" class="ts-table-label">{{ name }}</span>
   </div>
   <div class="absolute w-full h-full left-0 top-0">
-    <div class="absolute top-1/2 left-1/2 -ml-3 -mt-3"
+    <div class="absolute top-1/2 left-1/2"
+         style="margin-left:calc(var(--ts-chair-size) / -2);margin-top:calc(var(--ts-chair-size) / -2)"
          *ngFor="let seat of seatStyles; let i = index"
          [style.transform]="seat.transform">
-      <div *ngIf="!seat.isOpenSpace"
-           class="seat-circle rounded-full transition-all duration-200 hover:cursor-pointer flex justify-center items-center relative"
-           [ngClass]="getSeatClasses(seat)"
+      <div *ngIf="!seat.isOpenSpace" class="ts-chair"
            (click)="onChairClick($event, seat)"
            (mousedown)="onChairMouseDown($event, seat)"
            (mouseenter)="onChairHover(seat)"
            [title]="getSeatTitle(seat)">
-        <span *ngIf="chairLabelVisible"
-              [class]="getSeatLabelClasses(seat)">
-          {{ seat.label }}
-        </span>
-        <!-- Selection glow effect for editor mode -->
+        <svg viewBox="-17 -17 34 34" >
+          <g [attr.transform]="'rotate(' + (seat.angle + 90) + ')'">
+            <path d="M -12 0 A 12 12 0 1 0 12 0 Z"
+                  fill="#F4ECDB" stroke="#B89E70" stroke-width="1.4"/>
+          </g>
+          <circle cx="0" cy="0" r="6.5"
+                  [attr.fill]="getSvgPadColors(seat).fill"
+                  [attr.stroke]="getSvgPadColors(seat).stroke" stroke-width="0.8"/>
+          <text *ngIf="chairLabelVisible" x="0" y="0.5" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter,sans-serif" font-size="8" font-weight="500"
+                [attr.fill]="getSvgPadColors(seat).fill === '#B8331C' ? '#fff' : '#5C5446'">{{ seat.label }}</text>
+        </svg>
         <div *ngIf="seat.isSelected && viewerStore.isEditorMode"
              class="absolute inset-0 rounded-full ts-glow-accent opacity-40 animate-ping z-0"></div>
         <div *ngIf="seat.isSelected && viewerStore.isEditorMode"
              class="absolute -inset-2 rounded-full ts-glow-accent-soft blur-sm animate-pulse z-0"></div>
-        <!-- Selection glow effect for viewer mode -->
         <div *ngIf="seat.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(seat.chair.id)"
              class="absolute inset-0 rounded-full ts-glow-accent opacity-50 animate-ping z-0"></div>
         <div *ngIf="seat.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(seat.chair.id)"
              class="absolute -inset-3 rounded-full ts-glow-accent-soft blur-md animate-pulse z-0"></div>
       </div>
       <div *ngIf="seat.isOpenSpace"
-           class="open-space w-5 h-5 border-2 border-dashed rounded-full" style="border-color: var(--ts-border-strong)">
+           style="width:34px;height:34px;display:flex;align-items:center;justify-content:center">
+        <div class="w-5 h-5 border-2 border-dashed rounded-full" style="border-color: var(--ts-border-strong)"></div>
       </div>
     </div>
   </div>

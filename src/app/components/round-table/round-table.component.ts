@@ -214,7 +214,8 @@ export class RoundTableComponent implements OnInit, OnChanges {
         isOpenSpace: isOpenSpace,
         label: chair ? chair.label : (isSeat ? (i + 1).toString() : null),
         isSelected: chair ? chair.isSelected : false,
-        chair: chair
+        chair: chair,
+        angle: angleDegrees
       });
     }
 
@@ -256,6 +257,20 @@ export class RoundTableComponent implements OnInit, OnChanges {
   }
 
   onChairHover(seat: any): void {
+  }
+
+  getSvgPadColors(seat: any): { fill: string; stroke: string } {
+    const avail = { fill: '#E8DCC4', stroke: '#C9B999' };
+    const selected = { fill: '#B8331C', stroke: '#962513' };
+    const sold = { fill: '#C9C2B5', stroke: '#B8B0A2' };
+    if (!seat.chair) return avail;
+    if (this.viewerStore.isViewerMode) {
+      const s = this.viewerStore.getSeatReservationStatus(seat.chair);
+      if (s === 'selected-for-reservation') return selected;
+      if (s === 'pre-reserved' || s === 'reserved') return sold;
+      return avail;
+    }
+    return seat.isSelected ? selected : avail;
   }
 
   getSeatClasses(seat: any): string {

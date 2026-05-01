@@ -25,71 +25,37 @@ import { LoggerService } from '../../services/logger.service';
   ],
   template: `
     <div class="ts-viewer viewer-mode" *mobxAutorun>
-      <!-- Viewer Card -->
-      <div class="ts-viewer-card">
-        <!-- Header -->
-        <div class="ts-viewer-header" *ngIf="showReservationPanel">
-          <div class="ts-viewer-header-left">
-            <div class="ts-viewer-pill">
-              {{ getNavigationHint() }}
-            </div>
-            <h1 class="ts-viewer-title">Select your seats</h1>
-          </div>
-          <div class="ts-viewer-header-right" *mobxAutorun>
-            <div class="ts-viewer-meta">{{ viewerStore.selectedSeatsCount }}{{ getSeatLimitDisplay() }} seats selected</div>
-          </div>
+      <!-- Layout Area -->
+      <div #gridContainer class="ts-viewer-layout">
+        <div class="ts-viewer-grid-wrap">
+          <app-grid></app-grid>
         </div>
 
-        <!-- Layout Area -->
-        <div #gridContainer class="ts-viewer-layout">
-          <div class="ts-viewer-grid-wrap">
-            <app-grid></app-grid>
-          </div>
-
-          <!-- Reservation Panel (side) -->
-          <div class="ts-viewer-reservation" *ngIf="showReservationPanel">
-            <app-reservation-panel></app-reservation-panel>
-          </div>
+        <!-- Reservation Panel (side) -->
+        <div class="ts-viewer-reservation" *ngIf="showReservationPanel">
+          <app-reservation-panel></app-reservation-panel>
         </div>
+      </div>
 
-        <!-- Legend Row -->
-        <div class="ts-viewer-legend" *ngIf="showReservationPanel">
-          <div class="ts-legend-items">
-            <span class="ts-legend-dot">
-              <span class="ts-dot ts-dot-avail"></span> Available
-            </span>
-            <span class="ts-legend-dot">
-              <span class="ts-dot ts-dot-selected"></span> Your selection
-            </span>
-            <span class="ts-legend-dot">
-              <span class="ts-dot ts-dot-held"></span> Held
-            </span>
-            <span class="ts-legend-dot">
-              <span class="ts-dot ts-dot-sold"></span> Reserved
-            </span>
-          </div>
-          <div class="ts-hold-pill" *mobxAutorun>
-            <span class="ts-hold-indicator"></span>
-            {{ viewerStore.selectedSeatsCount }} seat{{ viewerStore.selectedSeatsCount !== 1 ? 's' : '' }} selected
-          </div>
+      <!-- Legend Row -->
+      <div class="ts-viewer-legend" *ngIf="showReservationPanel">
+        <div class="ts-legend-items">
+          <span class="ts-legend-dot">
+            <span class="ts-dot ts-dot-avail"></span> Available
+          </span>
+          <span class="ts-legend-dot">
+            <span class="ts-dot ts-dot-selected"></span> Your selection
+          </span>
+          <span class="ts-legend-dot">
+            <span class="ts-dot ts-dot-held"></span> Held
+          </span>
+          <span class="ts-legend-dot">
+            <span class="ts-dot ts-dot-sold"></span> Reserved
+          </span>
         </div>
-
-        <!-- Checkout Bar -->
-        <div class="ts-viewer-checkout" *ngIf="showReservationPanel">
-          <div class="ts-checkout-info">
-            <div class="ts-checkout-count">
-              {{ viewerStore.selectedSeatsCount }} {{ viewerStore.selectedSeatsCount === 1 ? 'SEAT' : 'SEATS' }}
-              <span *ngIf="viewerStore.selectedSeatsCount > 0" class="ts-checkout-ids">
-                · {{ getSelectedSeatLabels() }}
-              </span>
-            </div>
-            <div class="ts-checkout-total">\${{ getTotalPrice().toFixed(2) }}</div>
-          </div>
-          <button class="ts-checkout-btn"
-                  [class.ts-checkout-btn-disabled]="viewerStore.selectedSeatsCount === 0"
-                  [disabled]="viewerStore.selectedSeatsCount === 0">
-            Continue to checkout →
-          </button>
+        <div class="ts-hold-pill" *mobxAutorun>
+          <span class="ts-hold-indicator"></span>
+          {{ viewerStore.selectedSeatsCount }} seat{{ viewerStore.selectedSeatsCount !== 1 ? 's' : '' }} selected
         </div>
       </div>
 
@@ -108,87 +74,18 @@ import { LoggerService } from '../../services/logger.service';
   styles: [`
     :host {
       display: block;
+      width: 100%;
       height: 100%;
     }
 
     .ts-viewer {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: var(--ts-bg, #F4EFE6);
+      width: 100%;
+      height: 100%;
       font-family: var(--ts-font, 'Inter', system-ui, sans-serif);
       color: var(--ts-ink, #1C160C);
-      padding: 24px;
-    }
-
-    .ts-viewer-card {
-      width: 100%;
-      max-width: 1280px;
-      background: var(--ts-panel, #FDFBF7);
-      border-radius: 16px;
-      box-shadow:
-        0 1px 0 rgba(28,22,12,0.04),
-        0 24px 60px -20px rgba(28,22,12,0.18),
-        0 8px 24px -12px rgba(28,22,12,0.08);
-      border: 1px solid rgba(28,22,12,0.04);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* Header */
-    .ts-viewer-header {
-      padding: 28px 36px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-
-    .ts-viewer-header-left {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .ts-viewer-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--ts-panel-alt, #F8F3E8);
-      border: 1px solid var(--ts-border, rgba(28,22,12,0.08));
-      font-size: 12px;
-      color: var(--ts-ink-soft, #5C5446);
-      font-weight: 500;
-      width: fit-content;
-    }
-
-    .ts-viewer-title {
-      font-size: 28px;
-      line-height: 1.1;
-      font-weight: 700;
-      letter-spacing: -0.6px;
-      margin: 0;
-      color: var(--ts-ink, #1C160C);
-    }
-
-    .ts-viewer-header-right {
-      text-align: right;
-      font-size: 13px;
-      color: var(--ts-ink-soft, #5C5446);
-      line-height: 1.6;
-      padding-top: 4px;
-    }
-
-    .ts-viewer-meta {
-      font-family: var(--ts-mono, 'JetBrains Mono', monospace);
-      font-size: 12px;
-      letter-spacing: 0.5px;
+      position: relative;
     }
 
     /* Layout Area */
@@ -196,7 +93,7 @@ import { LoggerService } from '../../services/logger.service';
       display: flex;
       flex: 1;
       overflow: hidden;
-      min-height: 400px;
+      min-height: 300px;
     }
 
     .ts-viewer-grid-wrap {
@@ -211,19 +108,20 @@ import { LoggerService } from '../../services/logger.service';
 
     /* Legend Row */
     .ts-viewer-legend {
-      padding: 16px 36px;
+      padding: 10px 16px;
       border-top: 1px solid var(--ts-border, rgba(28,22,12,0.08));
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
+      background: var(--ts-panel, #FDFBF7);
     }
 
     .ts-legend-items {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
       font-size: 12px;
       color: var(--ts-ink-soft, #5C5446);
     }
@@ -280,117 +178,18 @@ import { LoggerService } from '../../services/logger.service';
       background: var(--ts-accent, #B8331C);
     }
 
-    /* Checkout Bar */
-    .ts-viewer-checkout {
-      padding: 20px 36px;
-      background: var(--ts-panel-alt, #F8F3E8);
-      border-top: 1px solid var(--ts-border, rgba(28,22,12,0.08));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .ts-checkout-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .ts-checkout-count {
-      font-family: var(--ts-mono, 'JetBrains Mono', monospace);
-      font-size: 11px;
-      color: var(--ts-ink-soft, #5C5446);
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-    }
-
-    .ts-checkout-ids {
-      font-weight: 400;
-    }
-
-    .ts-checkout-total {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.4px;
-    }
-
-    .ts-checkout-btn {
-      height: 44px;
-      padding: 0 20px;
-      border: none;
-      border-radius: 8px;
-      background: var(--ts-accent, #B8331C);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--ts-font, 'Inter', system-ui, sans-serif);
-      box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 2px 4px rgba(184,51,28,0.18);
-      transition: background 0.15s, box-shadow 0.15s;
-    }
-
-    .ts-checkout-btn:hover {
-      background: var(--ts-accent-deep, #962513);
-    }
-
-    .ts-checkout-btn-disabled {
-      background: var(--ts-seat-avail-edge, #D9CCB0);
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    .ts-checkout-btn-disabled:hover {
-      background: var(--ts-seat-avail-edge, #D9CCB0);
-    }
-
     /* Responsive */
     @media (max-width: 768px) {
-      .ts-viewer {
-        padding: 12px;
-      }
-
-      .ts-viewer-header {
-        padding: 20px 20px 16px;
-      }
-
-      .ts-viewer-title {
-        font-size: 22px;
-      }
-
-      .ts-viewer-legend {
-        padding: 12px 20px;
-      }
-
-      .ts-viewer-checkout {
-        padding: 16px 20px;
-      }
-
-      .ts-legend-items {
-        gap: 12px;
-        font-size: 11px;
-      }
-
       .ts-viewer-layout {
         flex-direction: column;
       }
 
-      .ts-checkout-btn {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .ts-viewer-header-right {
-        display: none;
+      .ts-viewer-legend {
+        padding: 8px 12px;
       }
 
-      .ts-viewer-pill {
+      .ts-legend-items {
+        gap: 10px;
         font-size: 11px;
       }
     }

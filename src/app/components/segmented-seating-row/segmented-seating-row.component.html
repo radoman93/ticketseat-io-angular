@@ -7,36 +7,40 @@
        class="absolute"
        [ngStyle]="data.styles">
 
-    <!-- Segment line (visual indicator) -->
-    <div class="absolute h-0.5"
+    <!-- Segment line (visual indicator) - centered through chairs -->
+    <div class="absolute"
+         style="height: 1px; top: 0;"
          [style.width.px]="data.width"
          [style.left.px]="0"
-         [style.top.px]="-1"
          [style.background]="isSelected ? 'var(--ts-accent)' : 'var(--ts-border-strong)'"
          [style.opacity]="isSelected ? '0.7' : '0.5'">
     </div>
 
     <!-- Chairs for this segment -->
     <div class="absolute w-full h-full left-0 top-0">
-      <div class="absolute top-1/2 left-1/2 -ml-2.5 -mt-2.5"
+      <div class="absolute top-1/2 left-1/2"
+           style="margin-left:calc(var(--ts-chair-size) / -2);margin-top:calc(var(--ts-chair-size) / -2)"
            *ngFor="let chair of data.chairs; trackBy: trackByChairId"
            [style.transform]="chair.transform">
-        <div class="chair-circle rounded-full transition-all duration-200 hover:cursor-pointer flex justify-center items-center relative"
-            [ngClass]="getChairClasses(chair)"
+        <div class="ts-chair"
             (click)="!isPreview && onChairClick($event, chair, segmentIndex)"
             (mousedown)="!isPreview && onChairMouseDown($event, chair)"
             (mouseenter)="!isPreview && onChairHover(chair)"
             [title]="getSeatTitle(chair)">
-          <span *ngIf="chairLabelVisible"
-                [class]="getSeatLabelClasses(chair)">
-            {{ chair.label }}
-          </span>
-          <!-- Selection glow effect for editor mode -->
+          <svg viewBox="-17 -17 34 34" [attr.transform]="'rotate(' + -(chair.segmentRotation || 0) + ')'">
+            <path d="M -12 0 A 12 12 0 1 0 12 0 Z"
+                  fill="#F4ECDB" stroke="#B89E70" stroke-width="1.4"/>
+            <circle cx="0" cy="0" r="6.5"
+                    [attr.fill]="getSvgPadColors(chair).fill"
+                    [attr.stroke]="getSvgPadColors(chair).stroke" stroke-width="0.8"/>
+            <text *ngIf="chairLabelVisible" x="0" y="0.5" text-anchor="middle" dominant-baseline="central"
+                  font-family="Inter,sans-serif" font-size="8" font-weight="500"
+                  [attr.fill]="getSvgPadColors(chair).fill === '#B8331C' ? '#fff' : '#5C5446'">{{ chair.label }}</text>
+          </svg>
           <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode"
                class="absolute inset-0 rounded-full ts-glow-accent opacity-40 animate-ping z-0"></div>
           <div *ngIf="chair.chair?.isSelected && viewerStore.isEditorMode"
                class="absolute -inset-2 rounded-full ts-glow-accent-soft blur-sm animate-pulse z-0"></div>
-          <!-- Selection glow effect for viewer mode -->
           <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
                class="absolute inset-0 rounded-full ts-glow-accent opacity-50 animate-ping z-0"></div>
           <div *ngIf="chair.chair && viewerStore.isViewerMode && viewerStore.isSeatSelectedForReservation(chair.chair.id)"
@@ -51,26 +55,30 @@
        class="absolute"
        [ngStyle]="previewSegmentData.styles">
 
-    <!-- Preview segment line -->
-    <div class="absolute h-0.5"
-         style="background: var(--ts-accent); opacity: 0.5;"
+    <!-- Preview segment line - centered through chairs -->
+    <div class="absolute"
+         style="background: var(--ts-accent); opacity: 0.5; height: 1px; top: 0;"
          [style.width.px]="previewSegmentData.width"
-         [style.left.px]="0"
-         [style.top.px]="-1">
+         [style.left.px]="0">
     </div>
 
     <!-- Preview chairs for this segment -->
     <div class="absolute w-full h-full left-0 top-0">
-      <div class="absolute top-1/2 left-1/2 w-5 h-5 -ml-2.5 -mt-2.5"
+      <div class="absolute top-1/2 left-1/2"
+           style="margin-left:calc(var(--ts-chair-size) / -2);margin-top:calc(var(--ts-chair-size) / -2)"
            *ngFor="let chair of previewSegmentData.chairs; trackBy: trackByChairId"
            [style.transform]="chair.transform">
-        <div class="chair-circle rounded-full transition-all duration-200 flex justify-center items-center relative"
-             [ngClass]="getChairClasses(chair)"
-             [title]="getSeatTitle(chair)">
-          <span *ngIf="chairLabelVisible"
-                [class]="getSeatLabelClasses(chair)">
-            {{ chair.label }}
-          </span>
+        <div class="ts-chair" [title]="getSeatTitle(chair)">
+          <svg viewBox="-17 -17 34 34" [attr.transform]="'rotate(' + -(chair.segmentRotation || 0) + ')'">
+            <path d="M -12 0 A 12 12 0 1 0 12 0 Z"
+                  fill="#F4ECDB" stroke="#B89E70" stroke-width="1.4"/>
+            <circle cx="0" cy="0" r="6.5"
+                    [attr.fill]="getSvgPadColors(chair).fill"
+                    [attr.stroke]="getSvgPadColors(chair).stroke" stroke-width="0.8"/>
+            <text *ngIf="chairLabelVisible" x="0" y="0.5" text-anchor="middle" dominant-baseline="central"
+                  font-family="Inter,sans-serif" font-size="8" font-weight="500"
+                  [attr.fill]="getSvgPadColors(chair).fill === '#B8331C' ? '#fff' : '#5C5446'">{{ chair.label }}</text>
+          </svg>
         </div>
       </div>
     </div>
