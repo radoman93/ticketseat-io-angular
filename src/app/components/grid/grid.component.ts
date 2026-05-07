@@ -66,6 +66,13 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   // Make enum available in template
   ToolType = ToolType;
 
+  // Render order for the canvas: reversed from the Objects panel so that
+  // items at the top of the panel render last (and thus appear visually on top),
+  // matching standard layers-panel conventions (Photoshop/Figma).
+  get renderedElements() {
+    return [...this.layoutStore.elements].reverse();
+  }
+
   // Preview table for add mode
   previewTable: TablePosition | null = null;
 
@@ -150,7 +157,7 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
           type: 'roundTable',
           x: 0,
           y: 0,
-          radius: this.getCssVarNumber('--ts-round-table-radius', 50),
+          radius: this.getCssVarNumber('--ts-round-table-radius', 40),
           seats: 8,
           openSpaces: 0,
           name: `Table ${this.layoutStore.elements.length + 1}`,
@@ -165,8 +172,8 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
           type: 'rectangleTable',
           x: 0,
           y: 0,
-          width: this.getCssVarNumber('--ts-rect-table-width', 120),
-          height: this.getCssVarNumber('--ts-rect-table-height', 80),
+          width: this.getCssVarNumber('--ts-rect-table-width', 100),
+          height: this.getCssVarNumber('--ts-rect-table-height', 60),
           upChairs: 4,
           downChairs: 4,
           leftChairs: 0,
@@ -187,10 +194,10 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
           type: 'seatingRow',
           x: 0,
           y: 0,
-          endX: 35,
+          endX: 30,
           endY: 0,
           seatCount: 0,
-          seatSpacing: 35,
+          seatSpacing: 30,
           name: `Row ${this.layoutStore.elements.length + 1}`,
           rotation: 0,
           chairLabelVisible: true,
@@ -1898,6 +1905,24 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
         };
         break;
 
+      case 'arcSeatingRow':
+        const arcBounds = this.elementBoundsService.getElementBounds(element);
+        const arcBoxCenterX = (arcBounds.visualLeft + arcBounds.visualRight) / 2;
+        const arcBoxCenterY = (arcBounds.visualTop + arcBounds.visualBottom) / 2;
+
+        box = {
+          id: element.id,
+          x: (arcBoxCenterX * zoom) + panX,
+          y: (arcBoxCenterY * zoom) + panY,
+          width: (arcBounds.visualRight - arcBounds.visualLeft + 10) * zoom,
+          height: (arcBounds.visualBottom - arcBounds.visualTop + 10) * zoom,
+          rotation: element.rotation || 0,
+          type: 'row',
+          centerX: (arcBounds.rotationOrigin.x * zoom) + panX,
+          centerY: (arcBounds.rotationOrigin.y * zoom) + panY
+        };
+        break;
+
       case 'line':
         const lineBounds = this.elementBoundsService.getElementBounds(element);
         const lineCenterX = (lineBounds.visualLeft + lineBounds.visualRight) / 2;
@@ -2033,18 +2058,17 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
     const worldX = (x - this.store.panOffset.x) / (this.store.zoomLevel / 100);
     const worldY = (y - this.store.panOffset.y) / (this.store.zoomLevel / 100);
     
-    // Check elements in reverse order (top to bottom)
-    const elements = [...this.layoutStore.elements].reverse();
-    
-    for (const element of elements) {
+    // Iterate in array order (front-to-back). With the current render convention,
+    // index 0 is the topmost element on the canvas, so the first hit is correct.
+    for (const element of this.layoutStore.elements) {
       const bounds = this.elementBoundsService.getElementBounds(element);
-      
+
       if (worldX >= bounds.left && worldX <= bounds.right &&
           worldY >= bounds.top && worldY <= bounds.bottom) {
         return element;
       }
     }
-    
+
     return null;
   }
 
@@ -2069,30 +2093,12 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
   }
 
   /**
-   * Send element forward in z-order
+   * Send element forward in z-order (toward the top of the visual stack).
+   * Top of stack = lower array index, so "forward" decrements the index.
    */
   sendElementForward(): void {
     if (!this.contextMenuElement) return;
-    
-    const currentIndex = this.layoutStore.elements.findIndex(e => e.id === this.contextMenuElement.id);
-    if (currentIndex < this.layoutStore.elements.length - 1) {
-      const command = new ReorderElementCommand(
-        this.contextMenuElement.id,
-        currentIndex,
-        currentIndex + 1
-      );
-      this.historyStore.executeCommand(command);
-    }
-    
-    this.showContextMenuFlag = false;
-  }
 
-  /**
-   * Send element backward in z-order
-   */
-  sendElementBackward(): void {
-    if (!this.contextMenuElement) return;
-    
     const currentIndex = this.layoutStore.elements.findIndex(e => e.id === this.contextMenuElement.id);
     if (currentIndex > 0) {
       const command = new ReorderElementCommand(
@@ -2102,7 +2108,27 @@ export class GridComponent extends MobXComponentBase implements AfterViewInit, O
       );
       this.historyStore.executeCommand(command);
     }
-    
+
+    this.showContextMenuFlag = false;
+  }
+
+  /**
+   * Send element backward in z-order (toward the bottom of the visual stack).
+   * Bottom of stack = higher array index, so "backward" increments the index.
+   */
+  sendElementBackward(): void {
+    if (!this.contextMenuElement) return;
+
+    const currentIndex = this.layoutStore.elements.findIndex(e => e.id === this.contextMenuElement.id);
+    if (currentIndex < this.layoutStore.elements.length - 1) {
+      const command = new ReorderElementCommand(
+        this.contextMenuElement.id,
+        currentIndex,
+        currentIndex + 1
+      );
+      this.historyStore.executeCommand(command);
+    }
+
     this.showContextMenuFlag = false;
   }
 

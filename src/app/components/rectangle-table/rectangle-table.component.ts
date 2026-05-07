@@ -18,8 +18,8 @@ import viewerStore from '../../stores/viewer.store';
 export class RectangleTableComponent implements OnInit, OnChanges {
   @Input() x: number = 0;
   @Input() y: number = 0;
-  @Input() width: number = 120;
-  @Input() height: number = 80;
+  @Input() width: number = 100;
+  @Input() height: number = 60;
   @Input() upChairs: number = 4;
   @Input() downChairs: number = 4;
   @Input() leftChairs: number = 0;
@@ -35,8 +35,8 @@ export class RectangleTableComponent implements OnInit, OnChanges {
   // Internal observable properties that sync with inputs
   public _x: number = 0;
   public _y: number = 0;
-  public _width: number = 120;
-  public _height: number = 80;
+  public _width: number = 100;
+  public _height: number = 60;
   public _upChairs: number = 4;
   public _downChairs: number = 4;
   public _leftChairs: number = 0;
@@ -318,7 +318,7 @@ export class RectangleTableComponent implements OnInit, OnChanges {
           id: `${this._tableData!.id}-chair-${chairIndex}`,
           tableId: this._tableData!.id,
           label: useOverride ? overrides![chairIndex] : (chairIndex + 1).toString(),
-          price: 25.00,
+          price: 0,
           position: {
             angle: 0, // Not used for rectangle tables
             distance: 25 // Standard chair offset

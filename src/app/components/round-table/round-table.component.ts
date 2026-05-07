@@ -18,7 +18,7 @@ import viewerStore from '../../stores/viewer.store';
 export class RoundTableComponent implements OnInit, OnChanges {
   @Input() x: number = 0;
   @Input() y: number = 0;
-  @Input() radius: number = 50;
+  @Input() radius: number = 40;
   @Input() seats: number = 10;
   @Input() openSpaces: number = 0;
   @Input() name: string = 'Table';
@@ -32,7 +32,7 @@ export class RoundTableComponent implements OnInit, OnChanges {
   // Internal observable properties that sync with inputs
   public _x: number = 0;
   public _y: number = 0;
-  public _radius: number = 50;
+  public _radius: number = 40;
   public _seats: number = 10;
   public _openSpaces: number = 0;
   public _name: string = 'Table';

@@ -6,6 +6,7 @@ import { EventViewerComponent } from './components/event-viewer/event-viewer.com
 import { LayoutExportData } from './services/layout-export-import.service';
 import { Chair } from './models/chair.model';
 import { LoggerService } from './services/logger.service';
+import { PresetLoaderService } from './services/preset-loader.service';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +17,15 @@ import { LoggerService } from './services/logger.service';
 })
 export class AppComponent {
   title = 'TicketSeat.io Angular Demo';
+
+  // Default Theater preset transform: scale shrinks the original ~1600×850 layout, then
+  // OFFSET_X/OFFSET_Y pan it so the leftmost element lands around x=40 instead of x=190.
+  private static readonly THEATER_SCALE = 0.6;
+  private static readonly THEATER_OFFSET_X = -150;
+  private static readonly THEATER_OFFSET_Y = 0;
+  private static readonly THEATER_ARC_CENTER_X = 1100 * AppComponent.THEATER_SCALE + AppComponent.THEATER_OFFSET_X;
+  private static readonly THEATER_ARC_CENTER_Y = 100 * AppComponent.THEATER_SCALE + AppComponent.THEATER_OFFSET_Y;
+  private static readonly THEATER_SIDE_SEAT_SPACING = 50 * AppComponent.THEATER_SCALE;
 
   // Component toggle
   showEditor = true;
@@ -37,9 +47,13 @@ export class AppComponent {
   // Sample layout data
   sampleLayout: LayoutExportData | null = null;
 
-  constructor(private logger: LoggerService) {
-    // Create a sample layout for testing
+  constructor(private logger: LoggerService, private presetLoader: PresetLoaderService) {
     this.createSampleLayout();
+  }
+
+  loadGoldman(variant: 'approx' | 'precise'): void {
+    const url = `assets/presets/goldman-theater-${variant}.json`;
+    this.presetLoader.load(url).catch(err => console.error('Goldman preset load failed', err));
   }
 
   toggleComponent(): void {
@@ -80,14 +94,14 @@ export class AppComponent {
   }
 
   private createSampleLayout(): void {
-    // This creates a basic sample layout for demonstration
-    // In a real app, this would come from your backend
+    const s = AppComponent.THEATER_SCALE;
+
     this.sampleLayout = {
       "meta": {
-        "version": "1.0",
-        "name": "3",
-        "created": "2025-07-11T08:50:43.212Z",
-        "creator": "TicketSeats v1.0"
+        "version": "1.1",
+        "name": "Theater",
+        "created": "2026-05-07T09:13:54.615Z",
+        "creator": "TicketSeats v1.1"
       },
       "settings": {
         "gridSize": 25,
@@ -95,610 +109,155 @@ export class AppComponent {
         "showGuides": true
       },
       "elements": [
-        {
-          "id": "table-1",
-          "type": "roundTable",
-          "x": 200,
-          "y": 150,
-          "rotation": 0,
-          "radius": 60,
-          "seats": 8,
-          "openSpaces": 0,
-          "name": "Table 1",
-          "tableLabelVisible": true,
-          "chairLabelVisible": true,
-          "chairs": [
-            {
-              "id": "table-1-chair-0",
-              "tableId": "table-1",
-              "label": "1",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-1",
-              "tableId": "table-1",
-              "label": "2",
-              "price": 25,
-              "position": {
-                "angle": 45,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-2",
-              "tableId": "table-1",
-              "label": "3",
-              "price": 25,
-              "position": {
-                "angle": 90,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-3",
-              "tableId": "table-1",
-              "label": "4",
-              "price": 25,
-              "position": {
-                "angle": 135,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-4",
-              "tableId": "table-1",
-              "label": "5",
-              "price": 25,
-              "position": {
-                "angle": 180,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-5",
-              "tableId": "table-1",
-              "label": "6",
-              "price": 25,
-              "position": {
-                "angle": 225,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-6",
-              "tableId": "table-1",
-              "label": "7",
-              "price": 25,
-              "position": {
-                "angle": 270,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1-chair-7",
-              "tableId": "table-1",
-              "label": "8",
-              "price": 25,
-              "position": {
-                "angle": 315,
-                "distance": 80
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            }
-          ]
-        },
-        {
-          "id": "rect-table-1",
-          "type": "rectangleTable",
-          "x": 400,
-          "y": 150,
-          "rotation": 0,
-          "width": 120,
-          "height": 80,
-          "leftChairs": 3,
-          "rightChairs": 3,
-          "upChairs": 2,
-          "downChairs": 2,
-          "name": "Rectangle Table 1",
-          "tableLabelVisible": true,
-          "chairLabelVisible": true,
-          "chairs": [
-            {
-              "id": "rect-table-1-chair-0",
-              "tableId": "rect-table-1",
-              "label": "1",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-1",
-              "tableId": "rect-table-1",
-              "label": "2",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-2",
-              "tableId": "rect-table-1",
-              "label": "3",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-3",
-              "tableId": "rect-table-1",
-              "label": "4",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-4",
-              "tableId": "rect-table-1",
-              "label": "5",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-5",
-              "tableId": "rect-table-1",
-              "label": "6",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-6",
-              "tableId": "rect-table-1",
-              "label": "7",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-7",
-              "tableId": "rect-table-1",
-              "label": "8",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-8",
-              "tableId": "rect-table-1",
-              "label": "9",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "rect-table-1-chair-9",
-              "tableId": "rect-table-1",
-              "label": "10",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            }
-          ]
-        },
-        {
-          "id": "seating-row-1",
-          "type": "seatingRow",
-          "x": 150,
-          "y": 350,
-          "rotation": 0,
-          "seatCount": 8,
-          "seatSpacing": 35,
-          "name": "Row A",
-          "rowLabelVisible": true,
-          "chairLabelVisible": true,
-          "chairs": [
-            {
-              "id": "seating-row-1-chair-0",
-              "tableId": "seating-row-1",
-              "label": "1",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-1",
-              "tableId": "seating-row-1",
-              "label": "2",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-2",
-              "tableId": "seating-row-1",
-              "label": "3",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-3",
-              "tableId": "seating-row-1",
-              "label": "4",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-4",
-              "tableId": "seating-row-1",
-              "label": "5",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-5",
-              "tableId": "seating-row-1",
-              "label": "6",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-6",
-              "tableId": "seating-row-1",
-              "label": "7",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-1-chair-7",
-              "tableId": "seating-row-1",
-              "label": "8",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            }
-          ]
-        },
-        {
-          "id": "seating-row-2",
-          "type": "seatingRow",
-          "x": 150,
-          "y": 400,
-          "rotation": 0,
-          "seatCount": 8,
-          "seatSpacing": 35,
-          "name": "Row B",
-          "rowLabelVisible": true,
-          "chairLabelVisible": true,
-          "chairs": [
-            {
-              "id": "seating-row-2-chair-0",
-              "tableId": "seating-row-2",
-              "label": "1",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-1",
-              "tableId": "seating-row-2",
-              "label": "2",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-2",
-              "tableId": "seating-row-2",
-              "label": "3",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-3",
-              "tableId": "seating-row-2",
-              "label": "4",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-4",
-              "tableId": "seating-row-2",
-              "label": "5",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-5",
-              "tableId": "seating-row-2",
-              "label": "6",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-6",
-              "tableId": "seating-row-2",
-              "label": "7",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            },
-            {
-              "id": "seating-row-2-chair-7",
-              "tableId": "seating-row-2",
-              "label": "8",
-              "price": 0,
-              "position": {
-                "angle": 0,
-                "distance": 0
-              },
-              "isSelected": false
-            }
-          ]
-        },
-        {
-          "id": "table-1752223838615",
-          "type": "rectangleTable",
-          "x": 576,
-          "y": 295,
-          "width": 120,
-          "height": 80,
-          "upChairs": 4,
-          "downChairs": 4,
-          "leftChairs": 0,
-          "rightChairs": 0,
-          "name": "Table 5",
-          "rotation": 0,
-          "tableLabelVisible": true,
-          "chairLabelVisible": true,
-          "chairs": [
-            {
-              "id": "table-1752223838615-chair-0",
-              "tableId": "table-1752223838615",
-              "label": "1",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-1",
-              "tableId": "table-1752223838615",
-              "label": "2",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-2",
-              "tableId": "table-1752223838615",
-              "label": "3",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-3",
-              "tableId": "table-1752223838615",
-              "label": "4",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-4",
-              "tableId": "table-1752223838615",
-              "label": "5",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-5",
-              "tableId": "table-1752223838615",
-              "label": "6",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-6",
-              "tableId": "table-1752223838615",
-              "label": "7",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            },
-            {
-              "id": "table-1752223838615-chair-7",
-              "tableId": "table-1752223838615",
-              "label": "8",
-              "price": 25,
-              "position": {
-                "angle": 0,
-                "distance": 25
-              },
-              "isSelected": false,
-              "reservationStatus": "free"
-            }
-          ]
-        },
-        {
-          "id": "line-1",
-          "type": "line",
-          "x": 300,
-          "y": 250,
-          "rotation": 0,
-          "startX": 300,
-          "startY": 250,
-          "endX": 500,
-          "endY": 300,
-          "thickness": 2,
-          "color": "#1C160C",
-          "name": "Sample Line",
-          "label": "Sample Line"
-        },
-        {
-          "id": "polygon-1",
-          "type": "polygon",
-          "x": 200,
-          "y": 400,
-          "rotation": 0,
-          "points": [
-            {"x": 200, "y": 400},
-            {"x": 300, "y": 380},
-            {"x": 350, "y": 450},
-            {"x": 280, "y": 500},
-            {"x": 150, "y": 480}
-          ],
-          "fillColor": "#E8DCC4",
-          "fillOpacity": 0.35,
-          "borderColor": "#5C5446",
-          "borderThickness": 2,
-          "showBorder": true,
-          "name": "Sample Polygon",
-          "label": "Sample Polygon"
-        }
+        this.buildStage(s),
+        this.buildStageLabel(s),
+        ...this.buildArcRow("center-row-a", "Row A", 360 * s, 244, 296),
+        ...this.buildArcRow("center-row-b", "Row B", 442 * s, 247, 293),
+        ...this.buildArcRow("center-row-c", "Row C", 524 * s, 249.5, 290.5),
+        ...this.buildArcRow("center-row-d", "Row D", 606 * s, 251.5, 288.5),
+        ...this.buildArcRow("center-row-e", "Row E", 688 * s, 253, 287),
+        ...this.buildArcRow("center-row-f", "Row F", 770 * s, 254.5, 285.5),
+        ...this.buildSideRow("left-row-b", "Row B", 500 * s, 425 * s, 391.9887056931244 * s, 461.9051901625796 * s, 11.5, "left", ["1", "3", "5", "7"]),
+        ...this.buildSideRow("left-row-c", "Row C", 475 * s, 500 * s, 378.9887056931244 * s, 543.9051901625796 * s, 11.5, "left", ["1", "3", "5", "7"]),
+        ...this.buildSideRow("left-row-d", "Row D", 450 * s, 575 * s, 366.9887056931244 * s, 625.9051901625796 * s, 11.5, "left", ["1", "3", "5", "7"]),
+        ...this.buildSideRow("left-row-e", "Row E", 425 * s, 650 * s, 355.9887056931244 * s, 707.9051901625796 * s, 11.5, "left", ["1", "3", "5", "7"]),
+        ...this.buildSideRow("left-row-f", "Row F", 400 * s, 725 * s, 344.9887056931244 * s, 789.9051901625796 * s, 11.5, "left", ["1", "3", "5", "7"]),
+        ...this.buildSideRow("right-row-b", "Row B", 1525 * s, 450 * s, 1901.9887056931245 * s, 402.0948098374204 * s, -11.5, "right", ["8", "6", "4", "2"]),
+        ...this.buildSideRow("right-row-c", "Row C", 1550 * s, 525 * s, 1914.9887056931245 * s, 484.0948098374204 * s, -11.5, "right", ["8", "6", "4", "2"]),
+        ...this.buildSideRow("right-row-d", "Row D", 1575 * s, 600 * s, 1926.9887056931245 * s, 566.0948098374204 * s, -11.5, "right", ["8", "6", "4", "2"]),
+        ...this.buildSideRow("right-row-e", "Row E", 1600 * s, 675 * s, 1937.9887056931245 * s, 648.0948098374204 * s, -11.5, "right", ["8", "6", "4", "2"]),
+        ...this.buildSideRow("right-row-f", "Row F", 1625 * s, 750 * s, 1948.9887056931245 * s, 730.0948098374204 * s, -11.5, "right", ["8", "6", "4", "2"])
       ]
-    }
+    };
+  }
+
+  private buildStage(s: number): any {
+    const points: Array<[number, number]> = [
+      [467.7777777777783, 16.666666666666686],
+      [1767.7777777777783, 16.666666666666686],
+      [1777.7777777777783, 66.66666666666669],
+      [1757.7777777777783, 96.66666666666669],
+      [1697.7777777777783, 126.66666666666669],
+      [1587.7777777777783, 146.66666666666669],
+      [1437.7777777777783, 161.66666666666669],
+      [1267.7777777777783, 171.66666666666669],
+      [1117.7777777777783, 174.66666666666669],
+      [967.7777777777783, 171.66666666666669],
+      [797.7777777777783, 161.66666666666669],
+      [647.7777777777783, 146.66666666666669],
+      [537.7777777777783, 126.66666666666669],
+      [477.7777777777783, 96.66666666666669],
+      [457.7777777777783, 66.66666666666669]
+    ];
+    const dx = AppComponent.THEATER_OFFSET_X;
+    const dy = AppComponent.THEATER_OFFSET_Y;
+    return {
+      id: "stage-shape",
+      type: "polygon",
+      x: 2217.7777777777783 * s + dx,
+      y: 196.66666666666669 * s + dy,
+      rotation: 0,
+      points: points.map(([x, y]) => ({ x: x * s + dx, y: y * s + dy })),
+      fillColor: "#6B7280",
+      fillOpacity: 1,
+      borderColor: "#4B5563",
+      borderThickness: 1,
+      showBorder: true,
+      name: "Stage"
+    };
+  }
+
+  private buildStageLabel(s: number): any {
+    return {
+      id: "stage-label",
+      type: "text",
+      x: 1100 * s + AppComponent.THEATER_OFFSET_X,
+      y: 160 * s + AppComponent.THEATER_OFFSET_Y,
+      rotation: 0,
+      text: "STAGE",
+      fontSize: 28,
+      fontFamily: "sans-serif",
+      fontWeight: "700",
+      fontStyle: "normal",
+      textAlign: "center",
+      color: "#FFFFFF",
+      name: "Stage Label",
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+      borderWidth: 0,
+      padding: 4
+    };
+  }
+
+  private buildArcRow(id: string, name: string, radius: number, startAngle: number, endAngle: number): any[] {
+    const labels = ["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "113"];
+    return [{
+      id,
+      type: "arcSeatingRow",
+      x: AppComponent.THEATER_ARC_CENTER_X,
+      y: AppComponent.THEATER_ARC_CENTER_Y,
+      rotation: 0,
+      radius,
+      startAngle,
+      endAngle,
+      seats: 13,
+      seatRadius: 8,
+      chairFacing: "inward",
+      name,
+      chairLabelVisible: true,
+      rowLabelVisible: true,
+      labelPosition: "left",
+      chairLabels: [...labels],
+      chairs: labels.map((label, i) => ({
+        id: `${id}-chair-${i}`,
+        tableId: id,
+        label,
+        price: 0,
+        position: { angle: 0, distance: 0 },
+        isSelected: false,
+        reservationStatus: "free"
+      }))
+    }];
+  }
+
+  private buildSideRow(
+    id: string,
+    name: string,
+    x: number,
+    y: number,
+    endX: number,
+    endY: number,
+    rotation: number,
+    labelPosition: "left" | "right",
+    labels: string[]
+  ): any[] {
+    const dx = AppComponent.THEATER_OFFSET_X;
+    const dy = AppComponent.THEATER_OFFSET_Y;
+    return [{
+      id,
+      type: "seatingRow",
+      x: x + dx,
+      y: y + dy,
+      endX: endX + dx,
+      endY: endY + dy,
+      rotation,
+      seatCount: labels.length,
+      seatSpacing: AppComponent.THEATER_SIDE_SEAT_SPACING,
+      seatRadius: 8,
+      name,
+      chairLabelVisible: true,
+      rowLabelVisible: true,
+      labelPosition,
+      chairLabels: [...labels],
+      chairs: labels.map((label, i) => ({
+        id: `${id}-chair-${i}`,
+        tableId: id,
+        label,
+        price: 0,
+        position: { angle: 0, distance: 0 },
+        isSelected: false,
+        reservationStatus: "free"
+      }))
+    }];
   }
 }

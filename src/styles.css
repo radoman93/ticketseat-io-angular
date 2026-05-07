@@ -32,9 +32,9 @@
   --ts-table-stroke: #B89E70;
   --ts-table-inner: rgba(184, 158, 112, 0.4);
   --ts-chair-size: 30px;
-  --ts-round-table-radius: 50;
-  --ts-rect-table-width: 120;
-  --ts-rect-table-height: 80;
+  --ts-round-table-radius: 40;
+  --ts-rect-table-width: 100;
+  --ts-rect-table-height: 60;
   --ts-good: #3F7A4D;
   --ts-warn: #D89A3C;
   --ts-font: 'Inter', system-ui, -apple-system, sans-serif;

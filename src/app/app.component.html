@@ -12,6 +12,16 @@
 
         <!-- Component Toggle -->
         <div class="flex items-center gap-4">
+          <div *ngIf="showEditor" class="flex items-center gap-2">
+            <button (click)="loadGoldman('approx')"
+              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style="background: var(--ts-panel-alt); color: var(--ts-ink); border: 1px solid var(--ts-border-strong);"
+              title="Load Goldman Theater (approximate geometry)">Goldman ≈</button>
+            <button (click)="loadGoldman('precise')"
+              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style="background: var(--ts-panel-alt); color: var(--ts-ink); border: 1px solid var(--ts-border-strong);"
+              title="Load Goldman Theater (pixel-precise geometry)">Goldman ✓</button>
+          </div>
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium" style="color: var(--ts-ink-soft);">Component:</span>
             <button (click)="toggleComponent()" class="px-4 py-2 rounded-lg font-medium transition-colors"

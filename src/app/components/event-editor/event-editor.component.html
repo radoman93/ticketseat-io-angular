@@ -10,15 +10,24 @@
                 <span class="ts-layers-count">{{ layoutStore.elements.length }}</span>
             </div>
             <div class="ts-layers-list">
-                <div *ngFor="let el of layoutStore.elements; trackBy: trackById"
+                <div *ngFor="let el of layoutStore.elements; let i = index; trackBy: trackById"
                      class="ts-layer-item"
                      [class.ts-layer-active]="selectionStore.isItemSelected(el.id)"
+                     [class.ts-layer-dragging]="draggingIndex === i"
+                     [class.ts-layer-drop-target]="dragOverIndex === i && draggingIndex !== null && draggingIndex !== i"
+                     draggable="true"
+                     (dragstart)="onLayerDragStart(i, $event)"
+                     (dragover)="onLayerDragOver(i, $event)"
+                     (dragleave)="onLayerDragLeave(i)"
+                     (drop)="onLayerDrop(i, $event)"
+                     (dragend)="onLayerDragEnd()"
                      (click)="selectElement(el)">
                     <span class="ts-layer-icon">
                         <svg *ngIf="el.type === 'roundTable'" width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
                         <svg *ngIf="el.type === 'rectangleTable'" width="12" height="12" viewBox="0 0 24 24"><rect x="6" y="8" width="12" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
                         <svg *ngIf="el.type === 'seatingRow'" width="12" height="12" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
                         <svg *ngIf="el.type === 'segmentedSeatingRow'" width="12" height="12" viewBox="0 0 24 24"><path d="M4 16 L10 10 L14 14 L20 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        <svg *ngIf="el.type === 'arcSeatingRow'" width="12" height="12" viewBox="0 0 24 24"><path d="M4 18 A10 10 0 0 1 20 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="6" cy="14" r="1.4" fill="currentColor"/><circle cx="12" cy="11" r="1.4" fill="currentColor"/><circle cx="18" cy="14" r="1.4" fill="currentColor"/></svg>
                         <svg *ngIf="el.type === 'line'" width="12" height="12" viewBox="0 0 24 24"><path d="M5 19 L19 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
                         <svg *ngIf="el.type === 'polygon'" width="12" height="12" viewBox="0 0 24 24"><path d="M12 4 L20 10 L17 19 L7 19 L4 10 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
                         <svg *ngIf="el.type === 'text'" width="12" height="12" viewBox="0 0 24 24"><path d="M5 6 H19 M12 6 V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>

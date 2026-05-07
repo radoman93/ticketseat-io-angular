@@ -1,0 +1,1966 @@
+{
+  "meta": {
+    "version": "1.1",
+    "name": "Goldman Theater (Precise)",
+    "created": "2026-05-02T00:00:00.000Z",
+    "creator": "TicketSeats v1.1",
+    "description": "Pixel-tuned recreation of Goldman Theater seating layout."
+  },
+  "settings": {
+    "gridSize": 25,
+    "showGrid": true,
+    "showGuides": true
+  },
+  "elements": [
+    {
+      "id": "stage-shape",
+      "type": "polygon",
+      "x": 1100,
+      "y": 130,
+      "rotation": 0,
+      "points": [
+        {
+          "x": -650,
+          "y": -50
+        },
+        {
+          "x": 650,
+          "y": -50
+        },
+        {
+          "x": 660,
+          "y": 0
+        },
+        {
+          "x": 640,
+          "y": 30
+        },
+        {
+          "x": 580,
+          "y": 60
+        },
+        {
+          "x": 470,
+          "y": 80
+        },
+        {
+          "x": 320,
+          "y": 95
+        },
+        {
+          "x": 150,
+          "y": 105
+        },
+        {
+          "x": 0,
+          "y": 108
+        },
+        {
+          "x": -150,
+          "y": 105
+        },
+        {
+          "x": -320,
+          "y": 95
+        },
+        {
+          "x": -470,
+          "y": 80
+        },
+        {
+          "x": -580,
+          "y": 60
+        },
+        {
+          "x": -640,
+          "y": 30
+        },
+        {
+          "x": -660,
+          "y": 0
+        }
+      ],
+      "fillColor": "#6B7280",
+      "fillOpacity": 1,
+      "borderColor": "#4B5563",
+      "borderThickness": 1,
+      "showBorder": true,
+      "name": "Stage"
+    },
+    {
+      "id": "stage-label",
+      "type": "text",
+      "x": 1100,
+      "y": 160,
+      "rotation": 0,
+      "text": "STAGE",
+      "fontSize": 28,
+      "fontFamily": "sans-serif",
+      "fontWeight": "700",
+      "fontStyle": "normal",
+      "textAlign": "center",
+      "color": "#FFFFFF",
+      "name": "Stage Label"
+    },
+    {
+      "id": "center-row-a",
+      "type": "arcSeatingRow",
+      "x": 1100,
+      "y": 100,
+      "rotation": 0,
+      "radius": 360,
+      "startAngle": 244,
+      "endAngle": 296,
+      "seats": 13,
+      "seatRadius": 8,
+      "chairFacing": "inward",
+      "name": "Row A",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107",
+        "108",
+        "109",
+        "110",
+        "111",
+        "112",
+        "113"
+      ],
+      "chairs": [
+        {
+          "id": "center-row-a-chair-0",
+          "tableId": "center-row-a",
+          "label": "101",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-1",
+          "tableId": "center-row-a",
+          "label": "102",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-2",
+          "tableId": "center-row-a",
+          "label": "103",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-3",
+          "tableId": "center-row-a",
+          "label": "104",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-4",
+          "tableId": "center-row-a",
+          "label": "105",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-5",
+          "tableId": "center-row-a",
+          "label": "106",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-6",
+          "tableId": "center-row-a",
+          "label": "107",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-7",
+          "tableId": "center-row-a",
+          "label": "108",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-8",
+          "tableId": "center-row-a",
+          "label": "109",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-9",
+          "tableId": "center-row-a",
+          "label": "110",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-10",
+          "tableId": "center-row-a",
+          "label": "111",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-11",
+          "tableId": "center-row-a",
+          "label": "112",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-a-chair-12",
+          "tableId": "center-row-a",
+          "label": "113",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "center-row-b",
+      "type": "arcSeatingRow",
+      "x": 1100,
+      "y": 100,
+      "rotation": 0,
+      "radius": 442,
+      "startAngle": 247,
+      "endAngle": 293,
+      "seats": 13,
+      "seatRadius": 8,
+      "chairFacing": "inward",
+      "name": "Row B",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107",
+        "108",
+        "109",
+        "110",
+        "111",
+        "112",
+        "113"
+      ],
+      "chairs": [
+        {
+          "id": "center-row-b-chair-0",
+          "tableId": "center-row-b",
+          "label": "101",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-1",
+          "tableId": "center-row-b",
+          "label": "102",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-2",
+          "tableId": "center-row-b",
+          "label": "103",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-3",
+          "tableId": "center-row-b",
+          "label": "104",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-4",
+          "tableId": "center-row-b",
+          "label": "105",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-5",
+          "tableId": "center-row-b",
+          "label": "106",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-6",
+          "tableId": "center-row-b",
+          "label": "107",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-7",
+          "tableId": "center-row-b",
+          "label": "108",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-8",
+          "tableId": "center-row-b",
+          "label": "109",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-9",
+          "tableId": "center-row-b",
+          "label": "110",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-10",
+          "tableId": "center-row-b",
+          "label": "111",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-11",
+          "tableId": "center-row-b",
+          "label": "112",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-b-chair-12",
+          "tableId": "center-row-b",
+          "label": "113",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "center-row-c",
+      "type": "arcSeatingRow",
+      "x": 1100,
+      "y": 100,
+      "rotation": 0,
+      "radius": 524,
+      "startAngle": 249.5,
+      "endAngle": 290.5,
+      "seats": 13,
+      "seatRadius": 8,
+      "chairFacing": "inward",
+      "name": "Row C",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107",
+        "108",
+        "109",
+        "110",
+        "111",
+        "112",
+        "113"
+      ],
+      "chairs": [
+        {
+          "id": "center-row-c-chair-0",
+          "tableId": "center-row-c",
+          "label": "101",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-1",
+          "tableId": "center-row-c",
+          "label": "102",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-2",
+          "tableId": "center-row-c",
+          "label": "103",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-3",
+          "tableId": "center-row-c",
+          "label": "104",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-4",
+          "tableId": "center-row-c",
+          "label": "105",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-5",
+          "tableId": "center-row-c",
+          "label": "106",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-6",
+          "tableId": "center-row-c",
+          "label": "107",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-7",
+          "tableId": "center-row-c",
+          "label": "108",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-8",
+          "tableId": "center-row-c",
+          "label": "109",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-9",
+          "tableId": "center-row-c",
+          "label": "110",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-10",
+          "tableId": "center-row-c",
+          "label": "111",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-11",
+          "tableId": "center-row-c",
+          "label": "112",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-c-chair-12",
+          "tableId": "center-row-c",
+          "label": "113",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "center-row-d",
+      "type": "arcSeatingRow",
+      "x": 1100,
+      "y": 100,
+      "rotation": 0,
+      "radius": 606,
+      "startAngle": 251.5,
+      "endAngle": 288.5,
+      "seats": 13,
+      "seatRadius": 8,
+      "chairFacing": "inward",
+      "name": "Row D",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107",
+        "108",
+        "109",
+        "110",
+        "111",
+        "112",
+        "113"
+      ],
+      "chairs": [
+        {
+          "id": "center-row-d-chair-0",
+          "tableId": "center-row-d",
+          "label": "101",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-1",
+          "tableId": "center-row-d",
+          "label": "102",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-2",
+          "tableId": "center-row-d",
+          "label": "103",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-3",
+          "tableId": "center-row-d",
+          "label": "104",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-4",
+          "tableId": "center-row-d",
+          "label": "105",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-5",
+          "tableId": "center-row-d",
+          "label": "106",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-6",
+          "tableId": "center-row-d",
+          "label": "107",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-7",
+          "tableId": "center-row-d",
+          "label": "108",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-8",
+          "tableId": "center-row-d",
+          "label": "109",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-9",
+          "tableId": "center-row-d",
+          "label": "110",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-10",
+          "tableId": "center-row-d",
+          "label": "111",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-11",
+          "tableId": "center-row-d",
+          "label": "112",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-d-chair-12",
+          "tableId": "center-row-d",
+          "label": "113",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "center-row-e",
+      "type": "arcSeatingRow",
+      "x": 1100,
+      "y": 100,
+      "rotation": 0,
+      "radius": 688,
+      "startAngle": 253,
+      "endAngle": 287,
+      "seats": 13,
+      "seatRadius": 8,
+      "chairFacing": "inward",
+      "name": "Row E",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107",
+        "108",
+        "109",
+        "110",
+        "111",
+        "112",
+        "113"
+      ],
+      "chairs": [
+        {
+          "id": "center-row-e-chair-0",
+          "tableId": "center-row-e",
+          "label": "101",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-1",
+          "tableId": "center-row-e",
+          "label": "102",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-2",
+          "tableId": "center-row-e",
+          "label": "103",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-3",
+          "tableId": "center-row-e",
+          "label": "104",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-4",
+          "tableId": "center-row-e",
+          "label": "105",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-5",
+          "tableId": "center-row-e",
+          "label": "106",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-6",
+          "tableId": "center-row-e",
+          "label": "107",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-7",
+          "tableId": "center-row-e",
+          "label": "108",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-8",
+          "tableId": "center-row-e",
+          "label": "109",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-9",
+          "tableId": "center-row-e",
+          "label": "110",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-10",
+          "tableId": "center-row-e",
+          "label": "111",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-11",
+          "tableId": "center-row-e",
+          "label": "112",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-e-chair-12",
+          "tableId": "center-row-e",
+          "label": "113",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "center-row-f",
+      "type": "arcSeatingRow",
+      "x": 1100,
+      "y": 100,
+      "rotation": 0,
+      "radius": 770,
+      "startAngle": 254.5,
+      "endAngle": 285.5,
+      "seats": 13,
+      "seatRadius": 8,
+      "chairFacing": "inward",
+      "name": "Row F",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107",
+        "108",
+        "109",
+        "110",
+        "111",
+        "112",
+        "113"
+      ],
+      "chairs": [
+        {
+          "id": "center-row-f-chair-0",
+          "tableId": "center-row-f",
+          "label": "101",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-1",
+          "tableId": "center-row-f",
+          "label": "102",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-2",
+          "tableId": "center-row-f",
+          "label": "103",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-3",
+          "tableId": "center-row-f",
+          "label": "104",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-4",
+          "tableId": "center-row-f",
+          "label": "105",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-5",
+          "tableId": "center-row-f",
+          "label": "106",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-6",
+          "tableId": "center-row-f",
+          "label": "107",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-7",
+          "tableId": "center-row-f",
+          "label": "108",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-8",
+          "tableId": "center-row-f",
+          "label": "109",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-9",
+          "tableId": "center-row-f",
+          "label": "110",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-10",
+          "tableId": "center-row-f",
+          "label": "111",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-11",
+          "tableId": "center-row-f",
+          "label": "112",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "center-row-f-chair-12",
+          "tableId": "center-row-f",
+          "label": "113",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "left-row-b",
+      "type": "seatingRow",
+      "x": 245,
+      "y": 432,
+      "endX": 391.9887056931244,
+      "endY": 461.9051901625796,
+      "rotation": 11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row B",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "chairs": [
+        {
+          "id": "left-row-b-chair-0",
+          "tableId": "left-row-b",
+          "label": "1",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-b-chair-1",
+          "tableId": "left-row-b",
+          "label": "3",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-b-chair-2",
+          "tableId": "left-row-b",
+          "label": "5",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-b-chair-3",
+          "tableId": "left-row-b",
+          "label": "7",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "left-row-c",
+      "type": "seatingRow",
+      "x": 232,
+      "y": 514,
+      "endX": 378.9887056931244,
+      "endY": 543.9051901625796,
+      "rotation": 11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row C",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "chairs": [
+        {
+          "id": "left-row-c-chair-0",
+          "tableId": "left-row-c",
+          "label": "1",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-c-chair-1",
+          "tableId": "left-row-c",
+          "label": "3",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-c-chair-2",
+          "tableId": "left-row-c",
+          "label": "5",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-c-chair-3",
+          "tableId": "left-row-c",
+          "label": "7",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "left-row-d",
+      "type": "seatingRow",
+      "x": 220,
+      "y": 596,
+      "endX": 366.9887056931244,
+      "endY": 625.9051901625796,
+      "rotation": 11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row D",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "chairs": [
+        {
+          "id": "left-row-d-chair-0",
+          "tableId": "left-row-d",
+          "label": "1",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-d-chair-1",
+          "tableId": "left-row-d",
+          "label": "3",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-d-chair-2",
+          "tableId": "left-row-d",
+          "label": "5",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-d-chair-3",
+          "tableId": "left-row-d",
+          "label": "7",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "left-row-e",
+      "type": "seatingRow",
+      "x": 209,
+      "y": 678,
+      "endX": 355.9887056931244,
+      "endY": 707.9051901625796,
+      "rotation": 11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row E",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "chairs": [
+        {
+          "id": "left-row-e-chair-0",
+          "tableId": "left-row-e",
+          "label": "1",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-e-chair-1",
+          "tableId": "left-row-e",
+          "label": "3",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-e-chair-2",
+          "tableId": "left-row-e",
+          "label": "5",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-e-chair-3",
+          "tableId": "left-row-e",
+          "label": "7",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "left-row-f",
+      "type": "seatingRow",
+      "x": 198,
+      "y": 760,
+      "endX": 344.9887056931244,
+      "endY": 789.9051901625796,
+      "rotation": 11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row F",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "left",
+      "chairLabels": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "chairs": [
+        {
+          "id": "left-row-f-chair-0",
+          "tableId": "left-row-f",
+          "label": "1",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-f-chair-1",
+          "tableId": "left-row-f",
+          "label": "3",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-f-chair-2",
+          "tableId": "left-row-f",
+          "label": "5",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "left-row-f-chair-3",
+          "tableId": "left-row-f",
+          "label": "7",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "right-row-b",
+      "type": "seatingRow",
+      "x": 1755,
+      "y": 432,
+      "endX": 1901.9887056931245,
+      "endY": 402.0948098374204,
+      "rotation": -11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row B",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "right",
+      "chairLabels": [
+        "8",
+        "6",
+        "4",
+        "2"
+      ],
+      "chairs": [
+        {
+          "id": "right-row-b-chair-0",
+          "tableId": "right-row-b",
+          "label": "8",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-b-chair-1",
+          "tableId": "right-row-b",
+          "label": "6",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-b-chair-2",
+          "tableId": "right-row-b",
+          "label": "4",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-b-chair-3",
+          "tableId": "right-row-b",
+          "label": "2",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "right-row-c",
+      "type": "seatingRow",
+      "x": 1768,
+      "y": 514,
+      "endX": 1914.9887056931245,
+      "endY": 484.0948098374204,
+      "rotation": -11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row C",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "right",
+      "chairLabels": [
+        "8",
+        "6",
+        "4",
+        "2"
+      ],
+      "chairs": [
+        {
+          "id": "right-row-c-chair-0",
+          "tableId": "right-row-c",
+          "label": "8",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-c-chair-1",
+          "tableId": "right-row-c",
+          "label": "6",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-c-chair-2",
+          "tableId": "right-row-c",
+          "label": "4",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-c-chair-3",
+          "tableId": "right-row-c",
+          "label": "2",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "right-row-d",
+      "type": "seatingRow",
+      "x": 1780,
+      "y": 596,
+      "endX": 1926.9887056931245,
+      "endY": 566.0948098374204,
+      "rotation": -11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row D",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "right",
+      "chairLabels": [
+        "8",
+        "6",
+        "4",
+        "2"
+      ],
+      "chairs": [
+        {
+          "id": "right-row-d-chair-0",
+          "tableId": "right-row-d",
+          "label": "8",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-d-chair-1",
+          "tableId": "right-row-d",
+          "label": "6",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-d-chair-2",
+          "tableId": "right-row-d",
+          "label": "4",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-d-chair-3",
+          "tableId": "right-row-d",
+          "label": "2",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "right-row-e",
+      "type": "seatingRow",
+      "x": 1791,
+      "y": 678,
+      "endX": 1937.9887056931245,
+      "endY": 648.0948098374204,
+      "rotation": -11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row E",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "right",
+      "chairLabels": [
+        "8",
+        "6",
+        "4",
+        "2"
+      ],
+      "chairs": [
+        {
+          "id": "right-row-e-chair-0",
+          "tableId": "right-row-e",
+          "label": "8",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-e-chair-1",
+          "tableId": "right-row-e",
+          "label": "6",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-e-chair-2",
+          "tableId": "right-row-e",
+          "label": "4",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-e-chair-3",
+          "tableId": "right-row-e",
+          "label": "2",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    },
+    {
+      "id": "right-row-f",
+      "type": "seatingRow",
+      "x": 1802,
+      "y": 760,
+      "endX": 1948.9887056931245,
+      "endY": 730.0948098374204,
+      "rotation": -11.5,
+      "seatCount": 4,
+      "seatSpacing": 50,
+      "seatRadius": 8,
+      "name": "Row F",
+      "chairLabelVisible": true,
+      "rowLabelVisible": true,
+      "labelPosition": "right",
+      "chairLabels": [
+        "8",
+        "6",
+        "4",
+        "2"
+      ],
+      "chairs": [
+        {
+          "id": "right-row-f-chair-0",
+          "tableId": "right-row-f",
+          "label": "8",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-f-chair-1",
+          "tableId": "right-row-f",
+          "label": "6",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-f-chair-2",
+          "tableId": "right-row-f",
+          "label": "4",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        },
+        {
+          "id": "right-row-f-chair-3",
+          "tableId": "right-row-f",
+          "label": "2",
+          "price": 0,
+          "position": {
+            "angle": 0,
+            "distance": 0
+          },
+          "isSelected": false,
+          "reservationStatus": "free"
+        }
+      ]
+    }
+  ]
+}

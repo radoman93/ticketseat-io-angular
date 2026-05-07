@@ -21,7 +21,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   @Input() endX: number = 100;
   @Input() endY: number = 0;
   @Input() seatCount: number = 5;
-  @Input() seatSpacing: number = 35;
+  @Input() seatSpacing: number = 30;
   @Input() name: string = 'Row';
   @Input() seatingRowData!: SeatingRowProperties;
   @Input() isSelected!: boolean;
@@ -36,7 +36,7 @@ export class SeatingRowComponent implements OnInit, OnChanges {
   public _endX: number = 100;
   public _endY: number = 0;
   public _seatCount: number = 5;
-  public _seatSpacing: number = 35;
+  public _seatSpacing: number = 30;
   public _name: string = 'Row';
   public _seatingRowData: SeatingRowProperties | null = null;
   public _isSelected: boolean = false;

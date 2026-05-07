@@ -169,14 +169,26 @@ export class LayoutStore {
 
   // Method to swap elements in the array (for z-order management)
   swapElements = action('swapElements', (index1: number, index2: number) => {
-    if (index1 < 0 || index1 >= this.elements.length || 
+    if (index1 < 0 || index1 >= this.elements.length ||
         index2 < 0 || index2 >= this.elements.length) {
       return;
     }
-    
+
     const temp = this.elements[index1];
     this.elements[index1] = this.elements[index2];
     this.elements[index2] = temp;
+  });
+
+  // Move an element from one index to another (for drag-and-drop reordering).
+  // Order in `elements` controls render/export order.
+  moveElement = action('moveElement', (fromIndex: number, toIndex: number) => {
+    const len = this.elements.length;
+    if (fromIndex < 0 || fromIndex >= len) return;
+    if (toIndex < 0 || toIndex >= len) return;
+    if (fromIndex === toIndex) return;
+
+    const [moved] = this.elements.splice(fromIndex, 1);
+    this.elements.splice(toIndex, 0, moved);
   });
 
   // Method to check if an element exists

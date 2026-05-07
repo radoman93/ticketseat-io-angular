@@ -38,6 +38,8 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
   layoutStore = layoutStore;
   selectionStore = selectionStore;
   showLayers = true;
+  draggingIndex: number | null = null;
+  dragOverIndex: number | null = null;
 
   @Input() design?: LayoutExportData | string | null;
   @Output() layoutUpdated = new EventEmitter<LayoutExportData>();
@@ -151,5 +153,37 @@ export class EventEditorComponent implements OnInit, OnChanges, OnDestroy {
 
   trackById(index: number, el: any): string {
     return el.id;
+  }
+
+  onLayerDragStart(index: number, ev: DragEvent): void {
+    this.draggingIndex = index;
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  onLayerDragOver(index: number, ev: DragEvent): void {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+    if (this.dragOverIndex !== index) this.dragOverIndex = index;
+  }
+
+  onLayerDragLeave(index: number): void {
+    if (this.dragOverIndex === index) this.dragOverIndex = null;
+  }
+
+  onLayerDrop(index: number, ev: DragEvent): void {
+    ev.preventDefault();
+    const from = this.draggingIndex;
+    this.draggingIndex = null;
+    this.dragOverIndex = null;
+    if (from === null || from === index) return;
+    this.layoutStore.moveElement(from, index);
+  }
+
+  onLayerDragEnd(): void {
+    this.draggingIndex = null;
+    this.dragOverIndex = null;
   }
 }

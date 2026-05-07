@@ -81,6 +81,11 @@
 /* Selection container styling */
 .selection-container {
   position: relative;
+  /* Each element gets its own stacking context so internal z-indices
+     (e.g. table-circle z-10, polygon svg z-1) don't leak out and override
+     sibling stacking. With isolation, sibling .selection-containers are
+     stacked purely by DOM order, which is what the Objects panel controls. */
+  isolation: isolate;
 }
 
 /* Common selection indicator styles */

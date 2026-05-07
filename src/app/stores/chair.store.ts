@@ -101,7 +101,7 @@ export class ChairStore {
         id: `${tableId}-chair-${i}`,
         tableId: tableId,
         label: useOverride ? chairLabels![i] : (i + 1).toString(),
-        price: 25.00, // Default price
+        price: 0, // Default price
         position: {
           angle: angleStep * i,
           distance: distanceToChairCenter
@@ -146,7 +146,7 @@ export class ChairStore {
         id: `${tableId}-chair-${i}`,
         tableId: tableId,
         label: useOverride ? chairLabels![i] : (i + 1).toString(),
-        price: 25.00,
+        price: 0,
         position: {
           angle: angle,
           distance: radius

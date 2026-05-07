@@ -194,7 +194,6 @@ export class ElementBoundsService {
    * Seating row bounds calculation
    */
   private getSeatingRowBounds(element: SeatingRowProperties): ElementBounds {
-    const labelOffset = 60;
     const chairWidth = 20;
     const chairHeight = 20;
     const padding = 20;
@@ -205,9 +204,32 @@ export class ElementBoundsService {
       ? (element.seatCount - 1) * element.seatSpacing + chairWidth
       : chairWidth;
 
+    // Reserve label space based on actual labelPosition.
+    // SeatingRowComponent renders the label at:
+    //   left:   x = -60          (template constant)
+    //   center: x = rowLength/2 - 20 (within the row span)
+    //   right:  x = rowLength + 30
+    const showLabel = element.rowLabelVisible !== false && !!element.name;
+    const labelPosition = element.labelPosition || 'left';
+
+    let labelLeftExtent = 0;
+    let labelRightExtent = 0;
+    if (showLabel) {
+      if (labelPosition === 'right') {
+        // Label anchors at +30 past last chair and grows rightward.
+        // Estimate text width from name length (text-xs ≈ 7px/char).
+        const labelWidth = Math.max(30, (element.name?.length ?? 0) * 7);
+        labelRightExtent = 30 + labelWidth;
+      } else if (labelPosition === 'center') {
+        // Label sits within row span; no horizontal extension needed.
+      } else {
+        labelLeftExtent = 60;
+      }
+    }
+
     // Local bounds (in the row's coordinate system where start point is 0,0)
-    const localLeft = -labelOffset - padding;
-    const localRight = rowLength + padding;
+    const localLeft = -labelLeftExtent - padding;
+    const localRight = rowLength + labelRightExtent + padding;
     const localTop = -chairHeight / 2 - padding;
     const localBottom = chairHeight / 2 + padding;
 
@@ -225,11 +247,11 @@ export class ElementBoundsService {
 
     return {
       // Core bounds
-      left: element.x - labelOffset,
+      left: element.x - labelLeftExtent,
       top: element.y - chairHeight / 2,
-      right: element.x + rowLength,
+      right: element.x + rowLength + labelRightExtent,
       bottom: element.y + chairHeight / 2,
-      width: rowLength + labelOffset,
+      width: rowLength + labelLeftExtent + labelRightExtent,
       height: chairHeight,
 
       // Center (in world coordinates, but represents center of unrotated box)
@@ -333,6 +355,22 @@ export class ElementBoundsService {
       if (px > maxX) maxX = px;
       if (py < minY) minY = py;
       if (py > maxY) maxY = py;
+    }
+
+    // Extend bounds to include the row label, which the component renders at
+    // (cx + cos(mid)*(radius+30), cy - sin(mid)*(radius+30)) and centers via translate(-50%, -50%).
+    if (element.rowLabelVisible !== false && element.name) {
+      const midDeg = (startAngle + endAngle) / 2;
+      const midRad = midDeg * Math.PI / 180;
+      const labelDistance = radius + 30;
+      const labelCenterX = cx + Math.cos(midRad) * labelDistance;
+      const labelCenterY = cy - Math.sin(midRad) * labelDistance;
+      const labelHalfWidth = Math.max(40, element.name.length * 4);
+      const labelHalfHeight = 10;
+      if (labelCenterX - labelHalfWidth < minX) minX = labelCenterX - labelHalfWidth;
+      if (labelCenterX + labelHalfWidth > maxX) maxX = labelCenterX + labelHalfWidth;
+      if (labelCenterY - labelHalfHeight < minY) minY = labelCenterY - labelHalfHeight;
+      if (labelCenterY + labelHalfHeight > maxY) maxY = labelCenterY + labelHalfHeight;
     }
 
     return {
