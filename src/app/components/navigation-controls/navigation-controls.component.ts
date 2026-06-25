@@ -75,62 +75,69 @@ import { ElementBoundsService } from '../../services/element-bounds.service';
     </div>
   `,
   styles: [`
+    /* ============ Docked top toolbar ============ */
+    :host {
+      display: block;
+      width: 100%;
+      flex-shrink: 0;
+    }
+
     .navigation-controls {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background: white;
-      border-radius: 12px;
-      padding: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
-      z-index: 1000;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 14px;
+      background: var(--ts-panel, #FDFBF7);
+      border-bottom: 1px solid var(--ts-border, rgba(28, 22, 12, 0.08));
       user-select: none;
       -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      z-index: 20;
     }
 
     .navigation-controls.compact {
-      bottom: 16px;
-      right: 16px;
-      padding: 6px;
-      gap: 6px;
+      padding: 6px 10px;
+      gap: 3px;
     }
 
     .nav-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
-      border: none;
-      border-radius: 8px;
-      background: #f3f4f6;
-      color: #374151;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      touch-action: manipulation;
-    }
-
-    .compact .nav-btn {
       width: 40px;
       height: 40px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .nav-btn:hover:not(:disabled) {
-      background: #e5e7eb;
+      background: rgba(17, 24, 39, 0.06);
       color: #111827;
     }
 
     .nav-btn:active:not(:disabled) {
-      background: #d1d5db;
-      transform: scale(0.95);
+      background: rgba(17, 24, 39, 0.12);
+      transform: scale(0.92);
+    }
+
+    .nav-btn:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
     }
 
     .nav-btn:disabled {
-      opacity: 0.4;
+      opacity: 0.35;
       cursor: not-allowed;
     }
 
@@ -139,38 +146,37 @@ import { ElementBoundsService } from '../../services/element-bounds.service';
       height: 20px;
     }
 
-    .compact .nav-btn .icon {
-      width: 18px;
-      height: 18px;
-    }
-
     .zoom-level {
       text-align: center;
       font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-      padding: 4px 0;
-      min-width: 44px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #4b5563;
+      padding: 0 4px;
+      min-width: 46px;
+      font-variant-numeric: tabular-nums;
     }
 
+    /* Vertical divider inside the horizontal bar */
     .divider {
-      height: 1px;
-      background: #e5e7eb;
-      margin: 4px 0;
+      align-self: center;
+      width: 1px;
+      height: 22px;
+      background: rgba(17, 24, 39, 0.12);
+      margin: 0 4px;
     }
 
-    /* Mobile-specific adjustments */
+    /* ============ Mobile ============ */
     @media (max-width: 768px) {
       .navigation-controls {
-        bottom: 16px;
-        right: 16px;
-        padding: 6px;
+        justify-content: center;
+        padding: 8px 10px;
         gap: 6px;
       }
 
       .nav-btn {
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
       }
 
       .nav-btn .icon {
@@ -179,30 +185,53 @@ import { ElementBoundsService } from '../../services/element-bounds.service';
       }
     }
 
-    /* Very small screens */
-    @media (max-width: 375px) {
+    @media (max-width: 360px) {
       .navigation-controls {
-        bottom: 12px;
-        right: 12px;
+        gap: 3px;
+      }
+      .nav-btn {
+        width: 42px;
+        height: 42px;
+      }
+      .zoom-level {
+        min-width: 40px;
       }
     }
 
-    /* Viewer mode - green theme */
+    @media (prefers-reduced-motion: reduce) {
+      .nav-btn {
+        transition: none;
+      }
+      .nav-btn:active:not(:disabled) {
+        transform: none;
+      }
+    }
+
+    /* ============ Viewer mode - green theme ============ */
     :host-context(.viewer-mode) .navigation-controls {
       background: #f0fdf4;
-      border: 1px solid #bbf7d0;
+      border-bottom: 1px solid #bbf7d0;
     }
 
     :host-context(.viewer-mode) .nav-btn {
-      background: #dcfce7;
+      color: #166534;
     }
 
     :host-context(.viewer-mode) .nav-btn:hover:not(:disabled) {
-      background: #bbf7d0;
+      background: rgba(22, 101, 52, 0.1);
+      color: #14532d;
     }
 
     :host-context(.viewer-mode) .nav-btn:active:not(:disabled) {
-      background: #86efac;
+      background: rgba(22, 101, 52, 0.18);
+    }
+
+    :host-context(.viewer-mode) .zoom-level {
+      color: #15803d;
+    }
+
+    :host-context(.viewer-mode) .divider {
+      background: rgba(22, 101, 52, 0.2);
     }
   `]
 })

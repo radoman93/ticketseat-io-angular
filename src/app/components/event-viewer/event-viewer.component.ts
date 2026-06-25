@@ -25,6 +25,12 @@ import { LoggerService } from '../../services/logger.service';
   ],
   template: `
     <div class="ts-viewer viewer-mode" *mobxAutorun>
+      <!-- Top Toolbar (zoom / navigation) -->
+      <app-navigation-controls
+        [containerRef]="gridContainer"
+        [compact]="isCompactMode">
+      </app-navigation-controls>
+
       <!-- Layout Area -->
       <div #gridContainer class="ts-viewer-layout">
         <div class="ts-viewer-grid-wrap">
@@ -58,12 +64,6 @@ import { LoggerService } from '../../services/logger.service';
           {{ viewerStore.selectedSeatsCount }} seat{{ viewerStore.selectedSeatsCount !== 1 ? 's' : '' }} selected
         </div>
       </div>
-
-      <!-- Navigation Controls -->
-      <app-navigation-controls
-        [containerRef]="gridContainer"
-        [compact]="isCompactMode">
-      </app-navigation-controls>
 
       <!-- Notifications -->
       <div *ngIf="showReservationPanel">
@@ -124,6 +124,18 @@ import { LoggerService } from '../../services/logger.service';
       gap: 16px;
       font-size: 12px;
       color: var(--ts-ink-soft, #5C5446);
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ts-legend-items::-webkit-scrollbar {
+      display: none;
+    }
+
+    .ts-legend-dot {
+      white-space: nowrap;
     }
 
     .ts-legend-dot {
@@ -185,12 +197,17 @@ import { LoggerService } from '../../services/logger.service';
       }
 
       .ts-viewer-legend {
-        padding: 8px 12px;
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+        flex-wrap: nowrap;
       }
 
       .ts-legend-items {
-        gap: 10px;
+        gap: 12px;
         font-size: 11px;
+      }
+
+      .ts-hold-pill {
+        flex-shrink: 0;
       }
     }
   `]
