@@ -26,6 +26,7 @@ export const SeatPalette: Record<string, Pal> = {
 interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; }
 interface CanvasItem {
   o: VObj; selected: boolean; dim: boolean; tier: Tier; bounds: Box;
+  picked?: boolean; pickCount?: number;
   stagePath?: string | null; zoneFill?: string;
   polyPoints?: string; polyCx?: number; polyCy?: number; polyFill?: string;
   tableFill?: string; chairs?: SeatVM[];
@@ -83,7 +84,9 @@ export class SeatComponent {
 
   get sold() { return this.status() === 'sold'; }
   get held() { return this.status() === 'held'; }
-  get cursor() { return this.interactive() && !this.sold ? 'pointer' : 'default'; }
+  // Both sold and held seats are unavailable - not selectable.
+  get taken() { return this.sold || this.held; }
+  get cursor() { return this.interactive() && !this.taken ? 'pointer' : 'default'; }
 
   // resolve ink slots (mirrors the JSX branch order)
   private slots() {
@@ -108,7 +111,7 @@ export class SeatComponent {
   get minStroke() { return this.selected() ? this.color() : this.edge; }
 
   onDown(e: PointerEvent) {
-    if (!this.interactive() || this.sold) return;
+    if (!this.interactive() || this.taken) return;
     e.stopPropagation();
     this.down.emit(e);
   }
@@ -163,21 +166,25 @@ export class SeatComponent {
                 @case ('zone') {
                   <rect [attr.x]="item.o.x! - item.o.w! / 2" [attr.y]="item.o.y! - item.o.h! / 2"
                         [attr.width]="item.o.w" [attr.height]="item.o.h" [attr.rx]="14" [attr.fill]="item.zoneFill"
-                        [attr.stroke]="item.tier.color" [attr.stroke-width]="item.selected ? 3 : 2" stroke-dasharray="7 6"/>
+                        [attr.stroke]="item.tier.color" [attr.stroke-width]="item.picked ? 4 : (item.selected ? 3 : 2)"
+                        [attr.stroke-dasharray]="item.picked ? null : '7 6'"/>
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y! - 4" text-anchor="middle" [attr.font-size]="17"
                         [attr.font-weight]="700" [attr.fill]="item.tier.color"
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
-                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 16" text-anchor="middle" [attr.font-size]="11"
-                        [attr.fill]="pal().subtext" style="pointer-events:none;font-family:'Geist Mono',monospace">CAP {{ item.o.capacity }}</text>
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 16" text-anchor="middle" [attr.font-size]="item.picked ? 12 : 11"
+                        [attr.font-weight]="item.picked ? 700 : 400" [attr.fill]="item.picked ? item.tier.color : pal().subtext"
+                        style="pointer-events:none;font-family:'Geist Mono',monospace">{{ item.picked ? item.pickCount + (item.pickCount === 1 ? ' spot held' : ' spots held') : (item.o.capacity ? 'CAP ' + item.o.capacity : 'No limit') }}</text>
                 }
                 @case ('polygon') {
                   <polygon [attr.points]="item.polyPoints" [attr.fill]="item.polyFill" [attr.stroke]="item.tier.color"
-                           [attr.stroke-width]="item.selected ? 3 : 2" stroke-dasharray="7 6" stroke-linejoin="round"/>
+                           [attr.stroke-width]="item.picked ? 4 : (item.selected ? 3 : 2)"
+                           [attr.stroke-dasharray]="item.picked ? null : '7 6'" stroke-linejoin="round"/>
                   <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! - 3" text-anchor="middle" [attr.font-size]="16"
                         [attr.font-weight]="700" [attr.fill]="item.tier.color"
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
-                  <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! + 15" text-anchor="middle" [attr.font-size]="11"
-                        [attr.fill]="pal().subtext" style="pointer-events:none;font-family:'Geist Mono',monospace">CAP {{ item.o.capacity }}</text>
+                  <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! + 15" text-anchor="middle" [attr.font-size]="item.picked ? 12 : 11"
+                        [attr.font-weight]="item.picked ? 700 : 400" [attr.fill]="item.picked ? item.tier.color : pal().subtext"
+                        style="pointer-events:none;font-family:'Geist Mono',monospace">{{ item.picked ? item.pickCount + (item.pickCount === 1 ? ' spot held' : ' spots held') : (item.o.capacity ? 'CAP ' + item.o.capacity : 'No limit') }}</text>
                   @if (item.selected) {
                     @for (p of item.o.points!; track $index) {
                       <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="4" [attr.fill]="pal().bg" [attr.stroke]="item.tier.color" [attr.stroke-width]="2"/>
@@ -274,6 +281,8 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   snap = input(false);
   selection = input<Set<string>>(new Set());
   selectedSeats = input<Set<string>>(new Set());
+  /** GA zone/polygon id → picked-spot count (rendered as picked, with the count shown). */
+  pickedZones = input<Map<string, number>>(new Map());
   dimUnfocused = input<Set<string> | null>(null);
   drawMode = input(false);
   drawPoints = input<Pt[]>([]);
@@ -310,33 +319,37 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   constructor() {
     // emit scale changes
     effect(() => { this.scaleChange.emit(this.view().s); });
-    // mark fit-pending whenever the venue identity changes
-    effect(() => { this.venue(); this.fitPending = true; queueMicrotask(() => this.tryFit()); });
+    // NOTE: the initial fit is driven solely by ngAfterViewInit + the ResizeObserver
+    // (size changes), NOT by venue content changes. Auto-fitting on venue change would
+    // zoom the view onto every newly-added element, which we explicitly don't want.
   }
 
   items = computed<CanvasItem[]>(() => {
     const v = this.venue();
     const sel = this.selection();
+    const picks = this.pickedZones();
     const dimSet = this.dimUnfocused();
     const showNum = this.view().s > 1.45;
     const pal = this.pal();
     return v.objects.map((o): CanvasItem => {
       const selected = !!sel?.has(o.id);
+      const pickCount = picks?.get(o.id) || 0;
+      const picked = pickCount > 0;
       const dim = !!(dimSet && dimSet.size && !dimSet.has(o.id));
       const tier = tierById(v.tiers, o.tier);
-      const item: CanvasItem = { o, selected, dim, tier, bounds: objBounds(o) };
+      const item: CanvasItem = { o, selected, picked, pickCount, dim, tier, bounds: objBounds(o) };
       if (o.type === 'stage') {
         const { x, y, w, h } = o as Required<Pick<VObj, 'x' | 'y' | 'w' | 'h'>>;
         item.stagePath = o.shape === 'arc'
           ? `M ${x - w / 2} ${y + h / 2} Q ${x - w / 2} ${y - h / 2} ${x} ${y - h / 2} Q ${x + w / 2} ${y - h / 2} ${x + w / 2} ${y + h / 2} Z`
           : null;
       } else if (o.type === 'zone') {
-        item.zoneFill = `color-mix(in srgb, ${tier.color} 16%, transparent)`;
+        item.zoneFill = `color-mix(in srgb, ${tier.color} ${picked ? 42 : 16}%, transparent)`;
       } else if (o.type === 'polygon') {
         item.polyPoints = o.points!.map((p) => `${p.x},${p.y}`).join(' ');
         const c = polyCentroid(o.points!);
         item.polyCx = c.cx; item.polyCy = c.cy;
-        item.polyFill = `color-mix(in srgb, ${tier.color} 15%, transparent)`;
+        item.polyFill = `color-mix(in srgb, ${tier.color} ${picked ? 42 : 15}%, transparent)`;
       } else if (o.type === 'table') {
         item.tableFill = `color-mix(in srgb, ${tier.color} 12%, ${pal.bg})`;
         item.chairs = tableSeatPositions(o).map((c, i): SeatVM => ({ p: c, angle: c.a || 0, seat: { n: i + 1, status: 'available' }, key: `${o.id}:${i + 1}` }));
@@ -375,11 +388,22 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     const v = this.view();
     return { x: (cx - r.left - v.tx) / v.s, y: (cy - r.top - v.ty) / v.s };
   }
+  // Decide the initial fit EXACTLY ONCE, on the first measurement where the host has a
+  // real (non-zero) size. By then the parent's ngOnInit has already applied the seed
+  // venue, so the object count reflects the real starting layout:
+  //   • content present  → a layout was loaded (viewer / store / saved editor) → fit to it.
+  //   • empty            → a blank editor → leave the default view so adding the first
+  //                        element (and every one after) never zooms/recenters the canvas.
+  // Either way fitPending is cleared, so no later venue change ever auto-fits again.
   private tryFit() {
     if (!this.fitPending) return;
-    const el = this.wrapRef().nativeElement;
-    const r = el.getBoundingClientRect();
-    if (r.width > 60 && r.height > 60) { this.fitPending = false; this.fit(); }
+    try {
+      const el = this.wrapRef().nativeElement;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 60 || r.height <= 60) return; // host not laid out yet; retry on next measurement
+      this.fitPending = false;
+      if (this.venue().objects.length > 0) this.fit();
+    } catch { /* view or venue not resolved yet; stay pending and retry on next measurement */ }
   }
 
   // ── imperative API ───────────────────────────────────────────────────────────

@@ -37,12 +37,8 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
   styleUrl: './seat-map-studio.component.css',
   template: `
     <!-- ── header ── -->
+    @if (showVenueSwitcher()) {
     <header class="st-header">
-      <div class="st-brand">
-        <sms-icon name="Logo" [s]="isMobile() ? 26 : 30"/>
-        @if (!isMobile()) { <span class="st-logo">Seat Map Studio</span> }
-      </div>
-      @if (showVenueSwitcher()) {
       <div class="st-venue">
         <button class="venue-btn" (click)="venueMenu.set(!venueMenu())">
           <span class="venue-name">{{ venue().name }}</span>
@@ -58,17 +54,8 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           </div>
         }
       </div>
-      }
-      <div class="st-right">
-        <div class="mode-switch">
-          <button [class.on]="mode() === 'editor'" (click)="setMode('editor')"><sms-icon name="Edit" [s]="15"/>@if (!isMobile()) {&nbsp;Editor}</button>
-          <button [class.on]="mode() === 'viewer'" (click)="setMode('viewer')"><sms-icon name="Eye" [s]="15"/>@if (!isMobile()) {&nbsp;Viewer}</button>
-        </div>
-        <button class="st-ic" (click)="toggleTheme()" title="Theme">
-          @if (appTheme() === 'light') { <sms-icon name="Moon" [s]="18"/> } @else { <sms-icon name="Sun" [s]="18"/> }
-        </button>
-      </div>
     </header>
+    }
 
     <!-- ── editor / viewer ── -->
     @if (mode() === 'editor') {
@@ -129,7 +116,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           <div class="vw-mtop">
             <div class="vw-chiprow">
               @for (s of stats(); track s.tier.id) {
-                <button class="vw-chip"><i [style.background]="s.tier.color"></i>{{ s.tier.name }}<b class="mono">\${{ s.tier.price }}</b></button>
+                <button class="vw-chip"><i [style.background]="s.tier.color"></i>{{ s.tier.name }}<b class="mono">{{ currency() }}{{ s.tier.price }}</b></button>
               }
             </div>
           </div>
@@ -137,15 +124,17 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
             <ng-container *ngTemplateOutlet="canvasTpl"></ng-container>
             <ng-container *ngTemplateOutlet="zoomTpl"></ng-container>
           </div>
-          <vw-bar [order]="order()" (open)="sheet.set('order')"/>
-          @if (sheet() === 'order') {
-            <div class="sheet-back" (click)="sheet.set(null)">
-              <div class="sheet" (click)="$event.stopPropagation()">
-                <div class="sheet-grip"></div>
-                <div class="sheet-head"><b>Your order</b><button class="ed-ic" (click)="sheet.set(null)"><sms-icon name="Add" [s]="18" [rot]="45"/></button></div>
-                <div class="sheet-body"><ng-container *ngTemplateOutlet="orderTpl"></ng-container></div>
+          @if (!readonly() && showOrderPanel()) {
+            <vw-bar [order]="order()" [currency]="currency()" (open)="sheet.set('order')"/>
+            @if (sheet() === 'order') {
+              <div class="sheet-back" (click)="sheet.set(null)">
+                <div class="sheet" (click)="$event.stopPropagation()">
+                  <div class="sheet-grip"></div>
+                  <div class="sheet-head"><b>Your order</b><button class="ed-ic" (click)="sheet.set(null)"><sms-icon name="Add" [s]="18" [rot]="45"/></button></div>
+                  <div class="sheet-body"><ng-container *ngTemplateOutlet="orderTpl"></ng-container></div>
+                </div>
               </div>
-            </div>
+            }
           }
         </div>
       } @else {
@@ -154,23 +143,25 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
             <ng-container *ngTemplateOutlet="canvasTpl"></ng-container>
             <ng-container *ngTemplateOutlet="zoomTpl"></ng-container>
           </div>
-          <div class="vw-side right">
-            <vw-legend [venue]="venue()" mode="legend" [focusTier]="focusTier()" (focus)="focusOnTier($event)"/>
-            <ng-container *ngTemplateOutlet="orderTpl"></ng-container>
-          </div>
+          @if (!readonly() && showOrderPanel()) {
+            <div class="vw-side right">
+              <vw-legend [venue]="displayVenue()" mode="legend" [currency]="currency()" [focusTier]="focusTier()" (focus)="focusOnTier($event)"/>
+              <ng-container *ngTemplateOutlet="orderTpl"></ng-container>
+            </div>
+          }
         </div>
       }
     }
 
     @if (wizard(); as wz) {
-      <ed-wizard [type]="wz" [tiers]="venue().tiers" (close)="wizard.set(null)" (create)="createFromWizard($event)"/>
+      <ed-wizard [type]="wz" [tiers]="venue().tiers" [currency]="currency()" (close)="wizard.set(null)" (create)="createFromWizard($event)"/>
     }
 
     <!-- ── reusable templates ── -->
     <ng-template #canvasTpl>
-      <sms-canvas #canvas [venue]="venue()" [mode]="mode()" [canvasStyle]="canvasStyle" [canvasTheme]="canvasTheme"
+      <sms-canvas #canvas [venue]="displayVenue()" [mode]="mode()" [canvasStyle]="canvasStyle" [canvasTheme]="canvasTheme"
                   [showGrid]="mode() === 'editor' && showGrid()" [snap]="snap()" [selection]="selection()"
-                  [selectedSeats]="selectedKeys()" [dimUnfocused]="null"
+                  [selectedSeats]="selectedKeys()" [pickedZones]="pickedZones()" [dimUnfocused]="null"
                   [drawMode]="!!draw()" [drawPoints]="draw()?.points || []" [drawCursor]="draw()?.cursor || null"
                   (drawAddPoint)="drawAddPoint($event)" (drawCursorChange)="drawCursor($event)" (drawCommit)="commitPolygon()"
                   (select)="selectObjs($event.ids, $event.additive)" (moveStart)="onMoveStart()" (move)="onMove($event.dx, $event.dy)"
@@ -187,17 +178,17 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
         @if (leftTab() === 'objects') {
           <ed-objects [venue]="venue()" [selection]="selection()" (select)="selectObjs($event.ids, $event.additive)"/>
         } @else {
-          <ed-tiers [venue]="venue()" (add)="addTier()" (patch)="patchTier($event.id, $event.p)" (del)="deleteTier($event)"/>
+          <ed-tiers [venue]="venue()" [currency]="currency()" (add)="addTier()" (patch)="patchTier($event.id, $event.p)" (del)="deleteTier($event)"/>
         }
       </div>
     </ng-template>
 
     <ng-template #inspectorTpl>
-      <ed-inspector [sel]="selection()" [venue]="venue()" (patch)="patch($event.id, $event.p)" (del)="deleteSel()" (dup)="dupSel()"/>
+      <ed-inspector [sel]="selection()" [venue]="venue()" [currency]="currency()" (patch)="patch($event.id, $event.p)" (del)="deleteSel()" (dup)="dupSel()"/>
     </ng-template>
 
     <ng-template #orderTpl>
-      <vw-order [order]="order()" [venue]="venue()" (remove)="removeLine($event)" (checkout)="checkout()"/>
+      <vw-order [order]="order()" [venue]="displayVenue()" [currency]="currency()" (remove)="removeLine($event)" (checkout)="checkout()"/>
     </ng-template>
 
     <ng-template #zoomTpl>
@@ -229,6 +220,16 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   showVenueSwitcher = input(true);
   /** Render inside its host box (position:relative; 100% height) instead of full-screen fixed. */
   embedded = input(false);
+  /** Currency symbol shown before every price (e.g. '€', 'RSD '). Defaults to '$'. */
+  currency = input<string>('$');
+  /** Seat IDs ("objectId:seatNumber") reserved/sold externally; overlaid live as held (non-selectable). */
+  reservedIds = input<string[] | null>(null);
+  /** Max number of seats a viewer may select (0 = unlimited). */
+  seatLimit = input<number>(0);
+  /** Read-only viewer: seats are not selectable and the order panel/checkout is hidden. */
+  readonly = input(false);
+  /** Show the built-in order panel + checkout in viewer mode (ignored when readonly). */
+  showOrderPanel = input(true);
 
   /** Emitted whenever the layout changes (add/move/edit/delete/tier/venue load). */
   venueChange = output<Venue>();
@@ -240,6 +241,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   themeChange = output<'light' | 'dark'>();
   /** Emitted when the viewer "Checkout" button is pressed, with the current order. */
   checkoutClick = output<OrderLine[]>();
+  /** Emitted when a seat pick is blocked because seatLimit was reached. Payload = the limit. */
+  limitReached = output<number>();
 
   private emitReady = false;
 
@@ -278,13 +281,49 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   private keyHandler = (e: KeyboardEvent) => this.onKey(e);
 
   selectedKeys = computed(() => new Set(this.order().filter((l) => l.kind === 'seat').map((l) => l.id)));
-  stats = computed(() => tierStats(this.venue()));
+  /** GA zone id → number of spots the viewer has picked there (canvas marks it picked + shows the count). */
+  pickedZones = computed(() => {
+    const m = new Map<string, number>();
+    for (const l of this.order()) {
+      if (l.kind !== 'ga') continue;
+      const i = l.id.lastIndexOf(':');
+      const z = i === -1 ? l.id : l.id.slice(0, i);
+      m.set(z, (m.get(z) || 0) + 1);
+    }
+    return m;
+  });
+  /** Base venue with externally-reserved seats overlaid as 'sold' (viewer display only; not
+   *  persisted) - rendered in the neutral "taken" colour and non-selectable. */
+  displayVenue = computed<Venue>(() => {
+    const v = this.venue();
+    const ids = this.reservedIds();
+    if (!ids || ids.length === 0) return v;
+    const set = new Set(ids);
+    return {
+      ...v,
+      objects: v.objects.map((o) =>
+        Array.isArray(o.seats)
+          ? { ...o, seats: (o.seats as Seat[]).map((s) =>
+              s.status === 'available' && set.has(`${o.id}:${s.n}`) ? { ...s, status: 'sold' as const } : s) }
+          : o),
+    };
+  });
+  stats = computed(() => tierStats(this.displayVenue()));
 
   // ── lifecycle ────────────────────────────────────────────────────────────────
   constructor() {
     // Surface state changes to host bindings once the component is initialized.
     effect(() => { const v = this.venue(); if (this.emitReady) this.venueChange.emit(v); });
     effect(() => { const o = this.order(); if (this.emitReady) this.orderChange.emit(o); });
+    // Enforce seatLimit reactively: if the cap drops below the current pick count
+    // (e.g. the buyer lowered their ticket quantity), release the most recently
+    // added picks. This un-selects them on the map AND emits orderChange so the
+    // host releases them - so quantity can never be less than the held picks.
+    effect(() => {
+      const lim = this.seatLimit();
+      const o = this.order();
+      if (lim > 0 && o.length > lim) this.order.set(o.slice(0, lim));
+    });
     effect(() => { const m = this.mode(); if (this.emitReady) this.modeChange.emit(m); });
     effect(() => { const t = this.appTheme(); if (this.emitReady) this.themeChange.emit(t); });
   }
@@ -453,12 +492,21 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
 
   // ── viewer ops ───────────────────────────────────────────────────────────────
   pickSeat(row: VObj, seat: Seat, tier: Tier) {
+    if (this.readonly()) return;
     const key = `${row.id}:${seat.n}`;
-    this.order.update((o) => o.some((l) => l.id === key)
+    const isDeselect = this.order().some((l) => l.id === key);
+    if (!isDeselect) {
+      const lim = this.seatLimit();
+      if (lim > 0 && this.order().filter((l) => l.kind === 'seat').length >= lim) { this.limitReached.emit(lim); return; }
+    }
+    this.order.update((o) => isDeselect
       ? o.filter((l) => l.id !== key)
       : [...o, { id: key, kind: 'seat', label: `${row.label || row.type} · ${row.type === 'table' ? 'Seat' : ''} ${seat.n}`.replace(/\s+/g, ' ').trim(), tierId: tier.id, price: tier.price }]);
   }
   pickZone(zone: VObj) {
+    if (this.readonly()) return;
+    const lim = this.seatLimit();
+    if (lim > 0 && this.order().filter((l) => l.kind === 'seat' || l.kind === 'ga').length >= lim) { this.limitReached.emit(lim); return; }
     const tier = tierById(this.venue().tiers, zone.tier);
     this.order.update((o) => [...o, { id: `${zone.id}:${Date.now()}`, kind: 'ga', label: `${zone.label} · GA`, tierId: tier.id, price: tier.price }]);
   }

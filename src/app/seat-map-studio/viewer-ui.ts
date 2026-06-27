@@ -51,7 +51,8 @@ export class TierLegendComponent {
   mode = input<'zoom' | 'legend'>('legend');
   focusTier = input<string | null>(null);
   focus = output<string | null>();
-  fmt = fmt;
+  currency = input<string>('$');
+  fmt = (n: number) => this.currency() + n.toLocaleString();
   stats = computed(() => tierStats(this.venue()));
   onClick(s: TierStat) {
     const isZoom = this.mode() === 'zoom';
@@ -99,7 +100,8 @@ export class OrderPanelComponent {
   order = input<OrderLine[]>([]);
   venue = input.required<Venue>();
   remove = output<string>(); checkout = output<void>();
-  fmt = fmt;
+  currency = input<string>('$');
+  fmt = (n: number) => this.currency() + n.toLocaleString();
   sub = computed(() => this.order().reduce((n, l) => n + l.price, 0));
   fee = computed(() => Math.round(this.sub() * 0.12));
   total = computed(() => this.sub() + (this.sub() ? this.fee() : 0));
@@ -139,7 +141,8 @@ export class SeatListPanelComponent {
   venue = input.required<Venue>();
   selectedKeys = input<Set<string>>(new Set());
   pick = output<{ row: VObj; seat: Seat; tier: Tier }>();
-  fmt = fmt;
+  currency = input<string>('$');
+  fmt = (n: number) => this.currency() + n.toLocaleString();
   rows = computed(() => this.venue().objects.filter((o) => o.type === 'row'));
   tier(r: VObj) { return tierById(this.venue().tiers, r.tier); }
   seatsOf(r: VObj) { return r.seats as Seat[]; }
@@ -165,6 +168,7 @@ export class SeatListPanelComponent {
 export class ViewerBarComponent {
   order = input<OrderLine[]>([]);
   open = output<void>();
-  fmt = fmt;
+  currency = input<string>('$');
+  fmt = (n: number) => this.currency() + n.toLocaleString();
   total = computed(() => { const sub = this.order().reduce((n, l) => n + l.price, 0); return sub + (sub ? Math.round(sub * 0.12) : 0); });
 }

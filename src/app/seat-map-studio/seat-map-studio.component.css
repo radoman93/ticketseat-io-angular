@@ -37,8 +37,6 @@
 
 /* header */
 .sms .st-header{height:58px;flex-shrink:0;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--card);position:relative;z-index:30;}
-.sms .st-brand{display:flex;align-items:center;gap:10px;}
-.sms .st-logo{font-size:16px;font-weight:700;letter-spacing:-0.03em;}
 .sms .st-venue{position:relative;}
 .sms .venue-btn{display:flex;align-items:center;gap:9px;height:38px;padding:0 8px 0 14px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--ink);}
 .sms .venue-btn:hover{border-color:var(--ink-2);}
@@ -49,12 +47,6 @@
 .sms .venue-item.on{background:var(--brand-tint);}
 .sms .venue-item b{font-size:13.5px;font-weight:600;}
 .sms .venue-item span{font-size:11.5px;color:var(--muted);}
-.sms .st-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.sms .mode-switch{display:flex;background:var(--line-2);border-radius:var(--r-pill);padding:3px;gap:2px;}
-.sms .mode-switch button{display:flex;align-items:center;gap:6px;height:34px;padding:0 16px;border:none;background:transparent;color:var(--ink-2);font-size:13.5px;font-weight:600;border-radius:var(--r-pill);transition:.15s;}
-.sms .mode-switch button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh-sm);}
-.sms .st-ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--ink-2);}
-.sms .st-ic:hover{border-color:var(--ink-2);color:var(--ink);}
 
 /* main areas */
 .sms .ed-main,.sms .vw-main{flex:1;min-height:0;display:flex;flex-direction:column;}

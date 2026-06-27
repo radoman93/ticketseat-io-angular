@@ -47,14 +47,15 @@ export class SlideComponent {
   template: `
     <div class="tier-pick">
       @for (t of list(); track t.id) {
-        <button [class.on]="value() === t.id" (click)="change.emit(t.id)" [title]="t.name + ' · $' + t.price">
-          <i [style.background]="t.color"></i><span>{{ t.name }}</span><b>\${{ t.price }}</b>
+        <button [class.on]="value() === t.id" (click)="change.emit(t.id)" [title]="t.name + ' · ' + currency() + t.price">
+          <i [style.background]="t.color"></i><span>{{ t.name }}</span><b>{{ currency() }}{{ t.price }}</b>
         </button>
       }
     </div>`,
 })
 export class TierPickComponent {
   value = input<string | null>(null); tiers = input<Tier[]>([]); change = output<string>();
+  currency = input<string>('$');
   list = computed(() => { const t = this.tiers(); return t && t.length ? t : TIERS; });
 }
 
@@ -151,7 +152,7 @@ export class ObjectsPanelComponent {
   subFor(o: VObj) {
     if (o.type === 'row') return `${(o.seats as Seat[]).length} seats`;
     if (o.type === 'table') return `${o.seats as number} seats`;
-    if (o.type === 'zone' || o.type === 'polygon') return `cap ${o.capacity}`;
+    if (o.type === 'zone' || o.type === 'polygon') return o.capacity ? `cap ${o.capacity}` : 'no limit';
     return o.type;
   }
 }
@@ -179,7 +180,7 @@ export class ObjectsPanelComponent {
             }
             <div class="tier-card-bot">
               <div class="tier-price">
-                <span>$</span>
+                <span>{{ currency() }}</span>
                 <input type="number" [min]="0" [value]="t.price" (input)="patch.emit({ id: t.id, p: { price: clampPrice($any($event.target).value) } })"/>
               </div>
               <span class="tier-count mono">{{ count(t.id) }} seats</span>
@@ -193,6 +194,7 @@ export class ObjectsPanelComponent {
 export class TierManagerComponent {
   venue = input.required<Venue>();
   add = output<void>(); patch = output<{ id: string; p: Partial<Tier> }>(); del = output<string>();
+  currency = input<string>('$');
   TIER_COLORS = TIER_COLORS;
   swatchFor = signal<string | null>(null);
   toggleSwatch(id: string) { this.swatchFor.update((s) => (s === id ? null : id)); }
@@ -218,7 +220,7 @@ export class TierManagerComponent {
         <div class="insp-head"><b>{{ sel().size }} selected</b></div>
         <p class="insp-note">Move them together by dragging on the canvas, or apply a tier to every seat row in the selection.</p>
         <ed-field label="Apply tier to rows">
-          <ed-tierpick [value]="null" [tiers]="venue().tiers" (change)="applyTier($event)"/>
+          <ed-tierpick [value]="null" [tiers]="venue().tiers" [currency]="currency()" (change)="applyTier($event)"/>
         </ed-field>
         <div class="insp-actions">
           <button class="ed-btn ghost" (click)="dup.emit()"><sms-icon name="Copy" [s]="15"/> Duplicate</button>
@@ -244,7 +246,7 @@ export class TierManagerComponent {
 
         @switch (o.type) {
           @case ('row') {
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field [label]="'Seats · ' + seatLen(o)">
               <ed-stepper [value]="seatLen(o)" [min]="1" [max]="40" (change)="setRowSeats(o, $event)"/>
             </ed-field>
@@ -258,7 +260,7 @@ export class TierManagerComponent {
           }
           @case ('table') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeTable" (change)="P(o, { shape: $any($event) })"/></ed-field>
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
             @if (o.shape === 'round') {
               <ed-field label="Size"><ed-slide [value]="o.r!" [min]="20" [max]="48" (change)="P(o, { r: $event })"/></ed-field>
@@ -268,14 +270,14 @@ export class TierManagerComponent {
             }
           }
           @case ('zone') {
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" (change)="P(o, { tier: $event })"/></ed-field>
-            <ed-field label="Capacity"><ed-slide [value]="o.capacity!" [min]="50" [max]="3000" [step]="50" (change)="P(o, { capacity: $event })"/></ed-field>
+            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Capacity (0 = no limit)"><input type="number" class="ed-input" min="0" max="100000" [value]="o.capacity ?? 0" (change)="P(o, { capacity: clampCap($any($event.target).value) })"/></ed-field>
             <ed-field label="Width"><ed-slide [value]="o.w!" [min]="120" [max]="800" [step]="10" (change)="P(o, { w: $event })"/></ed-field>
             <ed-field label="Height"><ed-slide [value]="o.h!" [min]="80" [max]="400" [step]="10" (change)="P(o, { h: $event })"/></ed-field>
           }
           @case ('polygon') {
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" (change)="P(o, { tier: $event })"/></ed-field>
-            <ed-field label="Capacity"><ed-slide [value]="o.capacity!" [min]="50" [max]="3000" [step]="50" (change)="P(o, { capacity: $event })"/></ed-field>
+            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Capacity (0 = no limit)"><input type="number" class="ed-input" min="0" max="100000" [value]="o.capacity ?? 0" (change)="P(o, { capacity: clampCap($any($event.target).value) })"/></ed-field>
             <p class="insp-note">{{ o.points!.length }} vertices · drag the shape on the canvas to reposition it.</p>
           }
           @case ('marker') {
@@ -295,8 +297,9 @@ export class InspectorComponent {
   sel = input<Set<string>>(new Set());
   venue = input.required<Venue>();
   patch = output<{ id: string; p: Partial<VObj> }>(); del = output<void>(); dup = output<void>();
+  currency = input<string>('$');
 
-  shapeStage = [{ v: 'arc', label: 'Arc' }, { v: 'rect', label: 'Rect' }];
+  shapeStage =[{ v: 'arc', label: 'Arc' }, { v: 'rect', label: 'Rect' }];
   shapeTable = [{ v: 'round', label: 'Round' }, { v: 'rect', label: 'Long' }];
   markerKinds = [{ v: 'entrance', label: 'Entry' }, { v: 'exit', label: 'Exit' }, { v: 'bar', label: 'Bar' }];
 
@@ -311,6 +314,8 @@ export class InspectorComponent {
   seatLen(o: VObj) { return (o.seats as Seat[]).length; }
 
   P(o: VObj, p: Partial<VObj>) { this.patch.emit({ id: o.id, p }); }
+  /** Custom GA capacity: 0 (no limit) up to 100,000. */
+  clampCap(v: string) { return Math.max(0, Math.min(100000, Math.round(Number(v) || 0))); }
   setRowSeats(o: VObj, n: number) {
     const seats = (o.seats as Seat[]).slice(0, n);
     while (seats.length < n) seats.push({ n: (seats.at(-1)?.n ?? 100) + 1, status: 'available' });
@@ -347,10 +352,10 @@ export interface ZoneWizardCfg { tier: string; cap: number; }
             <ed-field [label]="'Seats per row · ' + count()"><ed-stepper [value]="count()" [min]="2" [max]="36" (change)="count.set($event)"/></ed-field>
             <ed-field label="Seat spacing"><ed-slide [value]="gap()" [min]="22" [max]="48" unit="px" (change)="gap.set($event)"/></ed-field>
             <ed-field label="Curve"><ed-slide [value]="arc()" [min]="0" [max]="60" unit="°" (change)="arc.set($event)"/></ed-field>
-            <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" (change)="tier.set($event)"/></ed-field>
+            <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
             <div class="wiz-preview mono">{{ n() }} row{{ n() > 1 ? 's' : '' }} · {{ n() * count() }} seats · {{ tierName() }}</div>
           } @else {
-            <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" (change)="tier.set($event)"/></ed-field>
+            <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
             <ed-field [label]="'Capacity · ' + cap()"><ed-slide [value]="cap()" [min]="50" [max]="3000" [step]="50" (change)="cap.set($event)"/></ed-field>
             <div class="wiz-preview mono">Standing zone · holds {{ cap() }}</div>
           }
@@ -366,6 +371,7 @@ export class WizardComponent {
   @Input({ required: true }) type!: 'row' | 'zone';
   @Input({ required: true }) set tiers(v: Tier[]) { this._tiers.set(v); }
   private _tiers = signal<Tier[]>([]);
+  currency = input<string>('$');
   close = output<void>(); create = output<RowWizardCfg | ZoneWizardCfg>();
 
   tlist = computed(() => { const t = this._tiers(); return t && t.length ? t : TIERS; });

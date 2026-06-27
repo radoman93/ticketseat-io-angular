@@ -109,9 +109,14 @@ export class EmbeddedSeating {
 | `initialTheme` | `'light' \| 'dark'` | `'light'` | Starting app-chrome theme (canvas stays light). |
 | `showVenueSwitcher` | `boolean` | `true` | Show the built-in sample-venue dropdown. Set `false` for a single layout. |
 | `embedded` | `boolean` | `false` | `true` ⇒ fills its host box (`position: relative; height: 100%`) instead of the full viewport. |
+| `reservedIds` | `string[] \| null` | `null` | Seat IDs (`"<objectId>:<seatNumber>"`) reserved/sold externally. Overlaid **live** on the viewer as `held` (non-selectable). **Reactive** - update it (e.g. from a WebSocket) and the map recolors without recreating. |
+| `seatLimit` | `number` | `0` | Max seats a viewer may select (`0` = unlimited). Enforced at the click - over-limit picks are rejected and emit `limitReached`. |
+| `readonly` | `boolean` | `false` | Read-only viewer: seats are not selectable and the order panel/checkout is hidden. For display-only embeds. |
+| `showOrderPanel` | `boolean` | `true` | Show the built-in order panel + checkout in viewer mode (ignored when `readonly`). Set `false` to drive selection purely via `orderChange` from your own cart UI. |
 
-> Inputs are **seed values** applied on init. Drive subsequent state via the user UI and
-> listen to the outputs; re-assigning inputs later won't reset the studio.
+> **Seed vs. reactive:** `initialVenue` / `initialMode` / `initialTheme` are **seed values** applied
+> on init - re-assigning them later won't reset the studio. `reservedIds`, `seatLimit`, `readonly`
+> and `showOrderPanel` are **live** - changing them updates the running studio.
 
 ## Outputs
 
@@ -122,6 +127,7 @@ export class EmbeddedSeating {
 | `modeChange` | `'editor' \| 'viewer'` | The editor/viewer toggle changes. |
 | `themeChange` | `'light' \| 'dark'` | The theme toggle changes. |
 | `checkoutClick` | `OrderLine[]` | The viewer "Checkout" button is pressed. |
+| `limitReached` | `number` | A seat pick was blocked because `seatLimit` was hit (payload = the limit). |
 
 ---
 
