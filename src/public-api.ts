@@ -6,6 +6,10 @@
 export * from './app/components/event-editor/event-editor.component';
 export * from './app/components/event-viewer/event-viewer.component';
 
+// Seat Map Studio — modern editor/viewer (tiers, GA zones, polygon sections).
+// New public surface; see src/app/seat-map-studio/README.md.
+export * from './app/seat-map-studio';
+
 // Export the design data interface for proper typing
 export type { LayoutExportData } from './app/services/layout-export-import.service';
 

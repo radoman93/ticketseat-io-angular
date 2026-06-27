@@ -19,6 +19,8 @@
   -webkit-font-smoothing:antialiased; line-height:1.5;
   display:flex; flex-direction:column;
 }
+/* Embedded mode: fill the host's box instead of the full viewport. */
+.sms.sms--embedded{ position:relative; inset:auto; height:100%; width:100%; }
 .sms[data-theme="dark"]{
   --page:#0c0c0f; --card:#16161b; --raise:#1d1d23; --canvas:#141419;
   --ink:#f3f3f5; --ink-2:#a6a6b0; --muted:#6a6a75;

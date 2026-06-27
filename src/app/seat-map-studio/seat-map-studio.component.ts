@@ -5,7 +5,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulation,
-  computed, signal, viewChild,
+  computed, effect, input, output, signal, viewChild,
 } from '@angular/core';
 import { IconComponent } from './icon.component';
 import { SeatCanvasComponent } from './seat-canvas.component';
@@ -27,7 +27,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  host: { class: 'sms', '[attr.data-theme]': 'appTheme()' },
+  host: { class: 'sms', '[attr.data-theme]': 'appTheme()', '[class.sms--embedded]': 'embedded()' },
   imports: [
     NgTemplateOutlet, IconComponent, SeatCanvasComponent,
     ToolRailComponent, TopBarComponent, ObjectsPanelComponent, TierManagerComponent,
@@ -42,6 +42,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
         <sms-icon name="Logo" [s]="isMobile() ? 26 : 30"/>
         @if (!isMobile()) { <span class="st-logo">Seat Map Studio</span> }
       </div>
+      @if (showVenueSwitcher()) {
       <div class="st-venue">
         <button class="venue-btn" (click)="venueMenu.set(!venueMenu())">
           <span class="venue-name">{{ venue().name }}</span>
@@ -57,6 +58,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           </div>
         }
       </div>
+      }
       <div class="st-right">
         <div class="mode-switch">
           <button [class.on]="mode() === 'editor'" (click)="setMode('editor')"><sms-icon name="Edit" [s]="15"/>@if (!isMobile()) {&nbsp;Editor}</button>
@@ -216,6 +218,31 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   VENUE_META = VENUE_META;
   addTools: Tool[] = TOOLS.filter((t) => t.id !== 'select');
 
+  // ── public integration API ───────────────────────────────────────────────────
+  /** Seed the studio with a layout. Defaults to the built-in "Grand Theater". */
+  initialVenue = input<Venue | undefined>(undefined);
+  /** Initial mode: 'editor' (default) or 'viewer'. */
+  initialMode = input<'editor' | 'viewer' | undefined>(undefined);
+  /** Initial app-chrome theme: 'light' (default) or 'dark'. */
+  initialTheme = input<'light' | 'dark' | undefined>(undefined);
+  /** Show the built-in venue switcher (sample layouts). Hide it for a single embedded layout. */
+  showVenueSwitcher = input(true);
+  /** Render inside its host box (position:relative; 100% height) instead of full-screen fixed. */
+  embedded = input(false);
+
+  /** Emitted whenever the layout changes (add/move/edit/delete/tier/venue load). */
+  venueChange = output<Venue>();
+  /** Emitted whenever the viewer order (selected seats / GA) changes. */
+  orderChange = output<OrderLine[]>();
+  /** Emitted when the editor/viewer mode changes. */
+  modeChange = output<'editor' | 'viewer'>();
+  /** Emitted when the app theme changes. */
+  themeChange = output<'light' | 'dark'>();
+  /** Emitted when the viewer "Checkout" button is pressed, with the current order. */
+  checkoutClick = output<OrderLine[]>();
+
+  private emitReady = false;
+
   // state
   appTheme = signal<'light' | 'dark'>('light');
   venueKey = signal('theater');
@@ -254,12 +281,27 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   stats = computed(() => tierStats(this.venue()));
 
   // ── lifecycle ────────────────────────────────────────────────────────────────
+  constructor() {
+    // Surface state changes to host bindings once the component is initialized.
+    effect(() => { const v = this.venue(); if (this.emitReady) this.venueChange.emit(v); });
+    effect(() => { const o = this.order(); if (this.emitReady) this.orderChange.emit(o); });
+    effect(() => { const m = this.mode(); if (this.emitReady) this.modeChange.emit(m); });
+    effect(() => { const t = this.appTheme(); if (this.emitReady) this.themeChange.emit(t); });
+  }
+
   ngOnInit() {
+    // Apply seed inputs before wiring emitters so the initial state isn't echoed back.
+    const iv = this.initialVenue(); if (iv) this.venue.set(iv);
+    const im = this.initialMode(); if (im) this.mode.set(im);
+    const it = this.initialTheme(); if (it) this.appTheme.set(it);
+
     this.mq = window.matchMedia('(max-width: 880px)');
     this.isMobile.set(this.mq.matches);
     this.mqHandler = (e) => this.isMobile.set(e.matches);
     this.mq.addEventListener('change', this.mqHandler);
     window.addEventListener('keydown', this.keyHandler);
+
+    this.emitReady = true;
   }
   ngOnDestroy() {
     if (this.mq && this.mqHandler) this.mq.removeEventListener('change', this.mqHandler);
@@ -421,7 +463,7 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.order.update((o) => [...o, { id: `${zone.id}:${Date.now()}`, kind: 'ga', label: `${zone.label} · GA`, tierId: tier.id, price: tier.price }]);
   }
   removeLine(id: string) { this.order.update((o) => o.filter((l) => l.id !== id)); }
-  checkout() { window.alert('Proceeding to checkout — ' + this.order().length + ' items'); }
+  checkout() { this.checkoutClick.emit(this.order()); }
 
   focusOnTier(tid: string | null) {
     this.focusTier.set(tid);
