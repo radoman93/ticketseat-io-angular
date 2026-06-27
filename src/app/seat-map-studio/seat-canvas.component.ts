@@ -1,0 +1,508 @@
+// seat-canvas.component.ts — shared pan/zoom SVG canvas (editor + viewer).
+// Port of editor/seat-canvas.jsx.
+import {
+  AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy,
+  ViewEncapsulation, computed, effect, input, output, signal, viewChild,
+} from '@angular/core';
+import {
+  Box, Pt, Seat, Tier, VObj, Venue, objBounds, polyCentroid, rowSeatAngle,
+  rowSeatPositions, tableSeatPositions, tierById, venueBounds,
+} from './seat-data';
+
+export interface Pal {
+  bg: string; grid: string; grid2: string; sold: string; soldStroke: string;
+  text: string; subtext: string; stage: string; stageText: string;
+  marker: string; markerStroke: string; markerInk: string;
+}
+export const SeatPalette: Record<string, Pal> = {
+  light: { bg: '#eeeeec', grid: 'rgba(20,20,30,.055)', grid2: 'rgba(20,20,30,.11)',
+    sold: '#d2d2d9', soldStroke: '#bcbcc6', text: '#4a4a52', subtext: '#86868f',
+    stage: '#6b7280', stageText: '#ffffff', marker: '#ffffff', markerStroke: '#cdcdd4', markerInk: '#56565e' },
+  dark: { bg: '#141419', grid: 'rgba(255,255,255,.05)', grid2: 'rgba(255,255,255,.1)',
+    sold: '#33333b', soldStroke: '#44444d', text: '#c4c4ce', subtext: '#7c7c87',
+    stage: '#4b4b55', stageText: '#f3f3f5', marker: '#22222a', markerStroke: '#3a3a44', markerInk: '#b6b6c0' },
+};
+
+interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; }
+interface CanvasItem {
+  o: VObj; selected: boolean; dim: boolean; tier: Tier; bounds: Box;
+  stagePath?: string | null; zoneFill?: string;
+  polyPoints?: string; polyCx?: number; polyCy?: number; polyFill?: string;
+  tableFill?: string; chairs?: SeatVM[];
+  rowSeats?: SeatVM[]; rowLabelX?: number; rowLabelY?: number;
+  markerGlyph?: string; markerFontSize?: number;
+  showNum?: boolean;
+}
+
+const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', bar: 'BAR', stairs: '≡' };
+
+// ── Seat glyph ───────────────────────────────────────────────────────────────
+@Component({
+  selector: 'g[sms-seat]',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  template: `
+    <ng-container>
+      <svg:g [attr.transform]="'translate(' + p().x + ',' + p().y + ') rotate(' + angle() + ')'"
+             [attr.opacity]="dim() ? 0.3 : 1" [style.cursor]="cursor"
+             [attr.data-seat]="interactive() ? '1' : null" (pointerdown)="onDown($event)">
+        @if (selected()) {
+          <svg:circle [attr.r]="13" fill="none" [attr.stroke]="color()" [attr.stroke-width]="2" [attr.opacity]="0.32"/>
+        }
+        @if (seatStyle() === 'minimal') {
+          <svg:rect [attr.x]="-5.5" [attr.y]="-5.5" [attr.width]="11" [attr.height]="11" [attr.rx]="3.4"
+                    [attr.fill]="minFill" [attr.stroke]="minStroke" [attr.stroke-width]="1.5" [attr.opacity]="sold ? 0.55 : 1"/>
+        } @else {
+          <svg:rect [attr.x]="-7.4" [attr.y]="1.5" [attr.width]="14.8" [attr.height]="6.5" [attr.rx]="3.25"
+                    [attr.fill]="back" [attr.opacity]="selected() ? 0.55 : 1"/>
+          <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
+                    [attr.fill]="pad" [attr.stroke]="line ? edge : 'none'" [attr.stroke-width]="1.4"/>
+        }
+        @if (showNum() && !sold && seatStyle() !== 'minimal') {
+          <svg:text [attr.y]="-0.5" text-anchor="middle" [attr.font-size]="6.4" [attr.font-weight]="600" [attr.fill]="ink"
+                    style="pointer-events:none;font-family:'Geist Mono',monospace">{{ num() }}</svg:text>
+        }
+      </svg:g>
+    </ng-container>
+  `,
+})
+export class SeatComponent {
+  p = input.required<Pt>();
+  angle = input(0);
+  color = input('#6668ee');
+  status = input<string>('available');
+  seatStyle = input<string>('skeuomorphic');
+  num = input<number>(0);
+  showNum = input(false);
+  selected = input(false);
+  interactive = input(false);
+  dim = input(false);
+  pal = input.required<Pal>();
+  down = output<PointerEvent>();
+
+  get sold() { return this.status() === 'sold'; }
+  get held() { return this.status() === 'held'; }
+  get cursor() { return this.interactive() && !this.sold ? 'pointer' : 'default'; }
+
+  // resolve ink slots (mirrors the JSX branch order)
+  private slots() {
+    const color = this.color(), pal = this.pal();
+    let pad = '', edge = '', back = '', ink = '', line = false;
+    if (this.sold) { pad = pal.sold; edge = pal.soldStroke; back = pal.soldStroke; ink = pal.subtext; }
+    else if (this.selected()) { pad = color; edge = color; back = 'rgba(255,255,255,.5)'; ink = '#ffffff'; }
+    else if (this.held) { pad = '#fde7bf'; edge = '#d79a17'; back = '#d79a17'; ink = '#5b4406'; }
+    else if (this.seatStyle() === 'flat') { pad = color; edge = color; back = `color-mix(in srgb, ${color} 62%, #000)`; ink = '#ffffff'; }
+    else { pad = `color-mix(in srgb, ${color} 15%, ${pal.bg})`; edge = color; back = color; ink = color; line = true; }
+    return { pad, edge, back, ink, line };
+  }
+  get pad() { return this.slots().pad; }
+  get edge() { return this.slots().edge; }
+  get back() { return this.slots().back; }
+  get ink() { return this.slots().ink; }
+  get line() { return this.slots().line; }
+  get minFill() {
+    const color = this.color(), pal = this.pal();
+    return this.selected() ? color : (this.sold ? pal.sold : `color-mix(in srgb, ${color} 22%, ${pal.bg})`);
+  }
+  get minStroke() { return this.selected() ? this.color() : this.edge; }
+
+  onDown(e: PointerEvent) {
+    if (!this.interactive() || this.sold) return;
+    e.stopPropagation();
+    this.down.emit(e);
+  }
+}
+
+// ── Canvas ───────────────────────────────────────────────────────────────────
+@Component({
+  selector: 'sms-canvas',
+  standalone: true,
+  imports: [SeatComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  styles: [':host{position:absolute;inset:0;display:block;}'],
+  template: `
+    <div #wrap style="position:absolute;inset:0;overflow:hidden;touch-action:none"
+         [style.background]="pal().bg">
+      <svg #svg width="100%" height="100%" style="display:block"
+           [style.cursor]="drawMode() ? 'crosshair' : (gesture?.type === 'pan' ? 'grabbing' : 'default')"
+           (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)"
+           (pointerup)="onPointerUp($event)" (pointercancel)="onPointerUp($event)">
+        <defs>
+          <pattern id="gp" [attr.width]="G" [attr.height]="G" patternUnits="userSpaceOnUse"
+                   [attr.patternTransform]="'translate(' + view().tx + ',' + view().ty + ') scale(' + view().s + ')'">
+            <path [attr.d]="'M ' + G + ' 0 L 0 0 0 ' + G" fill="none" [attr.stroke]="pal().grid" [attr.stroke-width]="1 / view().s"/>
+          </pattern>
+        </defs>
+        @if (showGrid()) { <rect x="0" y="0" width="100%" height="100%" fill="url(#gp)"/> }
+        <g [attr.transform]="'translate(' + view().tx + ',' + view().ty + ') scale(' + view().s + ')'">
+          @for (item of items(); track item.o.id) {
+            <g [attr.data-oid]="item.o.id" [attr.opacity]="item.dim ? 0.28 : 1"
+               [style.cursor]="mode() === 'editor' ? 'move' : 'default'">
+
+              @if (item.selected && item.o.type !== 'row' && item.o.type !== 'polygon') {
+                <rect [attr.x]="item.bounds.x1 - 4" [attr.y]="item.bounds.y1 - 4"
+                      [attr.width]="item.bounds.x2 - item.bounds.x1 + 8" [attr.height]="item.bounds.y2 - item.bounds.y1 + 8"
+                      [attr.rx]="10" fill="color-mix(in srgb, #6668ee 8%, transparent)" stroke="#6668ee"
+                      [attr.stroke-width]="2" stroke-dasharray="5 4"/>
+              }
+
+              @switch (item.o.type) {
+                @case ('stage') {
+                  @if (item.stagePath) {
+                    <path [attr.d]="item.stagePath" [attr.fill]="pal().stage"/>
+                  } @else {
+                    <rect [attr.x]="item.o.x! - item.o.w! / 2" [attr.y]="item.o.y! - item.o.h! / 2"
+                          [attr.width]="item.o.w" [attr.height]="item.o.h" [attr.rx]="10" [attr.fill]="pal().stage"/>
+                  }
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 4" text-anchor="middle" [attr.font-size]="15"
+                        [attr.font-weight]="700" [attr.letter-spacing]="3" [attr.fill]="pal().stageText"
+                        style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
+                }
+                @case ('zone') {
+                  <rect [attr.x]="item.o.x! - item.o.w! / 2" [attr.y]="item.o.y! - item.o.h! / 2"
+                        [attr.width]="item.o.w" [attr.height]="item.o.h" [attr.rx]="14" [attr.fill]="item.zoneFill"
+                        [attr.stroke]="item.tier.color" [attr.stroke-width]="item.selected ? 3 : 2" stroke-dasharray="7 6"/>
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! - 4" text-anchor="middle" [attr.font-size]="17"
+                        [attr.font-weight]="700" [attr.fill]="item.tier.color"
+                        style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 16" text-anchor="middle" [attr.font-size]="11"
+                        [attr.fill]="pal().subtext" style="pointer-events:none;font-family:'Geist Mono',monospace">CAP {{ item.o.capacity }}</text>
+                }
+                @case ('polygon') {
+                  <polygon [attr.points]="item.polyPoints" [attr.fill]="item.polyFill" [attr.stroke]="item.tier.color"
+                           [attr.stroke-width]="item.selected ? 3 : 2" stroke-dasharray="7 6" stroke-linejoin="round"/>
+                  <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! - 3" text-anchor="middle" [attr.font-size]="16"
+                        [attr.font-weight]="700" [attr.fill]="item.tier.color"
+                        style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
+                  <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! + 15" text-anchor="middle" [attr.font-size]="11"
+                        [attr.fill]="pal().subtext" style="pointer-events:none;font-family:'Geist Mono',monospace">CAP {{ item.o.capacity }}</text>
+                  @if (item.selected) {
+                    @for (p of item.o.points!; track $index) {
+                      <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="4" [attr.fill]="pal().bg" [attr.stroke]="item.tier.color" [attr.stroke-width]="2"/>
+                    }
+                  }
+                }
+                @case ('table') {
+                  @if (item.o.shape === 'round') {
+                    <circle [attr.cx]="item.o.x" [attr.cy]="item.o.y" [attr.r]="item.o.r" [attr.fill]="item.tableFill"
+                            [attr.stroke]="item.tier.color" [attr.stroke-width]="1.6"/>
+                  } @else {
+                    <rect [attr.x]="item.o.x! - (item.o.w || 120) / 2" [attr.y]="item.o.y! - (item.o.h || 50) / 2"
+                          [attr.width]="item.o.w || 120" [attr.height]="item.o.h || 50" [attr.rx]="10"
+                          [attr.fill]="item.tableFill" [attr.stroke]="item.tier.color" [attr.stroke-width]="1.6"/>
+                  }
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 4" text-anchor="middle" [attr.font-size]="13"
+                        [attr.font-weight]="700" [attr.fill]="pal().text"
+                        style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
+                  @for (c of item.chairs!; track $index) {
+                    <g sms-seat [p]="c.p" [angle]="c.angle" [color]="item.tier.color" status="available"
+                       [seatStyle]="canvasStyle()" [num]="c.seat.n" [showNum]="false"
+                       [selected]="!!selectedSeats()?.has(c.key)" [interactive]="mode() === 'viewer'"
+                       [dim]="item.dim" [pal]="pal()" (down)="seatClick.emit({ row: item.o, seat: c.seat, tier: item.tier })"></g>
+                  }
+                }
+                @case ('marker') {
+                  <circle [attr.cx]="item.o.x" [attr.cy]="item.o.y" [attr.r]="15" [attr.fill]="pal().marker"
+                          [attr.stroke]="pal().markerStroke" [attr.stroke-width]="1.5"/>
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 4" text-anchor="middle" [attr.font-size]="item.markerFontSize"
+                        [attr.font-weight]="700" [attr.fill]="pal().markerInk"
+                        style="pointer-events:none;font-family:'Geist Mono',monospace">{{ item.markerGlyph }}</text>
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 30" text-anchor="middle" [attr.font-size]="11"
+                        [attr.fill]="pal().subtext" style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
+                }
+                @case ('label') {
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y" text-anchor="middle" [attr.font-size]="item.o.size || 18"
+                        [attr.font-weight]="600" [attr.fill]="pal().text" style="font-family:Geist,sans-serif">{{ item.o.text }}</text>
+                }
+                @case ('row') {
+                  @if (item.selected) {
+                    <rect [attr.x]="item.bounds.x1 - 2" [attr.y]="item.bounds.y1 - 2"
+                          [attr.width]="item.bounds.x2 - item.bounds.x1 + 4" [attr.height]="item.bounds.y2 - item.bounds.y1 + 4"
+                          [attr.rx]="14" fill="none" stroke="#6668ee" [attr.stroke-width]="2" stroke-dasharray="5 4"/>
+                  }
+                  <text [attr.x]="item.rowLabelX" [attr.y]="item.rowLabelY" text-anchor="end" [attr.font-size]="12"
+                        [attr.font-weight]="600" [attr.fill]="pal().text"
+                        style="font-family:Geist,sans-serif;pointer-events:none">{{ item.o.label }}</text>
+                  @for (rs of item.rowSeats!; track $index) {
+                    <g sms-seat [p]="rs.p" [angle]="rs.angle" [color]="item.tier.color" [status]="rs.seat.status"
+                       [seatStyle]="canvasStyle()" [num]="rs.seat.n" [showNum]="item.showNum ?? false"
+                       [selected]="!!selectedSeats()?.has(rs.key)" [interactive]="mode() === 'viewer'"
+                       [dim]="item.dim" [pal]="pal()" (down)="seatClick.emit({ row: item.o, seat: rs.seat, tier: item.tier })"></g>
+                  }
+                }
+              }
+            </g>
+          }
+
+          @if (marquee(); as m) {
+            <rect [attr.x]="min(m.x1, m.x2)" [attr.y]="min(m.y1, m.y2)" [attr.width]="abs(m.x2 - m.x1)"
+                  [attr.height]="abs(m.y2 - m.y1)" fill="color-mix(in srgb, #6668ee 10%, transparent)"
+                  stroke="#6668ee" [attr.stroke-width]="1.4 / view().s"/>
+          }
+
+          @if (drawMode() && drawPoints().length > 0) {
+            <g style="pointer-events:none">
+              @if (drawPoints().length >= 2) {
+                <polygon [attr.points]="drawLine()" fill="color-mix(in srgb, #6668ee 12%, transparent)" stroke="none"/>
+              }
+              <polyline [attr.points]="drawPolyline()" fill="none" stroke="#6668ee" [attr.stroke-width]="1.7 / view().s"
+                        [attr.stroke-dasharray]="(5 / view().s) + ' ' + (4 / view().s)" stroke-linejoin="round"/>
+              @for (p of drawPoints(); track $index) {
+                <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="($index === 0 ? 5.5 : 3.6) / view().s"
+                        [attr.fill]="$index === 0 ? pal().bg : '#6668ee'" stroke="#6668ee" [attr.stroke-width]="1.8 / view().s"/>
+              }
+              @if (drawPoints().length >= 3) {
+                <circle [attr.cx]="drawPoints()[0].x" [attr.cy]="drawPoints()[0].y" [attr.r]="11 / view().s"
+                        fill="none" stroke="#6668ee" [attr.stroke-width]="1.4 / view().s" [attr.opacity]="0.5"/>
+              }
+            </g>
+          }
+        </g>
+      </svg>
+    </div>
+  `,
+})
+export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
+  // inputs
+  venue = input.required<Venue>();
+  mode = input<'editor' | 'viewer'>('editor');
+  canvasStyle = input<string>('skeuomorphic');
+  canvasTheme = input<string>('light');
+  showGrid = input(true);
+  snap = input(false);
+  selection = input<Set<string>>(new Set());
+  selectedSeats = input<Set<string>>(new Set());
+  dimUnfocused = input<Set<string> | null>(null);
+  drawMode = input(false);
+  drawPoints = input<Pt[]>([]);
+  drawCursor = input<Pt | null>(null);
+
+  // outputs
+  select = output<{ ids: string[]; additive: boolean }>();
+  moveStart = output<void>();
+  move = output<{ dx: number; dy: number }>();
+  moveEnd = output<boolean>();
+  seatClick = output<{ row: VObj; seat: Seat; tier: Tier }>();
+  zonePick = output<VObj>();
+  scaleChange = output<number>();
+  drawAddPoint = output<Pt>();
+  drawCursorChange = output<Pt>();
+  drawCommit = output<void>();
+
+  readonly G = 25;
+  view = signal({ s: 0.8, tx: 60, ty: 40 });
+  marquee = signal<Box | null>(null);
+
+  private wrapRef = viewChild.required<ElementRef<HTMLDivElement>>('wrap');
+  private svgRef = viewChild.required<ElementRef<SVGSVGElement>>('svg');
+
+  private pointers = new Map<number, { x: number; y: number }>();
+  gesture: any = null;
+  private fitPending = true;
+  private ro?: ResizeObserver;
+
+  min = Math.min; abs = Math.abs;
+
+  pal = computed<Pal>(() => SeatPalette[this.canvasTheme()] || SeatPalette['light']);
+
+  constructor() {
+    // emit scale changes
+    effect(() => { this.scaleChange.emit(this.view().s); });
+    // mark fit-pending whenever the venue identity changes
+    effect(() => { this.venue(); this.fitPending = true; queueMicrotask(() => this.tryFit()); });
+  }
+
+  items = computed<CanvasItem[]>(() => {
+    const v = this.venue();
+    const sel = this.selection();
+    const dimSet = this.dimUnfocused();
+    const showNum = this.view().s > 1.45;
+    const pal = this.pal();
+    return v.objects.map((o): CanvasItem => {
+      const selected = !!sel?.has(o.id);
+      const dim = !!(dimSet && dimSet.size && !dimSet.has(o.id));
+      const tier = tierById(v.tiers, o.tier);
+      const item: CanvasItem = { o, selected, dim, tier, bounds: objBounds(o) };
+      if (o.type === 'stage') {
+        const { x, y, w, h } = o as Required<Pick<VObj, 'x' | 'y' | 'w' | 'h'>>;
+        item.stagePath = o.shape === 'arc'
+          ? `M ${x - w / 2} ${y + h / 2} Q ${x - w / 2} ${y - h / 2} ${x} ${y - h / 2} Q ${x + w / 2} ${y - h / 2} ${x + w / 2} ${y + h / 2} Z`
+          : null;
+      } else if (o.type === 'zone') {
+        item.zoneFill = `color-mix(in srgb, ${tier.color} 16%, transparent)`;
+      } else if (o.type === 'polygon') {
+        item.polyPoints = o.points!.map((p) => `${p.x},${p.y}`).join(' ');
+        const c = polyCentroid(o.points!);
+        item.polyCx = c.cx; item.polyCy = c.cy;
+        item.polyFill = `color-mix(in srgb, ${tier.color} 15%, transparent)`;
+      } else if (o.type === 'table') {
+        item.tableFill = `color-mix(in srgb, ${tier.color} 12%, ${pal.bg})`;
+        item.chairs = tableSeatPositions(o).map((c, i): SeatVM => ({ p: c, angle: c.a || 0, seat: { n: i + 1, status: 'available' }, key: `${o.id}:${i + 1}` }));
+      } else if (o.type === 'marker') {
+        item.markerGlyph = MARKER_GLYPHS[o.kind || ''] || '•';
+        item.markerFontSize = o.kind === 'bar' ? 8 : 13;
+      } else if (o.type === 'row') {
+        const ps = rowSeatPositions(o);
+        const seats = o.seats as Seat[];
+        item.rowSeats = ps.map((p, i): SeatVM => ({ p, angle: -rowSeatAngle(o, i), seat: seats[i], key: `${o.id}:${seats[i].n}` }));
+        item.rowLabelX = ps[0].x - 22; item.rowLabelY = ps[0].y + 4;
+        item.showNum = showNum;
+      }
+      return item;
+    });
+  });
+
+  drawLine = computed(() => this.drawPoints().map((p) => `${p.x},${p.y}`).join(' '));
+  drawPolyline = computed(() => {
+    const c = this.drawCursor();
+    return this.drawLine() + (c ? ` ${c.x},${c.y}` : '');
+  });
+
+  // ── lifecycle ──────────────────────────────────────────────────────────────
+  ngAfterViewInit() {
+    const el = this.wrapRef().nativeElement;
+    this.tryFit();
+    this.ro = new ResizeObserver(() => this.tryFit());
+    this.ro.observe(el);
+  }
+  ngOnDestroy() { this.ro?.disconnect(); }
+
+  private size() { const r = this.wrapRef().nativeElement.getBoundingClientRect(); return { w: r?.width || 800, h: r?.height || 600 }; }
+  private toWorld(cx: number, cy: number): Pt {
+    const r = this.svgRef().nativeElement.getBoundingClientRect();
+    const v = this.view();
+    return { x: (cx - r.left - v.tx) / v.s, y: (cy - r.top - v.ty) / v.s };
+  }
+  private tryFit() {
+    if (!this.fitPending) return;
+    const el = this.wrapRef().nativeElement;
+    const r = el.getBoundingClientRect();
+    if (r.width > 60 && r.height > 60) { this.fitPending = false; this.fit(); }
+  }
+
+  // ── imperative API ───────────────────────────────────────────────────────────
+  fit(b?: Box) {
+    const { w, h } = this.size();
+    const bb = b || venueBounds(this.venue().objects);
+    const bw = bb.x2 - bb.x1, bh = bb.y2 - bb.y1;
+    const pad = 60;
+    const s = Math.min((w - pad * 2) / bw, (h - pad * 2) / bh, 2.2);
+    const tx = (w - bw * s) / 2 - bb.x1 * s;
+    const ty = (h - bh * s) / 2 - bb.y1 * s;
+    this.view.set({ s, tx, ty });
+  }
+  focus(b: Box) { this.fit(b); }
+  zoomBy(f: number) { this.view.update((v) => this.clampZoom(v, f, this.size())); }
+  setZoom(s: number) { this.view.update((v) => this.clampZoom(v, s / v.s, this.size())); }
+  getScale() { return this.view().s; }
+  getCenterWorld(): Pt { const { w, h } = this.size(); const v = this.view(); return { x: (w / 2 - v.tx) / v.s, y: (h / 2 - v.ty) / v.s }; }
+
+  private clampZoom(v: { s: number; tx: number; ty: number }, f: number, sz: { w: number; h: number }, cx?: number, cy?: number) {
+    const ns = Math.max(0.25, Math.min(2.6, v.s * f));
+    const px = cx ?? sz.w / 2, py = cy ?? sz.h / 2;
+    const wx = (px - v.tx) / v.s, wy = (py - v.ty) / v.s;
+    return { s: ns, tx: px - wx * ns, ty: py - wy * ns };
+  }
+
+  // ── input handlers ───────────────────────────────────────────────────────────
+  onWheel(e: WheelEvent) {
+    e.preventDefault();
+    const rect = this.svgRef().nativeElement.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey || Math.abs(e.deltaY) > 24) {
+      const f = Math.exp(-e.deltaY * 0.0016);
+      this.view.update((v) => this.clampZoom(v, f, this.size(), e.clientX - rect.left, e.clientY - rect.top));
+    } else {
+      this.view.update((v) => ({ ...v, tx: v.tx - e.deltaX, ty: v.ty - e.deltaY }));
+    }
+  }
+
+  private objAt(target: EventTarget | null): string | null {
+    const el = target as Element | null;
+    return el?.closest?.('[data-oid]')?.getAttribute('data-oid') ?? null;
+  }
+
+  onPointerDown(e: PointerEvent) {
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { this.svgRef().nativeElement.setPointerCapture?.(e.pointerId); } catch (_) {}
+    if (this.pointers.size === 2) {
+      const [a, b] = [...this.pointers.values()];
+      this.gesture = { type: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, v: this.view() };
+      return;
+    }
+    if (this.drawMode()) {
+      const w = this.toWorld(e.clientX, e.clientY);
+      const pts = this.drawPoints();
+      if (pts.length >= 3) {
+        const f = pts[0], s = this.view().s;
+        if (Math.hypot((f.x - w.x) * s, (f.y - w.y) * s) < 12) { this.drawCommit.emit(); this.gesture = null; return; }
+      }
+      this.drawAddPoint.emit(w); this.gesture = null; return;
+    }
+    const target = e.target as Element;
+    if (target.closest?.('[data-seat]')) return; // seat handles its own click
+    const oid = this.objAt(target);
+    const mode = this.mode();
+    if (mode === 'editor' && oid) {
+      const already = this.selection()?.has(oid);
+      if (!already && !e.shiftKey) this.select.emit({ ids: [oid], additive: false });
+      else if (e.shiftKey) this.select.emit({ ids: [oid], additive: true });
+      this.moveStart.emit();
+      this.gesture = { type: 'drag', start: this.toWorld(e.clientX, e.clientY), moved: false };
+    } else if (mode === 'editor' && e.shiftKey) {
+      const w = this.toWorld(e.clientX, e.clientY);
+      this.gesture = { type: 'marquee', start: w };
+      this.marquee.set({ x1: w.x, y1: w.y, x2: w.x, y2: w.y });
+    } else {
+      this.gesture = { type: 'pan', x: e.clientX, y: e.clientY, v: this.view(), downId: oid, moved: false };
+    }
+  }
+
+  onPointerMove(e: PointerEvent) {
+    if (this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.drawMode()) { this.drawCursorChange.emit(this.toWorld(e.clientX, e.clientY)); return; }
+    const g = this.gesture; if (!g) return;
+    if (g.type === 'pinch' && this.pointers.size >= 2) {
+      const [a, b] = [...this.pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const r = this.svgRef().nativeElement.getBoundingClientRect();
+      const v0 = g.v, f = d / g.d;
+      const ns = Math.max(0.25, Math.min(2.6, v0.s * f));
+      const wx = (g.mid.x - r.left - v0.tx) / v0.s, wy = (g.mid.y - r.top - v0.ty) / v0.s;
+      this.view.set({ s: ns, tx: (mid.x - r.left) - wx * ns, ty: (mid.y - r.top) - wy * ns });
+      return;
+    }
+    if (g.type === 'pan') {
+      if (Math.abs(e.clientX - g.x) + Math.abs(e.clientY - g.y) > 3) g.moved = true;
+      this.view.set({ ...g.v, tx: g.v.tx + (e.clientX - g.x), ty: g.v.ty + (e.clientY - g.y) });
+    } else if (g.type === 'drag') {
+      const w = this.toWorld(e.clientX, e.clientY);
+      g.moved = true;
+      this.move.emit({ dx: w.x - g.start.x, dy: w.y - g.start.y });
+    } else if (g.type === 'marquee') {
+      const w = this.toWorld(e.clientX, e.clientY);
+      this.marquee.set({ x1: g.start.x, y1: g.start.y, x2: w.x, y2: w.y });
+    }
+  }
+
+  onPointerUp(e: PointerEvent) {
+    this.pointers.delete(e.pointerId);
+    const g = this.gesture;
+    if (g?.type === 'drag') this.moveEnd.emit(g.moved);
+    if (g?.type === 'pan' && !g.moved && this.mode() === 'editor' && !g.downId) this.select.emit({ ids: [], additive: false });
+    if (g?.type === 'pan' && !g.moved && this.mode() === 'viewer' && g.downId) {
+      const zo = this.venue().objects.find((o) => o.id === g.downId && (o.type === 'zone' || o.type === 'polygon'));
+      if (zo) this.zonePick.emit(zo);
+    }
+    if (g?.type === 'marquee') {
+      const end = this.toWorld(e.clientX, e.clientY);
+      const m = { x1: Math.min(g.start.x, end.x), x2: Math.max(g.start.x, end.x), y1: Math.min(g.start.y, end.y), y2: Math.max(g.start.y, end.y) };
+      const hit = this.venue().objects.filter((o) => { const b = objBounds(o); return b.x1 < m.x2 && b.x2 > m.x1 && b.y1 < m.y2 && b.y2 > m.y1; }).map((o) => o.id);
+      this.select.emit({ ids: hit, additive: false });
+      this.marquee.set(null);
+    }
+    if (this.pointers.size < 2) this.gesture = null;
+  }
+}

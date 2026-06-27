@@ -1,43 +1,39 @@
-# TASK: Mobile-Responsive Viewer Redesign
+# TASK — Recreate "Seat Map Studio" design 1:1 in Angular
 
-## Goal
-Make `EventViewerComponent` beautiful and fully usable on mobile devices, with
-special focus on the floating zoom-control bar. Desktop experience must not regress.
+Source: Claude Design project "Ticketseat Design" → `editor/SeatMapStudio.html` (React + Babel,
+self-contained). Owner: Aleksa (the user). Goal: pixel-faithful Angular port, verified with Playwright.
 
-## Current State (findings)
-- Touch gestures already work: `grid.component.ts` handles pinch-zoom + 1-finger pan
-  via PointerEvents (lines ~1475-1594). No gesture work needed.
-- Zoom bar = `NavigationControlsComponent` — fixed vertical pill, bottom-right,
-  white/green theme. Functional but not polished.
-- `EventViewerComponent` — flex column; reservation panel is a fixed `w-80` side
-  column that becomes full-width column on mobile (awkward). Legend wraps.
-- `ReservationPanelComponent` — hardcoded `w-80 h-full`, not mobile friendly.
+## What the design is
+A full-screen **Seat Map Studio** with two modes:
+- **Editor**: header → topbar → [tool rail | left browser (Objects/Tiers) | SVG canvas | right inspector].
+- **Viewer**: header → [canvas | right side (tier legend + order panel)] with zoom buttons.
+Plus: venue switcher menu, theme toggle, polygon draw HUD, add-row/add-zone wizards, mobile chrome.
 
-## Roadmap
+The `tweaks-panel.jsx` is the Claude-Design editing scaffold — NOT part of the app. Hardcode its
+defaults: canvasStyle=skeuomorphic(soft), canvasTheme=light, inspector=right, mobilePattern=sheet,
+viewerUX=direct, appTheme=light.
 
-### Phase 1 — Floating zoom/navigation bar (primary)
-- [x] 1.1 Frosted-glass redesign (backdrop-blur, layered shadow, hairline border)
-- [x] 1.2 Desktop: keep vertical, polish hover/active micro-interactions
-- [x] 1.3 Mobile (<=768px): horizontal pill, bottom-center, safe-area-inset aware
-- [x] 1.4 Divider adapts orientation (horizontal line <-> vertical line)
-- [x] 1.5 Touch targets >=44px, tap feedback, no text selection / tap highlight
-- [x] 1.6 Modernize viewer-mode (green) theme to match frosted look
-- [x] 1.7 Respect prefers-reduced-motion
+## Architecture decision
+- Port React → Angular **standalone components + signals**, reusing the **exact CSS** (scoped under
+  `.sms`, `ViewEncapsulation.None` on root) and the **exact SVG markup/geometry**.
+- Non-destructive: keep existing demo. `AppComponent` → router shell; demo → `DemoComponent` at `''`;
+  studio at route `/studio`.
+- Add Geist + Geist Mono fonts to `index.html`.
 
-### Phase 2 — Viewer layout responsiveness
-- [x] 2.1 Reservation panel becomes a bottom sheet on mobile (rounded top)
-- [x] 2.2 Legend row: horizontally scrollable, compact, hide scrollbar
-- [x] 2.3 Grid wrap fills available height; avoid panel squashing canvas
+## Roadmap / subtasks
+- [ ] 1. `seat-data.ts` — types, TIERS, TIER_COLORS, VENUES, VENUE_META, geometry, bounds, helpers.
+- [ ] 2. `icon.component.ts` — `sms-icon` (EdIcons + Logo/Moon/Sun), `s` size + `rot` deg.
+- [ ] 3. `seat-canvas.component.ts` — pan/zoom SVG, all object renderers, seat glyph, grid, draw,
+      marquee, selection halos, pointer/wheel/pinch, imperative zoomBy/fit/focus, @Output events.
+- [ ] 4. `editor-ui.ts` — Stepper/Seg/Slide/TierPick/Field + ToolRail, TopBar, ObjectsPanel,
+      TierManager, Inspector, Wizard, DrawHud.
+- [ ] 5. `viewer-ui.ts` — TierLegend, OrderPanel, SeatListPanel, ViewerBar; tierStats.
+- [ ] 6. `seat-map-studio.component.ts` — root: scoped CSS, state signals + all ops, Header,
+      Editor/Viewer chrome, BottomSheet, MobileTools, responsive (matchMedia 880px).
+- [ ] 7. Routing: `DemoComponent`, slim `AppComponent`, routes, Geist fonts.
+- [ ] 8. Build + `ng serve`; fix type/template errors.
+- [ ] 9. Playwright verify desktop (1440×900) + mobile (390×844); iterate until 1:1.
 
-### Phase 3 — Reservation panel internals (mobile)
-- [x] 3.1 Responsive width (full on mobile, w-80 desktop), max-height as sheet
-- [x] 3.2 Larger inputs, 16px font on inputs (prevent iOS zoom)
-
-### Phase 4 — Verify
-- [x] 4.1 Build / typecheck passes
-- [x] 4.2 Visual check desktop + mobile breakpoints (375 / 414 / 768)
-
-## Notes / Decisions
-- CSS-first; minimal template/TS edits.
-- Use CSS `env(safe-area-inset-*)` for notched devices.
-- Bottom sheet via CSS only (no new gesture lib).
+## Debug notes
+- Default load: Editor, Grand Theater, light, right inspector, empty inspector, Objects tab.
+- Seat numbers render only when canvas scale > 1.45. Canvas fits on mount → displayed zoom % = fit.
