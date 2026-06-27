@@ -91,7 +91,18 @@ jobs:
         esac
         
         NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-        
+
+        # Honor an explicit manual bump: if package.json declares a HIGHER version
+        # than the tag-derived bump, use that. Lets maintainers jump versions
+        # (e.g. 1.6.0 -> 1.8.0) by editing package.json, while normal commits
+        # still auto-increment from the latest tag.
+        PKG_VERSION=$(node -p "require('./package.json').version")
+        HIGHER=$(printf '%s\n%s\n' "$NEW_VERSION" "$PKG_VERSION" | sort -V | tail -n 1)
+        if [ "$HIGHER" != "$NEW_VERSION" ]; then
+          echo "package.json ($PKG_VERSION) is ahead of computed ($NEW_VERSION) — honoring it"
+          NEW_VERSION="$HIGHER"
+        fi
+
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
         echo "Next version: $NEW_VERSION"
 
