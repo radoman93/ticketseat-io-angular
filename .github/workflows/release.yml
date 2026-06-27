@@ -49,13 +49,19 @@ jobs:
         fi
         echo "Latest tag: $LATEST_TAG"
         
-        # Get the last commit message to determine the bump type
-        COMMIT_MSG=$(git log -1 --pretty=%B)
-        
-        # Determine version bump type based on conventional commit messages
-        if [[ $COMMIT_MSG =~ ^(feat|feature)(\(.+\))?!: ]] || [[ $COMMIT_MSG =~ BREAKING\ CHANGE ]]; then
+        # Determine bump type from ALL conventional commits since the latest tag
+        # (not just the last commit) so an interim chore/ci commit can't downgrade
+        # the bump derived from an earlier feat/fix.
+        if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+          RANGE="$LATEST_TAG..HEAD"
+        else
+          RANGE="HEAD"
+        fi
+        COMMIT_MSGS=$(git log $RANGE --pretty=%B)
+
+        if echo "$COMMIT_MSGS" | grep -qE '^(feat|feature)(\(.+\))?!:' || echo "$COMMIT_MSGS" | grep -q 'BREAKING CHANGE'; then
           BUMP_TYPE="major"
-        elif [[ $COMMIT_MSG =~ ^feat(\(.+\))?: ]]; then
+        elif echo "$COMMIT_MSGS" | grep -qE '^feat(\(.+\))?:'; then
           BUMP_TYPE="minor"
         else
           BUMP_TYPE="patch"
@@ -100,15 +106,25 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        # Only commit the root package.json, not the one in dist
-        git add package.json
-        git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }}"
+        # Commit the root package.json + lockfile (not the copy in dist).
+        # Skip cleanly if there's nothing to commit (e.g. the version was already
+        # bumped manually) so the job doesn't fail on an empty commit.
+        git add package.json package-lock.json
+        if git diff --staged --quiet; then
+          echo "No version change to commit — already at v${{ steps.version.outputs.new_version }}"
+        else
+          git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }}"
+        fi
 
     - name: Create and push Git tag
       run: |
         git push
-        git tag "v${{ steps.version.outputs.new_version }}"
-        git push origin "v${{ steps.version.outputs.new_version }}"
+        if git rev-parse "v${{ steps.version.outputs.new_version }}" >/dev/null 2>&1; then
+          echo "Tag v${{ steps.version.outputs.new_version }} already exists — skipping"
+        else
+          git tag "v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+        fi
 
     - name: Publish to GitHub Packages
       run: |
