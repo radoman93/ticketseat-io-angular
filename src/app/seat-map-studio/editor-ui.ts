@@ -34,12 +34,15 @@ export class SegComponent { value = input<string>(''); options = input<{ v: stri
   template: `
     <div class="ed-slide">
       <input type="range" [min]="min()" [max]="max()" [step]="step()" [value]="value()"
-             (input)="change.emit(+$any($event.target).value)"/>
+             (input)="valueChange.emit(+$any($event.target).value)"/>
       <span class="num">{{ value() }}{{ unit() }}</span>
     </div>`,
 })
 export class SlideComponent {
-  value = input(0); min = input(0); max = input(100); step = input(1); unit = input(''); change = output<number>();
+  // Output is NOT named "change": the range input fires a native "change" DOM event
+  // that bubbles and was being caught by the parent's (change) binding, overwriting
+  // the value with the Event object ("[object Event]").
+  value = input(0); min = input(0); max = input(100); step = input(1); unit = input(''); valueChange = output<number>();
 }
 
 @Component({
@@ -241,7 +244,7 @@ export class TierManagerComponent {
         }
         @if (o.type === 'label') {
           <ed-field label="Text"><input class="ed-input" [value]="o.text || ''" (input)="P(o, { text: $any($event.target).value })"/></ed-field>
-          <ed-field label="Size"><ed-slide [value]="o.size || 18" [min]="11" [max]="42" unit="px" (change)="P(o, { size: $event })"/></ed-field>
+          <ed-field label="Size"><ed-slide [value]="o.size || 18" [min]="11" [max]="42" unit="px" (valueChange)="P(o, { size: $event })"/></ed-field>
         }
 
         @switch (o.type) {
@@ -250,30 +253,30 @@ export class TierManagerComponent {
             <ed-field [label]="'Seats · ' + seatLen(o)">
               <ed-stepper [value]="seatLen(o)" [min]="1" [max]="40" (change)="setRowSeats(o, $event)"/>
             </ed-field>
-            <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (change)="P(o, { seatGap: $event })"/></ed-field>
-            <ed-field label="Curve"><ed-slide [value]="o.arc || 0" [min]="0" [max]="60" unit="°" (change)="P(o, { arc: $event })"/></ed-field>
+            <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
+            <ed-field label="Curve"><ed-slide [value]="o.arc || 0" [min]="0" [max]="60" unit="°" (valueChange)="P(o, { arc: $event })"/></ed-field>
           }
           @case ('stage') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeStage" (change)="P(o, { shape: $any($event) })"/></ed-field>
-            <ed-field label="Width"><ed-slide [value]="o.w!" [min]="160" [max]="800" [step]="10" (change)="P(o, { w: $event })"/></ed-field>
-            <ed-field label="Depth"><ed-slide [value]="o.h!" [min]="40" [max]="180" [step]="2" (change)="P(o, { h: $event })"/></ed-field>
+            <ed-field label="Width"><ed-slide [value]="o.w!" [min]="160" [max]="800" [step]="10" (valueChange)="P(o, { w: $event })"/></ed-field>
+            <ed-field label="Depth"><ed-slide [value]="o.h!" [min]="40" [max]="180" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
           }
           @case ('table') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeTable" (change)="P(o, { shape: $any($event) })"/></ed-field>
             <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
             @if (o.shape === 'round') {
-              <ed-field label="Size"><ed-slide [value]="o.r!" [min]="20" [max]="48" (change)="P(o, { r: $event })"/></ed-field>
+              <ed-field label="Size"><ed-slide [value]="o.r!" [min]="20" [max]="48" (valueChange)="P(o, { r: $event })"/></ed-field>
             } @else {
-              <ed-field label="Length"><ed-slide [value]="o.w || 120" [min]="70" [max]="220" [step]="5" (change)="P(o, { w: $event })"/></ed-field>
-              <ed-field label="Width"><ed-slide [value]="o.h || 50" [min]="36" [max]="90" [step]="2" (change)="P(o, { h: $event })"/></ed-field>
+              <ed-field label="Length"><ed-slide [value]="o.w || 120" [min]="70" [max]="220" [step]="5" (valueChange)="P(o, { w: $event })"/></ed-field>
+              <ed-field label="Width"><ed-slide [value]="o.h || 50" [min]="36" [max]="90" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
             }
           }
           @case ('zone') {
             <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field label="Capacity (0 = no limit)"><input type="number" class="ed-input" min="0" max="100000" [value]="o.capacity ?? 0" (change)="P(o, { capacity: clampCap($any($event.target).value) })"/></ed-field>
-            <ed-field label="Width"><ed-slide [value]="o.w!" [min]="120" [max]="800" [step]="10" (change)="P(o, { w: $event })"/></ed-field>
-            <ed-field label="Height"><ed-slide [value]="o.h!" [min]="80" [max]="400" [step]="10" (change)="P(o, { h: $event })"/></ed-field>
+            <ed-field label="Width"><ed-slide [value]="o.w!" [min]="120" [max]="800" [step]="10" (valueChange)="P(o, { w: $event })"/></ed-field>
+            <ed-field label="Height"><ed-slide [value]="o.h!" [min]="80" [max]="400" [step]="10" (valueChange)="P(o, { h: $event })"/></ed-field>
           }
           @case ('polygon') {
             <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
@@ -350,13 +353,13 @@ export interface ZoneWizardCfg { tier: string; cap: number; }
           @if (isRow) {
             <ed-field [label]="'Number of rows · ' + n()"><ed-stepper [value]="n()" [min]="1" [max]="12" (change)="n.set($event)"/></ed-field>
             <ed-field [label]="'Seats per row · ' + count()"><ed-stepper [value]="count()" [min]="2" [max]="36" (change)="count.set($event)"/></ed-field>
-            <ed-field label="Seat spacing"><ed-slide [value]="gap()" [min]="22" [max]="48" unit="px" (change)="gap.set($event)"/></ed-field>
-            <ed-field label="Curve"><ed-slide [value]="arc()" [min]="0" [max]="60" unit="°" (change)="arc.set($event)"/></ed-field>
+            <ed-field label="Seat spacing"><ed-slide [value]="gap()" [min]="22" [max]="48" unit="px" (valueChange)="gap.set($event)"/></ed-field>
+            <ed-field label="Curve"><ed-slide [value]="arc()" [min]="0" [max]="60" unit="°" (valueChange)="arc.set($event)"/></ed-field>
             <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
             <div class="wiz-preview mono">{{ n() }} row{{ n() > 1 ? 's' : '' }} · {{ n() * count() }} seats · {{ tierName() }}</div>
           } @else {
             <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
-            <ed-field [label]="'Capacity · ' + cap()"><ed-slide [value]="cap()" [min]="50" [max]="3000" [step]="50" (change)="cap.set($event)"/></ed-field>
+            <ed-field [label]="'Capacity · ' + cap()"><ed-slide [value]="cap()" [min]="50" [max]="3000" [step]="50" (valueChange)="cap.set($event)"/></ed-field>
             <div class="wiz-preview mono">Standing zone · holds {{ cap() }}</div>
           }
         </div>

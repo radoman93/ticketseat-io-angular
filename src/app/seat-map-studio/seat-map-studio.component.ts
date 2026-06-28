@@ -508,7 +508,9 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     const lim = this.seatLimit();
     if (lim > 0 && this.order().filter((l) => l.kind === 'seat' || l.kind === 'ga').length >= lim) { this.limitReached.emit(lim); return; }
     const tier = tierById(this.venue().tiers, zone.tier);
-    this.order.update((o) => [...o, { id: `${zone.id}:${Date.now()}`, kind: 'ga', label: `${zone.label} · GA`, tierId: tier.id, price: tier.price }]);
+    // Unique per pick (uid has no ':') so each GA spot is individually removable -
+    // Date.now() collided on rapid taps, making several picks share one id.
+    this.order.update((o) => [...o, { id: `${zone.id}:${uid('ga')}`, kind: 'ga', label: `${zone.label} · GA`, tierId: tier.id, price: tier.price }]);
   }
   removeLine(id: string) { this.order.update((o) => o.filter((l) => l.id !== id)); }
   checkout() { this.checkoutClick.emit(this.order()); }
