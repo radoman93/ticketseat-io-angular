@@ -10,10 +10,10 @@ import {
 import { IconComponent } from './icon.component';
 import { SeatCanvasComponent } from './seat-canvas.component';
 import {
-  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, tierById, uid, venueBounds,
+  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, segRowSeatCount, tierById, uid, venueBounds,
 } from './seat-data';
 import {
-  DrawHudComponent, InspectorComponent, ObjectsPanelComponent, TOOLS, Tool, ToolRailComponent,
+  DrawHudComponent, HelpComponent, InspectorComponent, ObjectsPanelComponent, OBJ_ICON, TOOLS, Tool, ToolRailComponent,
   TopBarComponent, TierManagerComponent, WizardComponent, RowWizardCfg, ZoneWizardCfg,
 } from './editor-ui';
 import {
@@ -31,7 +31,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
   imports: [
     NgTemplateOutlet, IconComponent, SeatCanvasComponent,
     ToolRailComponent, TopBarComponent, ObjectsPanelComponent, TierManagerComponent,
-    InspectorComponent, WizardComponent, DrawHudComponent,
+    InspectorComponent, WizardComponent, DrawHudComponent, HelpComponent,
     TierLegendComponent, OrderPanelComponent, ViewerBarComponent,
   ],
   styleUrl: './seat-map-studio.component.css',
@@ -64,10 +64,16 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           <ed-topbar [venue]="venue()" [scale]="scale()" [gridPx]="gridPx" [showGrid]="showGrid()" [snap]="snap()"
                      [canUndo]="canUndo()" [canRedo]="canRedo()" [isMobile]="true"
                      (undo)="undo()" (redo)="redo()" (zoom)="zoomBy($event)" (fit)="fit()"
-                     (menu)="sheet.set(sheet() === 'browser' ? null : 'browser')"/>
+                     (menu)="sheet.set(sheet() === 'browser' ? null : 'browser')" (help)="openHelp()"/>
           <div class="canvas-host">
             <ng-container *ngTemplateOutlet="canvasTpl"></ng-container>
-            @if (draw(); as d) { <ed-drawhud [count]="d.points.length" (finish)="commitPolygon()" (cancel)="cancelDraw()"/> }
+            @if (draw(); as d) { <ed-drawhud [count]="d.points.length" [kind]="d.kind" [seats]="segRowCount()" (finish)="commitDraw()" (cancel)="cancelDraw()"/> }
+          @if (placing(); as pl) {
+            <div class="draw-hud">
+              <span class="draw-hud-info"><sms-icon [name]="OBJ_ICON[pl.tool] || 'Marker'" [s]="15"/> Click to place · Esc to cancel</span>
+              <button class="draw-hud-btn ghost" (click)="cancelPlacing()">Cancel</button>
+            </div>
+          }
           </div>
           <div class="ed-addbar">
             @for (t of addTools; track t.id) {
@@ -98,13 +104,19 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           <ed-topbar [venue]="venue()" [scale]="scale()" [gridPx]="gridPx" [showGrid]="showGrid()" [snap]="snap()"
                      [canUndo]="canUndo()" [canRedo]="canRedo()" [isMobile]="false"
                      (undo)="undo()" (redo)="redo()" (toggleGrid)="toggleGrid()" (toggleSnap)="toggleSnap()"
-                     (zoom)="zoomBy($event)" (fit)="fit()"/>
+                     (zoom)="zoomBy($event)" (fit)="fit()" (help)="openHelp()"/>
           <div class="ed-cols insp-right">
             <ed-toolrail [active]="activeTool()" (tool)="addObject($event)"/>
             <div class="ed-side left"><ng-container *ngTemplateOutlet="browserTpl"></ng-container></div>
             <div class="canvas-host">
               <ng-container *ngTemplateOutlet="canvasTpl"></ng-container>
-              @if (draw(); as d) { <ed-drawhud [count]="d.points.length" (finish)="commitPolygon()" (cancel)="cancelDraw()"/> }
+              @if (draw(); as d) { <ed-drawhud [count]="d.points.length" [kind]="d.kind" [seats]="segRowCount()" (finish)="commitDraw()" (cancel)="cancelDraw()"/> }
+          @if (placing(); as pl) {
+            <div class="draw-hud">
+              <span class="draw-hud-info"><sms-icon [name]="OBJ_ICON[pl.tool] || 'Marker'" [s]="15"/> Click to place · Esc to cancel</span>
+              <button class="draw-hud-btn ghost" (click)="cancelPlacing()">Cancel</button>
+            </div>
+          }
             </div>
             <div class="ed-side right"><ng-container *ngTemplateOutlet="inspectorTpl"></ng-container></div>
           </div>
@@ -157,13 +169,24 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
       <ed-wizard [type]="wz" [tiers]="venue().tiers" [currency]="currency()" (close)="wizard.set(null)" (create)="createFromWizard($event)"/>
     }
 
+    @if (helpOpen()) { <ed-help (close)="closeHelp()"/> }
+    @if (mode() === 'editor' && !helpSeen() && !helpOpen()) {
+      <div class="sms-help-nudge">
+        <span>New here? Tap <b>?</b> for a 20-second tour.</span>
+        <button class="nudge-go" (click)="openHelp()">Show me</button>
+        <button class="nudge-x" (click)="dismissNudge()" aria-label="Dismiss"><sms-icon name="Add" [s]="13" [rot]="45"/></button>
+      </div>
+    }
+
     <!-- ── reusable templates ── -->
     <ng-template #canvasTpl>
       <sms-canvas #canvas [venue]="displayVenue()" [mode]="mode()" [canvasStyle]="canvasStyle" [canvasTheme]="canvasTheme"
                   [showGrid]="mode() === 'editor' && showGrid()" [snap]="snap()" [selection]="selection()"
                   [selectedSeats]="selectedKeys()" [pickedZones]="pickedZones()" [dimUnfocused]="null"
-                  [drawMode]="!!draw()" [drawPoints]="draw()?.points || []" [drawCursor]="draw()?.cursor || null"
-                  (drawAddPoint)="drawAddPoint($event)" (drawCursorChange)="drawCursor($event)" (drawCommit)="commitPolygon()"
+                  [drawMode]="!!draw()" [drawKind]="draw()?.kind || 'polygon'" [drawPoints]="draw()?.points || []" [drawCursor]="draw()?.cursor || null"
+                  [placing]="!!placing()" [ghost]="ghostObj()"
+                  (drawAddPoint)="drawAddPoint($event)" (drawCursorChange)="drawCursor($event)" (drawCommit)="commitDraw()" (drawClose)="drawClose()"
+                  (place)="placeObject($event)" (placeCursor)="placeCursorAt($event)"
                   (select)="selectObjs($event.ids, $event.additive)" (moveStart)="onMoveStart()" (move)="onMove($event.dx, $event.dy)"
                   (seatClick)="pickSeat($event.row, $event.seat, $event.tier)" (zonePick)="pickZone($event)"
                   (scaleChange)="scale.set($event)"/>
@@ -173,7 +196,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
       <div class="ed-browser">
         <div class="panel-tabs">
           <button [class.on]="leftTab() === 'objects'" (click)="leftTab.set('objects')">Objects</button>
-          <button [class.on]="leftTab() === 'tiers'" (click)="leftTab.set('tiers')">Tiers</button>
+          <button [class.on]="leftTab() === 'tiers'" (click)="leftTab.set('tiers')">Pricing</button>
         </div>
         @if (leftTab() === 'objects') {
           <ed-objects [venue]="venue()" [selection]="selection()" (select)="selectObjs($event.ids, $event.additive)"/>
@@ -255,7 +278,9 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   order = signal<OrderLine[]>([]);
   wizard = signal<'row' | 'zone' | null>(null);
   activeTool = signal('select');
-  draw = signal<{ points: Pt[]; cursor: Pt | null } | null>(null);
+  draw = signal<{ kind: 'polygon' | 'segrow' | 'line'; points: Pt[]; cursor: Pt | null } | null>(null);
+  placing = signal<{ tool: string; cursor: Pt } | null>(null);
+  OBJ_ICON = OBJ_ICON;
   scale = signal(0.8);
   focusTier = signal<string | null>(null);
   venueMenu = signal(false);
@@ -264,6 +289,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   isMobile = signal<boolean>(false);
   showGrid = signal(true);
   snap = signal(false);
+  helpOpen = signal(false);
+  helpSeen = signal(true); // set from storage in ngOnInit; assume seen so the nudge never flashes
 
   private canvas = viewChild<SeatCanvasComponent>('canvas');
   canvasRef() { return this.canvas(); }
@@ -275,12 +302,23 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   canUndo = computed(() => this.histPast().length > 0);
   canRedo = computed(() => this.histFuture().length > 0);
 
-  private moveSnap: Map<string, { x: number; y: number } | { points: Pt[] }> | null = null;
+  private moveSnap: Map<string, { x: number; y: number } | { points: Pt[] } | { path: Pt[] }> | null = null;
   private mq?: MediaQueryList;
   private mqHandler?: (e: MediaQueryListEvent) => void;
   private keyHandler = (e: KeyboardEvent) => this.onKey(e);
 
   selectedKeys = computed(() => new Set(this.order().filter((l) => l.kind === 'seat').map((l) => l.id)));
+  /** Live seat count for the segmented-row draw HUD (path so far + cursor). */
+  segRowCount = computed(() => {
+    const d = this.draw();
+    if (!d || d.kind !== 'segrow') return 0;
+    return segRowSeatCount(d.cursor ? [...d.points, d.cursor] : d.points, 30, false);
+  });
+  /** Ghost object rendered under the cursor while placing (Photoshop-style). */
+  ghostObj = computed<VObj | null>(() => {
+    const p = this.placing();
+    return p ? this.buildObject(p.tool, p.cursor, 'ghost') : null;
+  });
   /** GA zone id → number of spots the viewer has picked there (canvas marks it picked + shows the count). */
   pickedZones = computed(() => {
     const m = new Map<string, number>();
@@ -334,6 +372,9 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     const im = this.initialMode(); if (im) this.mode.set(im);
     const it = this.initialTheme(); if (it) this.appTheme.set(it);
 
+    // First-run nudge: show once until the user opens or dismisses help.
+    try { this.helpSeen.set(localStorage.getItem('ticketseat-studio-help-seen') === '1'); } catch { this.helpSeen.set(true); }
+
     this.mq = window.matchMedia('(max-width: 880px)');
     this.isMobile.set(this.mq.matches);
     this.mqHandler = (e) => this.isMobile.set(e.matches);
@@ -375,6 +416,10 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     setTimeout(() => this.canvasRef()?.fit(), 50);
   }
   toggleTheme() { this.appTheme.update((t) => (t === 'light' ? 'dark' : 'light')); }
+  openHelp() { this.helpOpen.set(true); this.markHelpSeen(); }
+  closeHelp() { this.helpOpen.set(false); }
+  dismissNudge() { this.markHelpSeen(); }
+  private markHelpSeen() { this.helpSeen.set(true); try { localStorage.setItem('ticketseat-studio-help-seen', '1'); } catch { /* storage unavailable */ } }
   loadVenue(key: string) {
     this.checkpoint('load'); this.venueKey.set(key); this.venue.set(VENUES[key]());
     this.selection.set(new Set()); this.order.set([]); this.focusTier.set(null); this.venueMenu.set(false);
@@ -388,10 +433,13 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   }
   onMoveStart() {
     this.checkpoint('move');
-    const m = new Map<string, { x: number; y: number } | { points: Pt[] }>();
+    const m = new Map<string, { x: number; y: number } | { points: Pt[] } | { path: Pt[] }>();
     const sel = this.selection();
     this.venue().objects.forEach((o) => {
-      if (sel.has(o.id)) m.set(o.id, o.type === 'polygon' ? { points: o.points!.map((p) => ({ ...p })) } : { x: o.x!, y: o.y! });
+      if (!sel.has(o.id)) return;
+      if (o.type === 'polygon') m.set(o.id, { points: o.points!.map((p) => ({ ...p })) });
+      else if (o.path) m.set(o.id, { path: o.path.map((p) => ({ x: p.x, y: p.y })) });
+      else m.set(o.id, { x: o.x!, y: o.y! });
     });
     this.moveSnap = m;
   }
@@ -401,31 +449,77 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.venue.update((v) => ({ ...v, objects: v.objects.map((o) => {
       const s = this.moveSnap?.get(o.id); if (!s) return o;
       if ('points' in s) return { ...o, points: s.points.map((p) => ({ x: snapTo(p.x + dx), y: snapTo(p.y + dy) })) };
+      if ('path' in s) return { ...o, path: s.path.map((p) => ({ x: snapTo(p.x + dx), y: snapTo(p.y + dy) })) };
       return { ...o, x: snapTo(s.x + dx), y: snapTo(s.y + dy) };
     }) }));
   }
 
   addObject(tool: Tool) {
-    if (tool.id !== 'polygon') this.draw.set(null);
+    this.draw.set(null); this.placing.set(null);
+    if (tool.id === 'select') { this.activeTool.set('select'); this.selection.set(new Set()); return; }
     if (tool.wizard) { this.activeTool.set('select'); this.wizard.set(tool.id as 'row' | 'zone'); this.sheet.set(null); return; }
-    if (tool.id === 'polygon') { this.activeTool.set('polygon'); this.draw.set({ points: [], cursor: null }); this.selection.set(new Set()); this.sheet.set(null); return; }
-    this.activeTool.set('select');
+    if (tool.id === 'polygon') { this.activeTool.set('polygon'); this.draw.set({ kind: 'polygon', points: [], cursor: null }); this.selection.set(new Set()); this.sheet.set(null); return; }
+    if (tool.id === 'segrow') { this.activeTool.set('segrow'); this.draw.set({ kind: 'segrow', points: [], cursor: null }); this.selection.set(new Set()); this.sheet.set(null); return; }
+    if (tool.id === 'line') { this.activeTool.set('line'); this.draw.set({ kind: 'line', points: [], cursor: null }); this.selection.set(new Set()); this.sheet.set(null); return; }
+    // Direct-placement tools (stage, table, label, marker): arm a ghost that follows
+    // the cursor; the object is created where the user clicks on the canvas.
+    this.activeTool.set(tool.id);
     const c = this.canvasRef()?.getCenterWorld() || { x: 600, y: 400 };
-    let o: VObj;
-    if (tool.id === 'stage') o = { id: uid('stage'), type: 'stage', x: c.x, y: c.y, w: 480, h: 80, label: 'STAGE', shape: 'arc' };
-    else if (tool.id === 'table') o = { id: uid('tab'), type: 'table', x: c.x, y: c.y, shape: 'round', r: 30, seats: 8, label: 'T' + (this.venue().objects.filter((q) => q.type === 'table').length + 1), tier: 'standard' };
-    else if (tool.id === 'label') o = { id: uid('lbl'), type: 'label', x: c.x, y: c.y, text: 'New label', size: 18 };
-    else o = { id: uid('mk'), type: 'marker', x: c.x, y: c.y, kind: 'entrance', label: 'Entrance' };
-    this.checkpoint('add'); this.venue.update((v) => ({ ...v, objects: [...v.objects, o] })); this.selection.set(new Set([o.id])); this.sheet.set(null);
+    this.placing.set({ tool: tool.id, cursor: c });
+    this.selection.set(new Set()); this.sheet.set(null);
   }
+
+  /** Template for a direct-placement object at a given point (used for both ghost + final). */
+  private buildObject(toolId: string, pt: Pt, id?: string): VObj {
+    const { x, y } = pt;
+    switch (toolId) {
+      case 'stage': return { id: id ?? uid('stage'), type: 'stage', x, y, w: 480, h: 80, label: 'STAGE', shape: 'arc' };
+      case 'table': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'round', r: 30, seats: 8, label: 'T' + (this.venue().objects.filter((q) => q.type === 'table').length + 1), tier: 'standard' };
+      case 'label': return { id: id ?? uid('lbl'), type: 'label', x, y, text: 'New label', size: 18 };
+      default: return { id: id ?? uid('mk'), type: 'marker', x, y, kind: 'entrance', label: 'Entrance' };
+    }
+  }
+  placeCursorAt(p: Pt) { this.placing.update((pl) => (pl ? { ...pl, cursor: p } : pl)); }
+  placeObject(p: Pt) {
+    const pl = this.placing(); if (!pl) return;
+    const o = this.buildObject(pl.tool, p);
+    this.checkpoint('add');
+    this.venue.update((v) => ({ ...v, objects: [...v.objects, o] }));
+    this.selection.set(new Set([o.id])); this.placing.set(null); this.activeTool.set('select');
+  }
+  cancelPlacing() { this.placing.set(null); this.activeTool.set('select'); }
 
   // ── polygon drawing ──────────────────────────────────────────────────────────
   drawAddPoint(p: Pt) { this.draw.update((d) => (d ? { ...d, points: [...d.points, p] } : d)); }
   drawCursor(p: Pt) { this.draw.update((d) => (d ? { ...d, cursor: p } : d)); }
-  commitPolygon() {
+  commitDraw() {
     const d = this.draw();
-    if (!d || d.points.length < 3) return;
+    if (!d) return;
+    if (d.kind === 'segrow') return this.commitSegRow(d.points);
+    if (d.kind === 'line') return this.commitLine(d.points);
+    if (d.points.length < 3) return;
     const o: VObj = { id: uid('poly'), type: 'polygon', points: d.points.map((p) => ({ ...p })), tier: 'standard', label: 'Section', capacity: 200 };
+    this.checkpoint('add');
+    this.venue.update((v) => ({ ...v, objects: [...v.objects, o] }));
+    this.selection.set(new Set([o.id])); this.draw.set(null); this.activeTool.set('select');
+  }
+  /** Build a line/divider from the drawn polyline. */
+  private commitLine(points: Pt[]) {
+    if (points.length < 2) return;
+    const o: VObj = { id: uid('line'), type: 'line', label: 'Line', path: points.map((p) => ({ x: p.x, y: p.y })), color: '#94a3b8', thickness: 2 };
+    this.checkpoint('add');
+    this.venue.update((v) => ({ ...v, objects: [...v.objects, o] }));
+    this.selection.set(new Set([o.id])); this.draw.set(null); this.activeTool.set('select');
+  }
+  /** Close the segmented row into a ring (last vertex → first). */
+  drawClose() { const d = this.draw(); if (d?.kind === 'segrow') this.commitSegRow(d.points, true); }
+  /** Build a segmented row: seats spread along the drawn polyline (initial count from length). */
+  private commitSegRow(points: Pt[], closed = false) {
+    const gap = 30;
+    const n = segRowSeatCount(points, gap, closed);
+    if (!n) return;
+    const seats: Seat[] = Array.from({ length: n }, (_, i) => ({ n: 101 + i, status: 'available' as const }));
+    const o: VObj = { id: uid('row'), type: 'row', label: 'Row', path: points.map((p) => ({ x: p.x, y: p.y })), closed: closed || undefined, seatGap: gap, tier: 'standard', seats };
     this.checkpoint('add');
     this.venue.update((v) => ({ ...v, objects: [...v.objects, o] }));
     this.selection.set(new Set([o.id])); this.draw.set(null); this.activeTool.set('select');
@@ -460,6 +554,7 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
       if (sel.has(o.id)) {
         const c: VObj = { ...clone(o), id: uid(o.type) };
         if (o.type === 'polygon') c.points = o.points!.map((p) => ({ x: p.x + 36, y: p.y + 36 }));
+        else if (o.path) c.path = o.path.map((p) => ({ x: p.x + 36, y: p.y + 36 }));
         else { c.x = o.x! + 36; c.y = o.y! + 36; }
         copies.push(c);
       }
@@ -535,8 +630,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? this.redo() : this.undo(); }
-    else if (e.key === 'Enter' && this.draw()) { e.preventDefault(); this.commitPolygon(); }
+    else if (e.key === 'Enter' && this.draw()) { e.preventDefault(); this.commitDraw(); }
     else if (this.mode() === 'editor' && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); this.deleteSel(); }
-    else if (e.key === 'Escape') { if (this.draw()) this.cancelDraw(); this.selection.set(new Set()); this.wizard.set(null); this.sheet.set(null); }
+    else if (e.key === 'Escape') { if (this.helpOpen()) { this.closeHelp(); return; } if (this.draw()) this.cancelDraw(); if (this.placing()) this.cancelPlacing(); this.selection.set(new Set()); this.wizard.set(null); this.sheet.set(null); }
   }
 }

@@ -11,7 +11,7 @@ const DISPLAY_CONTENTS = ':host{display:contents;}';
   changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
   template: `
     <div class="ed-stepper">
-      <button (click)="change.emit(Math.max(min(), value() - 1))" [disabled]="value() <= min()"><sms-icon name="Add" [s]="14" [rot]="45"/></button>
+      <button (click)="change.emit(Math.max(min(), value() - 1))" [disabled]="value() <= min()"><sms-icon name="Minus" [s]="14"/></button>
       <span class="val">{{ value() }}</span>
       <button (click)="change.emit(Math.min(max(), value() + 1))" [disabled]="value() >= max()"><sms-icon name="Add" [s]="14"/></button>
     </div>`,
@@ -74,13 +74,15 @@ export const TOOLS: Tool[] = [
   { id: 'select', name: 'Select', icon: 'Cursor' },
   { id: 'stage', name: 'Stage', icon: 'Stage' },
   { id: 'row', name: 'Row of seats', icon: 'Row', wizard: true },
+  { id: 'segrow', name: 'Segmented row', icon: 'Segrow' },
   { id: 'table', name: 'Table', icon: 'Table' },
   { id: 'zone', name: 'GA zone', icon: 'Zone', wizard: true },
   { id: 'polygon', name: 'Polygon section', icon: 'Polygon' },
+  { id: 'line', name: 'Line', icon: 'Line' },
   { id: 'label', name: 'Text label', icon: 'Label' },
   { id: 'marker', name: 'Marker', icon: 'Marker' },
 ];
-export const OBJ_ICON: Record<string, string> = { stage: 'Stage', row: 'Row', table: 'Table', zone: 'Zone', polygon: 'Polygon', label: 'Label', marker: 'Marker' };
+export const OBJ_ICON: Record<string, string> = { stage: 'Stage', row: 'Row', table: 'Table', zone: 'Zone', polygon: 'Polygon', label: 'Label', marker: 'Marker', line: 'Line' };
 
 @Component({
   selector: 'ed-toolrail', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
@@ -118,6 +120,7 @@ export class ToolRailComponent { active = input('select'); tool = output<Tool>()
       @if (!isMobile()) { <div class="ed-div"></div> }
       @if (!isMobile()) { <span class="mono ed-count">{{ seats() }} seats</span> }
       @if (isMobile()) { <button class="ed-ic" (click)="menu.emit()" title="Objects"><sms-icon name="Layers" [s]="18"/></button> }
+      <button class="ed-ic" (click)="help.emit()" title="Help & shortcuts"><sms-icon name="Help" [s]="18"/></button>
     </div>`,
 })
 export class TopBarComponent {
@@ -125,7 +128,7 @@ export class TopBarComponent {
   scale = input(0.8); gridPx = input(25); showGrid = input(true); snap = input(false);
   canUndo = input(false); canRedo = input(false); isMobile = input(false);
   undo = output<void>(); redo = output<void>(); toggleGrid = output<void>(); toggleSnap = output<void>();
-  zoom = output<number>(); fit = output<void>(); menu = output<void>();
+  zoom = output<number>(); fit = output<void>(); menu = output<void>(); help = output<void>();
   round = Math.round;
   seats = computed(() => this.venue().objects.reduce((n, o) => n + (o.type === 'row' ? (o.seats as Seat[]).length : 0), 0));
 }
@@ -156,6 +159,7 @@ export class ObjectsPanelComponent {
     if (o.type === 'row') return `${(o.seats as Seat[]).length} seats`;
     if (o.type === 'table') return `${o.seats as number} seats`;
     if (o.type === 'zone' || o.type === 'polygon') return o.capacity ? `cap ${o.capacity}` : 'no limit';
+    if (o.type === 'line') return `${o.path?.length || 0} points`;
     return o.type;
   }
 }
@@ -165,14 +169,14 @@ export class ObjectsPanelComponent {
   selector: 'ed-tiers', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
   template: `
     <div class="tier-mgr">
-      <div class="panel-head"><span>Price tiers</span><b class="mono">{{ venue().tiers.length }}</b></div>
+      <div class="panel-head"><span>Pricing</span><b class="mono">{{ venue().tiers.length }}</b></div>
       <div class="tier-mgr-scroll">
         @for (t of venue().tiers; track t.id) {
           <div class="tier-card">
             <div class="tier-card-top">
               <button class="tier-swatch" [style.background]="t.color" (click)="toggleSwatch(t.id)" title="Change color"></button>
               <input class="tier-name" [value]="t.name" (input)="patch.emit({ id: t.id, p: { name: $any($event.target).value } })"/>
-              <button class="tier-del" (click)="del.emit(t.id)" [disabled]="venue().tiers.length <= 1" title="Delete tier"><sms-icon name="Trash" [s]="15"/></button>
+              <button class="tier-del" (click)="del.emit(t.id)" [disabled]="venue().tiers.length <= 1" title="Delete price"><sms-icon name="Trash" [s]="15"/></button>
             </div>
             @if (swatchFor() === t.id) {
               <div class="tier-swatches">
@@ -191,7 +195,7 @@ export class ObjectsPanelComponent {
           </div>
         }
       </div>
-      <div class="tier-mgr-foot"><button class="ed-btn primary" (click)="add.emit()"><sms-icon name="Add" [s]="15"/> Add tier</button></div>
+      <div class="tier-mgr-foot"><button class="ed-btn primary" (click)="add.emit()"><sms-icon name="Add" [s]="15"/> Add price</button></div>
     </div>`,
 })
 export class TierManagerComponent {
@@ -221,8 +225,8 @@ export class TierManagerComponent {
     } @else if (sel().size > 1) {
       <div class="insp">
         <div class="insp-head"><b>{{ sel().size }} selected</b></div>
-        <p class="insp-note">Move them together by dragging on the canvas, or apply a tier to every seat row in the selection.</p>
-        <ed-field label="Apply tier to rows">
+        <p class="insp-note">Move them together by dragging on the canvas, or apply a price to every seat row in the selection.</p>
+        <ed-field label="Apply price to rows">
           <ed-tierpick [value]="null" [tiers]="venue().tiers" [currency]="currency()" (change)="applyTier($event)"/>
         </ed-field>
         <div class="insp-actions">
@@ -245,16 +249,32 @@ export class TierManagerComponent {
         @if (o.type === 'label') {
           <ed-field label="Text"><input class="ed-input" [value]="o.text || ''" (input)="P(o, { text: $any($event.target).value })"/></ed-field>
           <ed-field label="Size"><ed-slide [value]="o.size || 18" [min]="11" [max]="42" unit="px" (valueChange)="P(o, { size: $event })"/></ed-field>
+          <ed-field label="Color">
+            <div class="ed-color">
+              <input type="color" class="ed-color-swatch" [value]="o.color || '#111827'"
+                     (input)="P(o, { color: $any($event.target).value })"/>
+              @for (c of LABEL_COLORS; track c) {
+                <button class="ed-color-dot" [class.on]="(o.color || '').toLowerCase() === c" [style.background]="c"
+                        (click)="P(o, { color: c })" [title]="c"></button>
+              }
+              <button class="ed-color-auto" [class.on]="!o.color" (click)="P(o, { color: undefined })"
+                      title="Use theme colour">Auto</button>
+            </div>
+          </ed-field>
         }
 
         @switch (o.type) {
           @case ('row') {
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
-            <ed-field [label]="'Seats · ' + seatLen(o)">
-              <ed-stepper [value]="seatLen(o)" [min]="1" [max]="40" (change)="setRowSeats(o, $event)"/>
+            <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field [label]="(o.path ? 'Seats along path · ' : 'Seats · ') + seatLen(o)">
+              <ed-stepper [value]="seatLen(o)" [min]="1" [max]="60" (change)="setRowSeats(o, $event)"/>
             </ed-field>
-            <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
-            <ed-field label="Curve"><ed-slide [value]="o.arc || 0" [min]="0" [max]="60" unit="°" (valueChange)="P(o, { arc: $event })"/></ed-field>
+            @if (!o.path) {
+              <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
+              <ed-field label="Curve"><ed-slide [value]="o.arc || 0" [min]="0" [max]="60" unit="°" (valueChange)="P(o, { arc: $event })"/></ed-field>
+            } @else {
+              <p class="insp-note">{{ o.path!.length }} points{{ o.closed ? ' · ring' : '' }} · drag the row on the canvas to reposition it.</p>
+            }
           }
           @case ('stage') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeStage" (change)="P(o, { shape: $any($event) })"/></ed-field>
@@ -263,7 +283,7 @@ export class TierManagerComponent {
           }
           @case ('table') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeTable" (change)="P(o, { shape: $any($event) })"/></ed-field>
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
             @if (o.shape === 'round') {
               <ed-field label="Size"><ed-slide [value]="o.r!" [min]="20" [max]="48" (valueChange)="P(o, { r: $event })"/></ed-field>
@@ -273,18 +293,32 @@ export class TierManagerComponent {
             }
           }
           @case ('zone') {
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field label="Capacity (0 = no limit)"><input type="number" class="ed-input" min="0" max="100000" [value]="o.capacity ?? 0" (change)="P(o, { capacity: clampCap($any($event.target).value) })"/></ed-field>
             <ed-field label="Width"><ed-slide [value]="o.w!" [min]="120" [max]="800" [step]="10" (valueChange)="P(o, { w: $event })"/></ed-field>
             <ed-field label="Height"><ed-slide [value]="o.h!" [min]="80" [max]="400" [step]="10" (valueChange)="P(o, { h: $event })"/></ed-field>
           }
           @case ('polygon') {
-            <ed-field label="Tier"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
+            <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             <ed-field label="Capacity (0 = no limit)"><input type="number" class="ed-input" min="0" max="100000" [value]="o.capacity ?? 0" (change)="P(o, { capacity: clampCap($any($event.target).value) })"/></ed-field>
             <p class="insp-note">{{ o.points!.length }} vertices · drag the shape on the canvas to reposition it.</p>
           }
           @case ('marker') {
             <ed-field label="Kind"><ed-seg [value]="o.kind!" [options]="markerKinds" (change)="P(o, { kind: $event })"/></ed-field>
+          }
+          @case ('line') {
+            <ed-field label="Color">
+              <div class="ed-color">
+                <input type="color" class="ed-color-swatch" [value]="o.color || '#94a3b8'"
+                       (input)="P(o, { color: $any($event.target).value })"/>
+                @for (c of LINE_COLORS; track c) {
+                  <button class="ed-color-dot" [class.on]="(o.color || '').toLowerCase() === c" [style.background]="c"
+                          (click)="P(o, { color: c })" [title]="c"></button>
+                }
+              </div>
+            </ed-field>
+            <ed-field label="Thickness"><ed-slide [value]="o.thickness || 2" [min]="1" [max]="12" unit="px" (valueChange)="P(o, { thickness: $event })"/></ed-field>
+            <p class="insp-note">{{ o.path!.length }} points · drag the line on the canvas to reposition it.</p>
           }
         }
 
@@ -305,6 +339,9 @@ export class InspectorComponent {
   shapeStage =[{ v: 'arc', label: 'Arc' }, { v: 'rect', label: 'Rect' }];
   shapeTable = [{ v: 'round', label: 'Round' }, { v: 'rect', label: 'Long' }];
   markerKinds = [{ v: 'entrance', label: 'Entry' }, { v: 'exit', label: 'Exit' }, { v: 'bar', label: 'Bar' }];
+  // Quick-pick swatches for label text colour (lowercase — compared against o.color).
+  LABEL_COLORS = ['#111827', '#ffffff', '#6668ee', '#0c9d6e', '#d83a3a', '#b9750a'];
+  LINE_COLORS = ['#94a3b8', '#111827', '#6668ee', '#0c9d6e', '#d83a3a', '#b9750a'];
 
   obj = computed<VObj | undefined>(() => {
     const s = this.sel(); if (s.size !== 1) return undefined;
@@ -355,10 +392,10 @@ export interface ZoneWizardCfg { tier: string; cap: number; }
             <ed-field [label]="'Seats per row · ' + count()"><ed-stepper [value]="count()" [min]="2" [max]="36" (change)="count.set($event)"/></ed-field>
             <ed-field label="Seat spacing"><ed-slide [value]="gap()" [min]="22" [max]="48" unit="px" (valueChange)="gap.set($event)"/></ed-field>
             <ed-field label="Curve"><ed-slide [value]="arc()" [min]="0" [max]="60" unit="°" (valueChange)="arc.set($event)"/></ed-field>
-            <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
+            <ed-field label="Price"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
             <div class="wiz-preview mono">{{ n() }} row{{ n() > 1 ? 's' : '' }} · {{ n() * count() }} seats · {{ tierName() }}</div>
           } @else {
-            <ed-field label="Tier"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
+            <ed-field label="Price"><ed-tierpick [value]="tier()" [tiers]="tlist()" [currency]="currency()" (change)="tier.set($event)"/></ed-field>
             <ed-field [label]="'Capacity · ' + cap()"><ed-slide [value]="cap()" [min]="50" [max]="3000" [step]="50" (valueChange)="cap.set($event)"/></ed-field>
             <div class="wiz-preview mono">Standing zone · holds {{ cap() }}</div>
           }
@@ -404,17 +441,59 @@ export class WizardComponent {
   selector: 'ed-drawhud', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
   template: `
     <div class="draw-hud">
-      <span class="draw-hud-info"><sms-icon name="Polygon" [s]="15"/> {{ info() }}</span>
+      <span class="draw-hud-info"><sms-icon [name]="hudIcon()" [s]="15"/> {{ info() }}</span>
+      @if (kind() === 'segrow' && seats() > 0) {
+        <span class="mono" style="font-weight:700;color:var(--brand);white-space:nowrap">{{ seats() }} seats</span>
+      }
       <button class="draw-hud-btn ghost" (click)="cancel.emit()">Cancel</button>
-      <button class="draw-hud-btn primary" (click)="finish.emit()" [disabled]="count() < 3"><sms-icon name="Check" [s]="14"/> Finish</button>
+      <button class="draw-hud-btn primary" (click)="finish.emit()" [disabled]="count() < min()"><sms-icon name="Check" [s]="14"/> Finish</button>
     </div>`,
 })
 export class DrawHudComponent {
-  count = input(0); finish = output<void>(); cancel = output<void>();
+  count = input(0); kind = input<'polygon' | 'segrow' | 'line'>('polygon'); seats = input(0);
+  finish = output<void>(); cancel = output<void>();
+  min = computed(() => (this.kind() === 'polygon' ? 3 : 2));
+  hudIcon() { return this.kind() === 'segrow' ? 'Segrow' : this.kind() === 'line' ? 'Line' : 'Polygon'; }
   info() {
-    const c = this.count();
-    if (c === 0) return 'Click to drop the first point';
-    if (c >= 3) return `${c} points · click the first point to close`;
-    return `${c} point${c > 1 ? 's' : ''} · need ${3 - c} more`;
+    const c = this.count(), k = this.kind();
+    if (c === 0) return k === 'segrow' ? 'Click to start the row, then click each bend'
+      : k === 'line' ? 'Click to start the line, then click each point' : 'Click to drop the first point';
+    if (k === 'segrow' && c >= 3) return `${c} points · click the first seat to make a ring, or press Enter to finish`;
+    if (c >= this.min()) return k === 'polygon' ? `${c} points · click the first point to close`
+      : k === 'segrow' ? `${c} points · add a bend, or press Enter to finish` : `${c} points · add a point, or press Enter to finish`;
+    return `${c} point${c > 1 ? 's' : ''} · need ${this.min() - c} more`;
   }
 }
+
+// ── help / quick-start ─────────────────────────────────────────────────────────
+@Component({
+  selector: 'ed-help', standalone: true, imports: [IconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
+  template: `
+    <div class="sms-help-back" (click)="close.emit()">
+      <div class="sms-help" role="dialog" aria-label="Quick start and shortcuts" (click)="$event.stopPropagation()">
+        <div class="help-head">
+          <b>Quick start</b>
+          <button class="ed-ic" (click)="close.emit()" title="Close"><sms-icon name="Add" [s]="18" [rot]="45"/></button>
+        </div>
+        <ol class="help-steps">
+          <li><span class="help-num">1</span><div><b>Place</b><p>Pick a tool on the left, then click the canvas to drop seats, tables, or a stage.</p></div></li>
+          <li><span class="help-num">2</span><div><b>Arrange</b><p>Drag anything to move it. Select it to resize, rename, or bend it in the panel on the right.</p></div></li>
+          <li><span class="help-num">3</span><div><b>Set pricing</b><p>Open the Pricing tab to name your price levels, then give each section a price.</p></div></li>
+        </ol>
+        <div class="help-keys">
+          <div class="help-keys-title">Keys &amp; gestures</div>
+          <div class="help-keys-grid">
+            <span><span class="kbd">Del</span> Remove selected</span>
+            <span><span class="kbd">Shift</span>+drag &middot; Select many</span>
+            <span><span class="kbd">Ctrl</span><span class="kbd">Z</span> Undo</span>
+            <span>Drag canvas &middot; Pan</span>
+            <span><span class="kbd">Enter</span> Finish a shape</span>
+            <span>Scroll &middot; Zoom</span>
+            <span><span class="kbd">Esc</span> Cancel</span>
+          </div>
+        </div>
+      </div>
+    </div>`,
+})
+export class HelpComponent { close = output<void>(); }

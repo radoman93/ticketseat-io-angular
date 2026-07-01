@@ -169,6 +169,17 @@
 .sms .ed-btn.ghost:hover{background:var(--line);}
 .sms .ed-btn.danger{background:var(--red-tint);color:var(--red);}
 
+/* label colour picker */
+.sms .ed-color{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sms .ed-color-swatch{width:34px;height:30px;padding:2px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:var(--field);cursor:pointer;}
+.sms .ed-color-swatch::-webkit-color-swatch{border:none;border-radius:4px;}
+.sms .ed-color-swatch::-webkit-color-swatch-wrapper{padding:0;}
+.sms .ed-color-dot{width:22px;height:22px;border-radius:6px;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;}
+.sms .ed-color-dot:hover{transform:scale(1.12);}
+.sms .ed-color-dot.on{box-shadow:0 0 0 2px var(--ink);}
+.sms .ed-color-auto{height:26px;padding:0 10px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:var(--card);color:var(--ink-2);font-size:11.5px;font-weight:600;cursor:pointer;}
+.sms .ed-color-auto.on{border-color:var(--brand);color:var(--brand);}
+
 /* polygon draw HUD */
 .sms .draw-hud{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);box-shadow:var(--sh-lg);z-index:20;white-space:nowrap;}
 .sms .draw-hud-info{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);}
@@ -300,4 +311,32 @@
 @media (max-width:880px){
   .sms .st-header{height:54px;gap:10px;padding:0 12px;}
   .sms .venue-name{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+}
+
+/* help / quick-start popover */
+.sms .sms-help-back{position:fixed;inset:0;z-index:60;}
+.sms .sms-help{position:absolute;top:56px;right:14px;width:340px;max-width:calc(100vw - 24px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-lg);overflow:hidden;animation:sms-help-in .16s ease;}
+@keyframes sms-help-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+.sms .help-head{display:flex;align-items:center;justify-content:space-between;padding:12px 10px 12px 16px;border-bottom:1px solid var(--line);}
+.sms .help-head b{font-size:14px;color:var(--ink);}
+.sms .help-steps{list-style:none;margin:0;padding:14px 16px 4px;display:flex;flex-direction:column;gap:13px;}
+.sms .help-steps li{display:flex;gap:11px;}
+.sms .help-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;}
+.sms .help-steps b{display:block;font-size:13px;color:var(--ink);margin-bottom:2px;}
+.sms .help-steps p{margin:0;font-size:12.5px;line-height:1.45;color:var(--ink-2);}
+.sms .help-keys{padding:13px 16px 16px;border-top:1px solid var(--line);margin-top:10px;}
+.sms .help-keys-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px;}
+.sms .help-keys-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;font-size:12px;color:var(--ink-2);}
+.sms .help-keys-grid span{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.sms .kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;background:var(--field);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;color:var(--ink);}
+
+/* first-run nudge */
+.sms .sms-help-nudge{position:absolute;top:56px;right:14px;z-index:55;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;background:var(--brand);color:#fff;border-radius:var(--r-pill);box-shadow:var(--sh-lg);font-size:12.5px;animation:sms-help-in .2s ease;max-width:calc(100vw - 24px);}
+.sms .sms-help-nudge b{color:#fff;font-weight:700;}
+.sms .nudge-go{height:26px;padding:0 11px;border:none;border-radius:var(--r-pill);background:#fff;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.sms .nudge-x{width:24px;height:24px;border:none;background:transparent;color:#fff;opacity:.75;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;}
+.sms .nudge-x:hover{opacity:1;background:rgba(255,255,255,.15);}
+
+@media (prefers-reduced-motion: reduce){
+  .sms .sms-help,.sms .sms-help-nudge{animation:none;}
 }

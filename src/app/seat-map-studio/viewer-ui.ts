@@ -28,7 +28,7 @@ export function tierStats(venue: Venue): TierStat[] {
   template: `
     <div class="vw-legend">
       <div class="panel-head">
-        <span>{{ mode() === 'zoom' ? 'Sections' : 'Price tiers' }}</span>
+        <span>{{ mode() === 'zoom' ? 'Sections' : 'Pricing' }}</span>
         @if (mode() === 'zoom' && focusTier()) {
           <button class="vw-back" (click)="focus.emit(null)"><sms-icon name="ZoomOut" [s]="13"/> Overview</button>
         }

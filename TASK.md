@@ -1,39 +1,51 @@
-# TASK — Recreate "Seat Map Studio" design 1:1 in Angular
+# TASK.md — Restore missing features + real icons in Seat Map Studio
 
-Source: Claude Design project "Ticketseat Design" → `editor/SeatMapStudio.html` (React + Babel,
-self-contained). Owner: Aleksa (the user). Goal: pixel-faithful Angular port, verified with Playwright.
+Base: clean `origin/main` @ v1.9.0 (Studio at `src/app/seat-map-studio/`, route `/studio`).
+Prior v1.4.0 old-editor redesign is parked in `git stash@{0}` (not deleted).
 
-## What the design is
-A full-screen **Seat Map Studio** with two modes:
-- **Editor**: header → topbar → [tool rail | left browser (Objects/Tiers) | SVG canvas | right inspector].
-- **Viewer**: header → [canvas | right side (tier legend + order panel)] with zoom buttons.
-Plus: venue switcher menu, theme toggle, polygon draw HUD, add-row/add-zone wizards, mobile chrome.
+## Goal
+Bring back features the Studio dropped vs the old editor, and replace the
+hand-authored ("AI-looking") icon set with a real icon library.
 
-The `tweaks-panel.jsx` is the Claude-Design editing scaffold — NOT part of the app. Hardcode its
-defaults: canvasStyle=skeuomorphic(soft), canvasTheme=light, inspector=right, mobilePattern=sheet,
-viewerUX=direct, appTheme=light.
+## Gaps found (Studio vs old editor)
+| Feature | Status | Plan |
+|---|---|---|
+| Text/label **color** | label has only Text+Size | add `color` to VObj + inspector picker + canvas render |
+| **Segmented row** (multi-click angled row) | only single arc rows | new `segrow` tool reusing the polygon draw flow; seats along a polyline |
+| Icons look AI-generated | inline paths in `IconComponent.P` | swap to real Lucide-style path data (dependency-free) |
+| (stretch) Label bold/align | missing | optional, low-risk |
+| (stretch) Line tool | missing | defer unless asked |
 
-## Architecture decision
-- Port React → Angular **standalone components + signals**, reusing the **exact CSS** (scoped under
-  `.sms`, `ViewEncapsulation.None` on root) and the **exact SVG markup/geometry**.
-- Non-destructive: keep existing demo. `AppComponent` → router shell; demo → `DemoComponent` at `''`;
-  studio at route `/studio`.
-- Add Geist + Geist Mono fonts to `index.html`.
+## Roadmap
 
-## Roadmap / subtasks
-- [ ] 1. `seat-data.ts` — types, TIERS, TIER_COLORS, VENUES, VENUE_META, geometry, bounds, helpers.
-- [ ] 2. `icon.component.ts` — `sms-icon` (EdIcons + Logo/Moon/Sun), `s` size + `rot` deg.
-- [ ] 3. `seat-canvas.component.ts` — pan/zoom SVG, all object renderers, seat glyph, grid, draw,
-      marquee, selection halos, pointer/wheel/pinch, imperative zoomBy/fit/focus, @Output events.
-- [ ] 4. `editor-ui.ts` — Stepper/Seg/Slide/TierPick/Field + ToolRail, TopBar, ObjectsPanel,
-      TierManager, Inspector, Wizard, DrawHud.
-- [ ] 5. `viewer-ui.ts` — TierLegend, OrderPanel, SeatListPanel, ViewerBar; tierStats.
-- [ ] 6. `seat-map-studio.component.ts` — root: scoped CSS, state signals + all ops, Header,
-      Editor/Viewer chrome, BottomSheet, MobileTools, responsive (matchMedia 880px).
-- [ ] 7. Routing: `DemoComponent`, slim `AppComponent`, routes, Geist fonts.
-- [ ] 8. Build + `ng serve`; fix type/template errors.
-- [ ] 9. Playwright verify desktop (1440×900) + mobile (390×844); iterate until 1:1.
+### Phase 1 — Text/label color  ✅ DONE + verified in Playwright
+- [x] 1.1 `seat-data.ts`: add `color?: string` to `VObj`
+- [x] 1.2 `editor-ui.ts` Inspector `@case('label')`: color control (native picker + 6 swatches + Auto)
+- [x] 1.3 `seat-canvas.ts` `@case('label')`: `fill = o.color || pal.text`
+- [x] 1.4 CSS `.ed-color*` in studio css
+- [x] 1.5 Verified: added label, picked red → canvas text fill = #d83a3a
 
-## Debug notes
-- Default load: Editor, Grand Theater, light, right inspector, empty inspector, Objects tab.
-- Seat numbers render only when canvas scale > 1.45. Canvas fits on mount → displayed zoom % = fit.
+### Phase 2 — Real icons  ✅ DONE + verified
+- [x] 2.1 Replaced `IconComponent.P` with vendored Lucide path data (keys unchanged)
+- [x] 2.2 Domain glyphs: Stage→presentation, Row→armchair, Table→circle-dot, Zone→dashed square, Polygon→pentagon, Label→type, Marker→map-pin
+- [x] 2.3 Verified: all rail/topbar/inspector/object-list icons render, 0 console errors
+
+### Phase 3 — Segmented row tool  ✅ DONE + verified
+- [x] 3.1 `seat-data.ts`: `path?: Pt[]` + `pathRowPositions()` (seats spread by arc-length, tangent angle per seat)
+- [x] 3.2 `draw` signal gained `kind: 'polygon' | 'segrow'`; canvas `drawKind` input; polygon-only close/fill/hint
+- [x] 3.3 `segrow` tool in `TOOLS` + new `Segrow` Lucide-style icon
+- [x] 3.4 `DrawHud` kind-aware (finish ≥2 for segrow, tailored copy)
+- [x] 3.5 `commitSegRow()` builds a `path` row; canvas tilts seats via `p.a`; move/dup handle `path`
+- [x] 3.6 Inspector: path rows show Tier + "Seats along path" stepper (redistributes); curve/spacing hidden
+- [x] 3.7 Verified: drew a 3-point bent row → 14 seats follow the bend, selectable, 0 console errors
+
+### Phase 4 — Verify pass
+- [ ] 4.1 `/studio` boots clean (dev server), no console errors
+- [ ] 4.2 Screenshots: editor + viewer, light + dark
+- [ ] 4.3 Library build (`build:lib`) passes (Studio is exported in public-api)
+
+## Risks / notes
+- Studio is signal-based + immutable `patch()`; keep updates pure.
+- `draw`/`commitPolygon` is polygon-specific — must generalize carefully (Enter/Escape/HUD).
+- Icons: dependency-free path swap avoids touching build; verify every `name` still resolves.
+- Don't touch the old editor components (Studio doesn't use them).

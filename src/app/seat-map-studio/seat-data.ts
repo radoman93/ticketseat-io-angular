@@ -1,7 +1,7 @@
 // seat-data.ts — venue data model, sample layouts, geometry helpers.
 // Port of editor/seat-data.jsx (Seat Map Studio design).
 
-export type ObjType = 'stage' | 'row' | 'table' | 'zone' | 'polygon' | 'label' | 'marker';
+export type ObjType = 'stage' | 'row' | 'table' | 'zone' | 'polygon' | 'label' | 'marker' | 'line';
 export type SeatStatus = 'available' | 'sold' | 'held';
 
 export interface Seat { n: number; status: SeatStatus; }
@@ -19,6 +19,8 @@ export interface VObj {
   label?: string;
   text?: string;
   size?: number;
+  color?: string;              // label text colour / line colour
+  thickness?: number;          // line: stroke width
   shape?: 'arc' | 'rect' | 'round';
   seats?: Seat[] | number;     // row: Seat[]; table: number
   seatGap?: number;
@@ -26,6 +28,8 @@ export interface VObj {
   tier?: string;
   capacity?: number;
   points?: Pt[];
+  path?: Pt[];                 // segmented row: polyline vertices (seats spread along it)
+  closed?: boolean;            // segmented row: join last vertex back to first (ring of seats)
   kind?: string;
 }
 
@@ -52,7 +56,66 @@ let _seq = 0;
 export const uid = (p = 'o') => `${p}_${(_seq++).toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 
 // ── Geometry ─────────────────────────────────────────────────────────────────
+// Seats spread evenly (by arc-length) along a multi-segment polyline. Each point
+// carries `a` = the tangent angle (deg) of the segment it sits on, so the seat glyph
+// tilts to follow the bend.
+export function pathRowPositions(row: VObj): Pt[] {
+  const closed = !!row.closed;
+  // For a ring, walk back to the first vertex so seats wrap the whole loop.
+  const verts = closed ? [...row.path!, row.path![0]] : row.path!;
+  const n = (row.seats as Seat[]).length;
+  const segs = verts.slice(0, -1).map((a, i) => {
+    const b = verts[i + 1];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    return { a, b, len: Math.hypot(dx, dy), ang: (Math.atan2(dy, dx) * 180) / Math.PI };
+  });
+  const total = segs.reduce((s, q) => s + q.len, 0);
+  const out: Pt[] = [];
+  // Seats always face north (no per-segment tilt) — matches the classic segmented row.
+  if (n <= 1 || total === 0) { const s = segs[0]; out.push({ x: s.a.x, y: s.a.y }); return out; }
+  // Open row: seats at 0..1 (endpoints included). Ring: 0..(n-1)/n so the loop
+  // isn't double-stacked at the join.
+  const denom = closed ? n : n - 1;
+  for (let i = 0; i < n; i++) {
+    let d = (i / denom) * total, k = 0;
+    while (k < segs.length - 1 && d > segs[k].len) { d -= segs[k].len; k++; }
+    const s = segs[k], t = s.len ? d / s.len : 0;
+    out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t });
+  }
+  return out;
+}
+
+// How many seats a drawn polyline yields at the given spacing (used live while drawing
+// and at commit, so the preview count matches the result exactly).
+export function segRowSeatCount(points: Pt[], gap = 30, closed = false): number {
+  if (points.length < (closed ? 3 : 2)) return 0;
+  const verts = closed ? [...points, points[0]] : points;
+  let total = 0;
+  for (let i = 0; i < verts.length - 1; i++) total += Math.hypot(verts[i + 1].x - verts[i].x, verts[i + 1].y - verts[i].y);
+  if (total === 0) return 0;
+  return Math.max(closed ? 3 : 2, Math.round(total / gap) + (closed ? 0 : 1));
+}
+
+// Live seat positions for the drawing preview (north-facing).
+export function segRowPreview(points: Pt[], gap = 30, closed = false): Pt[] {
+  const n = segRowSeatCount(points, gap, closed);
+  if (!n) return [];
+  const verts = closed ? [...points, points[0]] : points;
+  const segs = verts.slice(0, -1).map((a, i) => ({ a, b: verts[i + 1], len: Math.hypot(verts[i + 1].x - a.x, verts[i + 1].y - a.y) }));
+  const total = segs.reduce((s, q) => s + q.len, 0);
+  const denom = closed ? n : n - 1;
+  const out: Pt[] = [];
+  for (let i = 0; i < n; i++) {
+    let d = (i / denom) * total, k = 0;
+    while (k < segs.length - 1 && d > segs[k].len) { d -= segs[k].len; k++; }
+    const s = segs[k], t = s.len ? d / s.len : 0;
+    out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t });
+  }
+  return out;
+}
+
 export function rowSeatPositions(row: VObj): Pt[] {
+  if (row.path && row.path.length >= 2) return pathRowPositions(row);
   const seats = row.seats as Seat[];
   const n = seats.length;
   const gap = row.seatGap ?? 30;
@@ -127,6 +190,10 @@ export function objBounds(o: VObj): Box {
     return { x1: o.x! - o.w! / 2, y1: o.y! - o.h! / 2, x2: o.x! + o.w! / 2, y2: o.y! + o.h! / 2 };
   if (o.type === 'polygon') {
     const xs = o.points!.map((p) => p.x), ys = o.points!.map((p) => p.y);
+    return { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+  }
+  if (o.type === 'line') {
+    const xs = o.path!.map((p) => p.x), ys = o.path!.map((p) => p.y);
     return { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
   }
   if (o.type === 'row') {

@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import {
   Box, Pt, Seat, Tier, VObj, Venue, objBounds, polyCentroid, rowSeatAngle,
-  rowSeatPositions, tableSeatPositions, tierById, venueBounds,
+  rowSeatPositions, segRowPreview, tableSeatPositions, tierById, venueBounds,
 } from './seat-data';
 
 export interface Pal {
@@ -26,9 +26,11 @@ export const SeatPalette: Record<string, Pal> = {
 interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; }
 interface CanvasItem {
   o: VObj; selected: boolean; dim: boolean; tier: Tier; bounds: Box;
+  ghost?: boolean;
   picked?: boolean; pickCount?: number;
   stagePath?: string | null; zoneFill?: string;
   polyPoints?: string; polyCx?: number; polyCy?: number; polyFill?: string;
+  linePoints?: string;
   tableFill?: string; chairs?: SeatVM[];
   rowSeats?: SeatVM[]; rowLabelX?: number; rowLabelY?: number;
   markerGlyph?: string; markerFontSize?: number;
@@ -129,7 +131,7 @@ export class SeatComponent {
     <div #wrap style="position:absolute;inset:0;overflow:hidden;touch-action:none"
          [style.background]="pal().bg">
       <svg #svg width="100%" height="100%" style="display:block"
-           [style.cursor]="drawMode() ? 'crosshair' : (gesture?.type === 'pan' ? 'grabbing' : 'default')"
+           [style.cursor]="drawMode() || placing() ? 'crosshair' : (gesture?.type === 'pan' ? 'grabbing' : 'default')"
            (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)"
            (pointerup)="onPointerUp($event)" (pointercancel)="onPointerUp($event)">
         <defs>
@@ -141,10 +143,11 @@ export class SeatComponent {
         @if (showGrid()) { <rect x="0" y="0" width="100%" height="100%" fill="url(#gp)"/> }
         <g [attr.transform]="'translate(' + view().tx + ',' + view().ty + ') scale(' + view().s + ')'">
           @for (item of items(); track item.o.id) {
-            <g [attr.data-oid]="item.o.id" [attr.opacity]="item.dim ? 0.28 : 1"
+            <g [attr.data-oid]="item.o.id" [attr.opacity]="item.ghost ? 0.5 : (item.dim ? 0.28 : 1)"
+               [style.pointer-events]="item.ghost ? 'none' : null"
                [style.cursor]="mode() === 'editor' ? 'move' : 'default'">
 
-              @if (item.selected && item.o.type !== 'row' && item.o.type !== 'polygon') {
+              @if (item.selected && item.o.type !== 'row' && item.o.type !== 'polygon' && item.o.type !== 'line') {
                 <rect [attr.x]="item.bounds.x1 - 4" [attr.y]="item.bounds.y1 - 4"
                       [attr.width]="item.bounds.x2 - item.bounds.x1 + 8" [attr.height]="item.bounds.y2 - item.bounds.y1 + 8"
                       [attr.rx]="10" fill="color-mix(in srgb, #6668ee 8%, transparent)" stroke="#6668ee"
@@ -221,7 +224,17 @@ export class SeatComponent {
                 }
                 @case ('label') {
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y" text-anchor="middle" [attr.font-size]="item.o.size || 18"
-                        [attr.font-weight]="600" [attr.fill]="pal().text" style="font-family:Geist,sans-serif">{{ item.o.text }}</text>
+                        [attr.font-weight]="600" [attr.fill]="item.o.color || pal().text" style="font-family:Geist,sans-serif">{{ item.o.text }}</text>
+                }
+                @case ('line') {
+                  <polyline [attr.points]="item.linePoints" fill="none" stroke="transparent" [attr.stroke-width]="16" stroke-linecap="round"/>
+                  <polyline [attr.points]="item.linePoints" fill="none" [attr.stroke]="item.o.color || '#94a3b8'"
+                            [attr.stroke-width]="item.o.thickness || 2" stroke-linecap="round" stroke-linejoin="round"/>
+                  @if (item.selected) {
+                    @for (p of item.o.path!; track $index) {
+                      <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="4" [attr.fill]="pal().bg" stroke="#6668ee" [attr.stroke-width]="2"/>
+                    }
+                  }
                 }
                 @case ('row') {
                   @if (item.selected) {
@@ -251,8 +264,12 @@ export class SeatComponent {
 
           @if (drawMode() && drawPoints().length > 0) {
             <g style="pointer-events:none">
-              @if (drawPoints().length >= 2) {
+              @if (drawKind() === 'polygon' && drawPoints().length >= 2) {
                 <polygon [attr.points]="drawLine()" fill="color-mix(in srgb, #6668ee 12%, transparent)" stroke="none"/>
+              }
+              @for (sp of segPreview(); track $index) {
+                <rect [attr.x]="sp.x - 7" [attr.y]="sp.y - 6" [attr.width]="14" [attr.height]="12" [attr.rx]="4"
+                      fill="color-mix(in srgb, #6668ee 16%, #eeeeec)" stroke="#6668ee" [attr.stroke-width]="1.4" [attr.opacity]="0.9"/>
               }
               <polyline [attr.points]="drawPolyline()" fill="none" stroke="#6668ee" [attr.stroke-width]="1.7 / view().s"
                         [attr.stroke-dasharray]="(5 / view().s) + ' ' + (4 / view().s)" stroke-linejoin="round"/>
@@ -260,7 +277,7 @@ export class SeatComponent {
                 <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="($index === 0 ? 5.5 : 3.6) / view().s"
                         [attr.fill]="$index === 0 ? pal().bg : '#6668ee'" stroke="#6668ee" [attr.stroke-width]="1.8 / view().s"/>
               }
-              @if (drawPoints().length >= 3) {
+              @if (drawKind() !== 'line' && drawPoints().length >= 3) {
                 <circle [attr.cx]="drawPoints()[0].x" [attr.cy]="drawPoints()[0].y" [attr.r]="11 / view().s"
                         fill="none" stroke="#6668ee" [attr.stroke-width]="1.4 / view().s" [attr.opacity]="0.5"/>
               }
@@ -285,8 +302,11 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   pickedZones = input<Map<string, number>>(new Map());
   dimUnfocused = input<Set<string> | null>(null);
   drawMode = input(false);
+  drawKind = input<'polygon' | 'segrow' | 'line'>('polygon');
   drawPoints = input<Pt[]>([]);
   drawCursor = input<Pt | null>(null);
+  placing = input(false);
+  ghost = input<VObj | null>(null);
 
   // outputs
   select = output<{ ids: string[]; additive: boolean }>();
@@ -299,6 +319,9 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   drawAddPoint = output<Pt>();
   drawCursorChange = output<Pt>();
   drawCommit = output<void>();
+  drawClose = output<void>();
+  place = output<Pt>();
+  placeCursor = output<Pt>();
 
   readonly G = 25;
   view = signal({ s: 0.8, tx: 60, ty: 40 });
@@ -326,12 +349,19 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
 
   items = computed<CanvasItem[]>(() => {
     const v = this.venue();
+    const list = v.objects.map((o) => this.buildItem(o, v));
+    const g = this.ghost();
+    if (g) { const gi = this.buildItem(g, v); gi.ghost = true; gi.selected = false; gi.dim = false; list.push(gi); }
+    return list;
+  });
+
+  private buildItem(o: VObj, v: Venue): CanvasItem {
     const sel = this.selection();
     const picks = this.pickedZones();
     const dimSet = this.dimUnfocused();
     const showNum = this.view().s > 1.45;
     const pal = this.pal();
-    return v.objects.map((o): CanvasItem => {
+    {
       const selected = !!sel?.has(o.id);
       const pickCount = picks?.get(o.id) || 0;
       const picked = pickCount > 0;
@@ -356,21 +386,31 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       } else if (o.type === 'marker') {
         item.markerGlyph = MARKER_GLYPHS[o.kind || ''] || '•';
         item.markerFontSize = o.kind === 'bar' ? 8 : 13;
+      } else if (o.type === 'line') {
+        item.linePoints = o.path!.map((p) => `${p.x},${p.y}`).join(' ');
       } else if (o.type === 'row') {
         const ps = rowSeatPositions(o);
         const seats = o.seats as Seat[];
-        item.rowSeats = ps.map((p, i): SeatVM => ({ p, angle: -rowSeatAngle(o, i), seat: seats[i], key: `${o.id}:${seats[i].n}` }));
+        item.rowSeats = ps.map((p, i): SeatVM => ({ p, angle: -(p.a ?? rowSeatAngle(o, i)), seat: seats[i], key: `${o.id}:${seats[i].n}` }));
         item.rowLabelX = ps[0].x - 22; item.rowLabelY = ps[0].y + 4;
         item.showNum = showNum;
       }
       return item;
-    });
-  });
+    }
+  }
 
   drawLine = computed(() => this.drawPoints().map((p) => `${p.x},${p.y}`).join(' '));
   drawPolyline = computed(() => {
     const c = this.drawCursor();
     return this.drawLine() + (c ? ` ${c.x},${c.y}` : '');
+  });
+  // Live seat pads previewed while drawing a segmented row (path so far + cursor).
+  segPreview = computed<Pt[]>(() => {
+    if (!this.drawMode() || this.drawKind() !== 'segrow') return [];
+    const pts = [...this.drawPoints()];
+    const c = this.drawCursor();
+    if (c) pts.push(c);
+    return segRowPreview(pts, 30, false);
   });
 
   // ── lifecycle ──────────────────────────────────────────────────────────────
@@ -455,12 +495,17 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       this.gesture = { type: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, v: this.view() };
       return;
     }
+    if (this.placing()) { this.place.emit(this.toWorld(e.clientX, e.clientY)); this.gesture = null; return; }
     if (this.drawMode()) {
       const w = this.toWorld(e.clientX, e.clientY);
       const pts = this.drawPoints();
-      if (pts.length >= 3) {
+      if (this.drawKind() !== 'line' && pts.length >= 3) {
         const f = pts[0], s = this.view().s;
-        if (Math.hypot((f.x - w.x) * s, (f.y - w.y) * s) < 12) { this.drawCommit.emit(); this.gesture = null; return; }
+        if (Math.hypot((f.x - w.x) * s, (f.y - w.y) * s) < 12) {
+          // Clicking the first point closes the shape: a polygon section, or a ring of seats.
+          if (this.drawKind() === 'segrow') this.drawClose.emit(); else this.drawCommit.emit();
+          this.gesture = null; return;
+        }
       }
       this.drawAddPoint.emit(w); this.gesture = null; return;
     }
@@ -485,6 +530,7 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
 
   onPointerMove(e: PointerEvent) {
     if (this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.placing()) { this.placeCursor.emit(this.toWorld(e.clientX, e.clientY)); return; }
     if (this.drawMode()) { this.drawCursorChange.emit(this.toWorld(e.clientX, e.clientY)); return; }
     const g = this.gesture; if (!g) return;
     if (g.type === 'pinch' && this.pointers.size >= 2) {
