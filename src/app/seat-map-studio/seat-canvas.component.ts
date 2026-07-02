@@ -26,6 +26,7 @@ export const SeatPalette: Record<string, Pal> = {
 interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; }
 interface CanvasItem {
   o: VObj; selected: boolean; dim: boolean; tier: Tier; bounds: Box;
+  cx: number; cy: number;   // rotation pivot = bounds centre (works for path shapes too)
   ghost?: boolean;
   picked?: boolean; pickCount?: number;
   stagePath?: string | null; zoneFill?: string;
@@ -146,7 +147,7 @@ export class SeatComponent {
             <g [attr.data-oid]="item.o.id" [attr.opacity]="item.ghost ? 0.5 : (item.dim ? 0.28 : 1)"
                [style.pointer-events]="item.ghost ? 'none' : null"
                [style.cursor]="mode() === 'editor' ? 'move' : 'default'"
-               [attr.transform]="item.o.rotation && item.o.x != null && item.o.y != null ? ('rotate(' + item.o.rotation + ' ' + item.o.x + ' ' + item.o.y + ')') : null">
+               [attr.transform]="item.o.rotation ? ('rotate(' + item.o.rotation + ' ' + item.cx + ' ' + item.cy + ')') : null">
 
               @if (item.selected && item.o.type !== 'row' && item.o.type !== 'polygon' && item.o.type !== 'line') {
                 <rect [attr.x]="item.bounds.x1 - 4" [attr.y]="item.bounds.y1 - 4"
@@ -255,14 +256,12 @@ export class SeatComponent {
                 }
               }
 
-              <!-- Drag-to-rotate handle (single point-based object, editor). Lives inside
-                   the rotated group so it always sticks out the object's current top. -->
-              @if (selection().size === 1 && item.selected && mode() === 'editor'
-                   && item.o.x != null && item.o.y != null
-                   && item.o.type !== 'row' && item.o.type !== 'polygon' && item.o.type !== 'line') {
-                <line [attr.x1]="item.o.x" [attr.y1]="item.bounds.y1 - 4" [attr.x2]="item.o.x" [attr.y2]="item.bounds.y1 - 24"
+              <!-- Drag-to-rotate handle (single selected object, editor). Lives inside the
+                   rotated group so it always sticks out the object's current top. -->
+              @if (selection().size === 1 && item.selected && mode() === 'editor') {
+                <line [attr.x1]="item.cx" [attr.y1]="item.bounds.y1 - 4" [attr.x2]="item.cx" [attr.y2]="item.bounds.y1 - 24"
                       stroke="#6668ee" [attr.stroke-width]="1.6" style="pointer-events:none"/>
-                <circle data-rot-handle="1" [attr.cx]="item.o.x" [attr.cy]="item.bounds.y1 - 28" [attr.r]="6.5"
+                <circle data-rot-handle="1" [attr.cx]="item.cx" [attr.cy]="item.bounds.y1 - 28" [attr.r]="6.5"
                         fill="#fff" stroke="#6668ee" [attr.stroke-width]="2" style="cursor:grab"/>
               }
             </g>
@@ -380,7 +379,8 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       const picked = pickCount > 0;
       const dim = !!(dimSet && dimSet.size && !dimSet.has(o.id));
       const tier = tierById(v.tiers, o.tier);
-      const item: CanvasItem = { o, selected, picked, pickCount, dim, tier, bounds: objBounds(o) };
+      const bounds = objBounds(o);
+      const item: CanvasItem = { o, selected, picked, pickCount, dim, tier, bounds, cx: (bounds.x1 + bounds.x2) / 2, cy: (bounds.y1 + bounds.y2) / 2 };
       if (o.type === 'stage') {
         const { x, y, w, h } = o as Required<Pick<VObj, 'x' | 'y' | 'w' | 'h'>>;
         item.stagePath = o.shape === 'arc'
@@ -534,7 +534,7 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     if (this.mode() === 'editor' && target.closest?.('[data-rot-handle]')) {
       const rid = this.objAt(target);
       const ro = this.venue().objects.find((o) => o.id === rid);
-      if (rid && ro && ro.x != null && ro.y != null) { this.gesture = { type: 'rotate', id: rid, cx: ro.x, cy: ro.y }; return; }
+      if (rid && ro) { const b = objBounds(ro); this.gesture = { type: 'rotate', id: rid, cx: (b.x1 + b.x2) / 2, cy: (b.y1 + b.y2) / 2 }; return; }
     }
     if (target.closest?.('[data-seat]')) return; // seat handles its own click
     const oid = this.objAt(target);

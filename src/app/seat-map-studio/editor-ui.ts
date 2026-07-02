@@ -289,7 +289,6 @@ export class TierManagerComponent {
             <ed-field label="Depth"><ed-slide [value]="o.h!" [min]="40" [max]="180" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
           }
           @case ('table') {
-            <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeTable" (change)="P(o, { shape: $any($event) })"/></ed-field>
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             @if (o.shape === 'round') {
               <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
@@ -349,7 +348,6 @@ export class InspectorComponent {
   currency = input<string>('$');
 
   shapeStage =[{ v: 'arc', label: 'Arc' }, { v: 'rect', label: 'Rect' }];
-  shapeTable = [{ v: 'round', label: 'Round' }, { v: 'rect', label: 'Long' }];
   markerKinds = [{ v: 'entrance', label: 'Entry' }, { v: 'exit', label: 'Exit' }, { v: 'bar', label: 'Bar' }];
   rowFacing = [{ v: 'front', label: 'Face front' }, { v: 'along', label: 'Follow line' }];
   // Quick-pick swatches for label text colour (lowercase — compared against o.color).
