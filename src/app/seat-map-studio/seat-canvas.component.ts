@@ -49,13 +49,14 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
   styles: [`
     g.sms-seat-body{ transform-box: fill-box; transform-origin: center; }
     g.sms-seat-body rect{ transition: fill .18s ease, stroke .18s ease, opacity .18s ease; }
-    /* Picking a seat: a springy pop that reads as "yes, got it". */
-    g.sms-seat-body.sms-picked{ animation: smsPick .34s cubic-bezier(.34,1.56,.64,1); }
-    /* A seat becoming taken: a firmer settle that reads as "locked in". */
+    /* Picked seat: keeps gently pulsating so a pending selection stays alive. */
+    g.sms-seat-body.sms-picked{ animation: smsPickPulse 1.35s ease-in-out infinite; }
+    /* Seat turning taken: a firmer settle that reads as "locked in". */
     g.sms-seat-body.sms-taken{ animation: smsTake .44s ease both; }
-    circle.sms-seat-ring{ transform-box: fill-box; transform-origin: center; animation: smsRing .34s cubic-bezier(.34,1.56,.64,1); }
-    @keyframes smsPick{ 0%{transform:scale(.68)} 55%{transform:scale(1.22)} 100%{transform:scale(1)} }
-    @keyframes smsRing{ 0%{transform:scale(.2);opacity:0} 100%{transform:scale(1)} }
+    /* The halo ring breathes in sync with the seat for a clear pulsating cue. */
+    circle.sms-seat-ring{ transform-box: fill-box; transform-origin: center; animation: smsRingPulse 1.35s ease-in-out infinite; }
+    @keyframes smsPickPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.14)} }
+    @keyframes smsRingPulse{ 0%,100%{transform:scale(1);opacity:.34} 50%{transform:scale(1.26);opacity:.1} }
     @keyframes smsTake{ 0%{transform:scale(1)} 24%{transform:scale(1.18)} 50%{transform:scale(.9)} 74%{transform:scale(1.05)} 100%{transform:scale(1)} }
     @media (prefers-reduced-motion: reduce){ g.sms-seat-body, circle.sms-seat-ring{ animation: none !important; } }
   `],
