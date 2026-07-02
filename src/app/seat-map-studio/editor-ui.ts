@@ -135,7 +135,8 @@ export class TopBarComponent {
   cycleGrid = output<void>();
   zoom = output<number>(); fit = output<void>(); menu = output<void>(); help = output<void>();
   round = Math.round;
-  seats = computed(() => this.venue().objects.reduce((n, o) => n + (o.type === 'row' ? (o.seats as Seat[]).length : 0), 0));
+  seats = computed(() => this.venue().objects.reduce((n, o) =>
+    n + (o.type === 'row' ? (o.seats as Seat[]).length : o.type === 'table' ? tableSeats(o) : 0), 0));
 }
 
 // ── objects panel ────────────────────────────────────────────────────────────
