@@ -80,22 +80,40 @@ function placeAlong(verts: Pt[], gap: number, count: number): Pt[] {
   const segs = polySegments(verts);
   if (!segs.length) return [];
   const total = segs.reduce((s, q) => s + q.len, 0);
+  const last = segs[segs.length - 1];
+  const ux = last.len ? (last.b.x - last.a.x) / last.len : 1;
+  const uy = last.len ? (last.b.y - last.a.y) / last.len : 0;
   const out: Pt[] = [];
   for (let k = 0; k < count; k++) {
-    let d = Math.min(k * gap, total), i = 0;
-    while (i < segs.length - 1 && d > segs[i].len) { d -= segs[i].len; i++; }
-    const s = segs[i], t = s.len ? d / s.len : 0;
-    out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t, a: s.ang });
+    const dist = k * gap;
+    if (dist <= total) {
+      let d = dist, i = 0;
+      while (i < segs.length - 1 && d > segs[i].len) { d -= segs[i].len; i++; }
+      const s = segs[i], t = s.len ? d / s.len : 0;
+      out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t, a: s.ang });
+    } else {
+      // Fixed seat count + wider spacing: continue past the last vertex along its
+      // direction instead of piling seats at the end.
+      const over = dist - total;
+      out.push({ x: last.b.x + ux * over, y: last.b.y + uy * over, a: last.ang });
+    }
   }
   return out;
 }
 
-// Seats for a committed segmented row — fixed spacing from the start.
+// Seats for a committed segmented row. The count is FIXED (the seats array), so
+// changing the spacing re-spaces those seats rather than adding/removing chairs.
+// A ring distributes its seats evenly; an open row uses the chosen spacing.
 export function pathRowPositions(row: VObj): Pt[] {
   const closed = !!row.closed;
   const verts = closed ? [...row.path!, row.path![0]] : row.path!;
-  const gap = row.seatGap ?? 30;
-  return placeAlong(verts, gap, segRowSeatCount(row.path!, gap, closed));
+  const count = (row.seats as Seat[])?.length || 0;
+  if (!count) return [];
+  if (closed) {
+    const total = polySegments(verts).reduce((s, q) => s + q.len, 0);
+    return placeAlong(verts, total / count, count);
+  }
+  return placeAlong(verts, row.seatGap ?? 30, count);
 }
 
 /** Grow/shrink a seats array to `n`, keeping existing seats + numbering. */
@@ -162,42 +180,45 @@ export function rowSeatAngle(row: VObj, i: number): number {
 export function tableSeatPositions(t: VObj): Pt[] {
   const out: Pt[] = [];
   const n = t.seats as number;
+  const openN = Math.max(0, t.openSpaces ?? 0);
   if (t.shape === 'round') {
     const R = (t.r ?? 30) + 17;
-    // All `n` ring positions render. The last `openSpaces` slots are "open" — drawn as
-    // dashed outlines (no physical chair) but still bookable, so they form one gap arc.
-    const open = Math.max(0, Math.min(n - 1, t.openSpaces ?? 0));
-    const shown = n - open;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      out.push({ x: (t.x ?? 0) + R * Math.cos(a), y: (t.y ?? 0) + R * Math.sin(a), a: (a * 180) / Math.PI - 90, open: i >= shown });
+    // Open spaces are ADDITIONAL ring slots (like extra chairs): total = seats + open.
+    // The real chairs come first; the trailing `open` slots draw as dashed placeholders.
+    const total = n + openN;
+    for (let i = 0; i < total; i++) {
+      const a = (i / total) * Math.PI * 2 - Math.PI / 2;
+      out.push({ x: (t.x ?? 0) + R * Math.cos(a), y: (t.y ?? 0) + R * Math.sin(a), a: (a * 180) / Math.PI - 90, open: i >= n });
     }
   } else {
     const w = t.w || 120, h = t.h || 50;
     const cx = t.x ?? 0, cy = t.y ?? 0;
     const hasSides = t.up != null || t.down != null || t.left != null || t.right != null;
     if (hasSides) {
-      // Per-side chairs: evenly spaced along each edge, facing outward.
-      const edge = (count: number, horiz: boolean, sign: number, a: number) => {
-        const m = count || 0;
+      // Per-side chairs, evenly spaced along each edge and facing outward. Open spaces
+      // are additional dashed slots appended to the bottom edge.
+      const edge = (count: number, horiz: boolean, sign: number, a: number, openCount = 0) => {
+        const m = (count || 0) + openCount;
         for (let k = 0; k < m; k++) {
           const f = (k + 0.5) / m; // even spacing along the edge
-          if (horiz) out.push({ x: cx - w / 2 + w * f, y: cy + sign * (h / 2 + 15), a });
-          else out.push({ x: cx + sign * (w / 2 + 15), y: cy - h / 2 + h * f, a });
+          const isOpen = k >= (count || 0);
+          if (horiz) out.push({ x: cx - w / 2 + w * f, y: cy + sign * (h / 2 + 15), a, open: isOpen });
+          else out.push({ x: cx + sign * (w / 2 + 15), y: cy - h / 2 + h * f, a, open: isOpen });
         }
       };
-      edge(t.up ?? 0, true, -1, 180);    // top edge, facing up
-      edge(t.down ?? 0, true, 1, 0);     // bottom edge, facing down
-      edge(t.left ?? 0, false, -1, 90);  // left edge, facing left
-      edge(t.right ?? 0, false, 1, -90); // right edge, facing right
+      edge(t.up ?? 0, true, -1, 180);          // top edge, facing up
+      edge(t.down ?? 0, true, 1, 0, openN);    // bottom edge, facing down (+ open spaces)
+      edge(t.left ?? 0, false, -1, 90);        // left edge, facing left
+      edge(t.right ?? 0, false, 1, -90);       // right edge, facing right
     } else {
-      const per = Math.ceil(n / 2);
+      const total = n + openN;
+      const per = Math.ceil(total / 2);
       const gap = w / per;
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < total; i++) {
         const top = i < per;
         const k = top ? i : i - per;
         const x = cx - w / 2 + gap * (k + 0.5);
-        out.push({ x, y: cy + (top ? -(h / 2 + 15) : h / 2 + 15), a: top ? 180 : 0 });
+        out.push({ x, y: cy + (top ? -(h / 2 + 15) : h / 2 + 15), a: top ? 180 : 0, open: i >= n });
       }
     }
   }
@@ -346,12 +367,13 @@ export const VENUE_META = [
 ];
 
 // helper: count seats for a tier (used in TierManager)
-/** Bookable spot count for a table. Round open spaces are chairless but still
- *  selectable, so they count; per-side long tables sum their four edges. */
+/** Bookable spot count for a table. Open spaces are chairless but still selectable,
+ *  so they're added on top; per-side long tables sum their four edges. */
 export function tableSeats(o: VObj): number {
+  const open = Math.max(0, o.openSpaces ?? 0);
   const hasSides = o.up != null || o.down != null || o.left != null || o.right != null;
-  if (o.shape !== 'round' && hasSides) return (o.up ?? 0) + (o.down ?? 0) + (o.left ?? 0) + (o.right ?? 0);
-  return (o.seats as number) || 0;
+  if (o.shape !== 'round' && hasSides) return (o.up ?? 0) + (o.down ?? 0) + (o.left ?? 0) + (o.right ?? 0) + open;
+  return ((o.seats as number) || 0) + open;
 }
 
 export function seatCountForTier(venue: Venue, id: string): number {

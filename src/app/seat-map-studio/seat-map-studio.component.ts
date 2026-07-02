@@ -10,7 +10,7 @@ import {
 import { IconComponent } from './icon.component';
 import { SeatCanvasComponent } from './seat-canvas.component';
 import {
-  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, resizeSeats, segRowSeatCount, tierById, uid, venueBounds,
+  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, segRowSeatCount, tierById, uid, venueBounds,
 } from './seat-data';
 import {
   DrawHudComponent, HelpComponent, InspectorComponent, ObjectsPanelComponent, OBJ_ICON, TOOLS, Tool, ToolRailComponent,
@@ -494,12 +494,9 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.checkpoint(sig || `${id}:${Object.keys(p)[0]}`);
     this.venue.update((v) => ({ ...v, objects: v.objects.map((o) => {
       if (o.id !== id) return o;
-      let no: VObj = { ...o, ...p };
-      // A segmented row's seat count is derived from its spacing — keep the seats
-      // array in sync when spacing (or ring state) changes.
-      if (no.type === 'row' && no.path && ('seatGap' in p || 'closed' in p)) {
-        no = { ...no, seats: resizeSeats(no.seats as Seat[], segRowSeatCount(no.path, no.seatGap ?? 30, !!no.closed)) };
-      }
+      const no: VObj = { ...o, ...p };
+      // A segmented row keeps a fixed seat count: changing spacing or ring state
+      // re-spaces the same chairs (count is edited explicitly via the Seats stepper).
       return no;
     }) }));
   }

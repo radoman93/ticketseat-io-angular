@@ -303,7 +303,10 @@ export class TierManagerComponent {
           @case ('row') {
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             @if (o.path) {
-              <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
+              <ed-field [label]="'Seats · ' + seatLen(o)"><ed-stepper [value]="seatLen(o)" [min]="2" [max]="200" (change)="setRowSeats(o, $event)"/></ed-field>
+              @if (!o.closed) {
+                <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
+              }
               <ed-field label="Chair facing"><ed-seg [value]="o.faceAlong ? 'along' : 'front'" [options]="rowFacing" (change)="P(o, { faceAlong: $event === 'along' })"/></ed-field>
               <p class="insp-note">{{ seatLen(o) }} seats · {{ o.path!.length }} points{{ o.closed ? ' · ring' : '' }} · drag to reposition.</p>
             } @else {
@@ -321,13 +324,14 @@ export class TierManagerComponent {
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
             @if (o.shape === 'round') {
               <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
-              <ed-field label="Open spaces"><ed-stepper [value]="o.openSpaces || 0" [min]="0" [max]="($any(o.seats) || 8) - 1" (change)="P(o, { openSpaces: $event })"/></ed-field>
+              <ed-field label="Open spaces"><ed-stepper [value]="o.openSpaces || 0" [min]="0" [max]="12" (change)="P(o, { openSpaces: $event })"/></ed-field>
               <ed-field label="Size"><ed-slide [value]="o.r!" [min]="20" [max]="48" (valueChange)="P(o, { r: $event })"/></ed-field>
             } @else {
               <ed-field label="Top"><ed-stepper [value]="o.up || 0" [min]="0" [max]="12" (change)="P(o, { up: $event })"/></ed-field>
               <ed-field label="Bottom"><ed-stepper [value]="o.down || 0" [min]="0" [max]="12" (change)="P(o, { down: $event })"/></ed-field>
               <ed-field label="Left"><ed-stepper [value]="o.left || 0" [min]="0" [max]="12" (change)="P(o, { left: $event })"/></ed-field>
               <ed-field label="Right"><ed-stepper [value]="o.right || 0" [min]="0" [max]="12" (change)="P(o, { right: $event })"/></ed-field>
+              <ed-field label="Open spaces"><ed-stepper [value]="o.openSpaces || 0" [min]="0" [max]="12" (change)="P(o, { openSpaces: $event })"/></ed-field>
               <ed-field label="Length"><ed-slide [value]="o.w || 120" [min]="70" [max]="220" [step]="5" (valueChange)="P(o, { w: $event })"/></ed-field>
               <ed-field label="Width"><ed-slide [value]="o.h || 50" [min]="36" [max]="90" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
             }
