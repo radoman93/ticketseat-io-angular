@@ -4,6 +4,10 @@ import { IconComponent } from './icon.component';
 import { Seat, TIERS, TIER_COLORS, Tier, VObj, Venue, seatCountForTier, tierById } from './seat-data';
 
 const DISPLAY_CONTENTS = ':host{display:contents;}';
+// Panel hosts must be real flex columns (not display:contents) so their inner
+// scroll region is height-constrained by the sidebar — display:contents children
+// don't get flex-sized reliably in Chromium.
+const PANEL_HOST = ':host{display:flex;flex-direction:column;min-height:0;flex:1 1 0;overflow:hidden;}';
 
 // ── small controls ───────────────────────────────────────────────────────────
 @Component({
@@ -106,7 +110,7 @@ export class ToolRailComponent { active = input('select'); tool = output<Tool>()
       </div>
       @if (!isMobile()) { <div class="ed-div"></div> }
       @if (!isMobile()) {
-        <button class="ed-flag" [class.on]="showGrid()" (click)="toggleGrid.emit()"><sms-icon name="Grid" [s]="15"/> <span class="mono">{{ gridPx() }}px</span></button>
+        <button class="ed-flag" [class.on]="showGrid()" (click)="cycleGrid.emit()" title="Grid size"><sms-icon name="Grid" [s]="15"/> <span class="mono">{{ showGrid() ? gridPx() + 'px' : 'Off' }}</span></button>
       }
       @if (!isMobile()) {
         <button class="ed-flag" [class.on]="snap()" (click)="toggleSnap.emit()"><sms-icon name="Magnet" [s]="15"/> <span class="mono">Snap</span></button>
@@ -128,6 +132,7 @@ export class TopBarComponent {
   scale = input(0.8); gridPx = input(25); showGrid = input(true); snap = input(false);
   canUndo = input(false); canRedo = input(false); isMobile = input(false);
   undo = output<void>(); redo = output<void>(); toggleGrid = output<void>(); toggleSnap = output<void>();
+  cycleGrid = output<void>();
   zoom = output<number>(); fit = output<void>(); menu = output<void>(); help = output<void>();
   round = Math.round;
   seats = computed(() => this.venue().objects.reduce((n, o) => n + (o.type === 'row' ? (o.seats as Seat[]).length : 0), 0));
@@ -135,7 +140,7 @@ export class TopBarComponent {
 
 // ── objects panel ────────────────────────────────────────────────────────────
 @Component({
-  selector: 'ed-objects', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
+  selector: 'ed-objects', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [PANEL_HOST],
   template: `
     <div class="obj-list">
       <div class="panel-head"><span>Objects</span><b class="mono">{{ venue().objects.length }}</b></div>
@@ -166,7 +171,7 @@ export class ObjectsPanelComponent {
 
 // ── tier manager ─────────────────────────────────────────────────────────────
 @Component({
-  selector: 'ed-tiers', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
+  selector: 'ed-tiers', standalone: true, imports: [IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [PANEL_HOST],
   template: `
     <div class="tier-mgr">
       <div class="panel-head"><span>Pricing</span><b class="mono">{{ venue().tiers.length }}</b></div>
@@ -214,7 +219,7 @@ export class TierManagerComponent {
 @Component({
   selector: 'ed-inspector', standalone: true,
   imports: [IconComponent, FieldComponent, TierPickComponent, StepperComponent, SlideComponent, SegComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [DISPLAY_CONTENTS],
+  changeDetection: ChangeDetectionStrategy.OnPush, encapsulation: ViewEncapsulation.None, styles: [PANEL_HOST],
   template: `
     @if (sel().size === 0) {
       <div class="insp-empty">
@@ -266,14 +271,14 @@ export class TierManagerComponent {
         @switch (o.type) {
           @case ('row') {
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
-            <ed-field [label]="(o.path ? 'Seats along path · ' : 'Seats · ') + seatLen(o)">
-              <ed-stepper [value]="seatLen(o)" [min]="1" [max]="60" (change)="setRowSeats(o, $event)"/>
-            </ed-field>
-            @if (!o.path) {
+            @if (o.path) {
+              <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
+              <ed-field label="Chair facing"><ed-seg [value]="o.faceAlong ? 'along' : 'front'" [options]="rowFacing" (change)="P(o, { faceAlong: $event === 'along' })"/></ed-field>
+              <p class="insp-note">{{ seatLen(o) }} seats · {{ o.path!.length }} points{{ o.closed ? ' · ring' : '' }} · drag to reposition.</p>
+            } @else {
+              <ed-field [label]="'Seats · ' + seatLen(o)"><ed-stepper [value]="seatLen(o)" [min]="1" [max]="60" (change)="setRowSeats(o, $event)"/></ed-field>
               <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
               <ed-field label="Curve"><ed-slide [value]="o.arc || 0" [min]="0" [max]="60" unit="°" (valueChange)="P(o, { arc: $event })"/></ed-field>
-            } @else {
-              <p class="insp-note">{{ o.path!.length }} points{{ o.closed ? ' · ring' : '' }} · drag the row on the canvas to reposition it.</p>
             }
           }
           @case ('stage') {
@@ -339,6 +344,7 @@ export class InspectorComponent {
   shapeStage =[{ v: 'arc', label: 'Arc' }, { v: 'rect', label: 'Rect' }];
   shapeTable = [{ v: 'round', label: 'Round' }, { v: 'rect', label: 'Long' }];
   markerKinds = [{ v: 'entrance', label: 'Entry' }, { v: 'exit', label: 'Exit' }, { v: 'bar', label: 'Bar' }];
+  rowFacing = [{ v: 'front', label: 'Face front' }, { v: 'along', label: 'Follow line' }];
   // Quick-pick swatches for label text colour (lowercase — compared against o.color).
   LABEL_COLORS = ['#111827', '#ffffff', '#6668ee', '#0c9d6e', '#d83a3a', '#b9750a'];
   LINE_COLORS = ['#94a3b8', '#111827', '#6668ee', '#0c9d6e', '#d83a3a', '#b9750a'];

@@ -30,6 +30,7 @@ export interface VObj {
   points?: Pt[];
   path?: Pt[];                 // segmented row: polyline vertices (seats spread along it)
   closed?: boolean;            // segmented row: join last vertex back to first (ring of seats)
+  faceAlong?: boolean;         // segmented row: rotate chairs to follow the line (else face front)
   kind?: string;
 }
 
@@ -56,62 +57,68 @@ let _seq = 0;
 export const uid = (p = 'o') => `${p}_${(_seq++).toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 
 // ── Geometry ─────────────────────────────────────────────────────────────────
-// Seats spread evenly (by arc-length) along a multi-segment polyline. Each point
-// carries `a` = the tangent angle (deg) of the segment it sits on, so the seat glyph
-// tilts to follow the bend.
-export function pathRowPositions(row: VObj): Pt[] {
-  const closed = !!row.closed;
-  // For a ring, walk back to the first vertex so seats wrap the whole loop.
-  const verts = closed ? [...row.path!, row.path![0]] : row.path!;
-  const n = (row.seats as Seat[]).length;
-  const segs = verts.slice(0, -1).map((a, i) => {
+/** Segment metadata for a polyline: endpoints, length, and tangent angle (deg). */
+function polySegments(verts: Pt[]) {
+  return verts.slice(0, -1).map((a, i) => {
     const b = verts[i + 1];
     const dx = b.x - a.x, dy = b.y - a.y;
     return { a, b, len: Math.hypot(dx, dy), ang: (Math.atan2(dy, dx) * 180) / Math.PI };
   });
+}
+
+/** Place `count` seats at FIXED spacing `gap` measured FROM THE FIRST vertex.
+ *  Anchoring to the start is what keeps earlier seats put when you add more
+ *  segments — only new seats appear on the extension. Each point carries `a`
+ *  (its segment's tangent angle) for the optional rotate-chairs mode. */
+function placeAlong(verts: Pt[], gap: number, count: number): Pt[] {
+  const segs = polySegments(verts);
+  if (!segs.length) return [];
   const total = segs.reduce((s, q) => s + q.len, 0);
   const out: Pt[] = [];
-  // Seats always face north (no per-segment tilt) — matches the classic segmented row.
-  if (n <= 1 || total === 0) { const s = segs[0]; out.push({ x: s.a.x, y: s.a.y }); return out; }
-  // Open row: seats at 0..1 (endpoints included). Ring: 0..(n-1)/n so the loop
-  // isn't double-stacked at the join.
-  const denom = closed ? n : n - 1;
-  for (let i = 0; i < n; i++) {
-    let d = (i / denom) * total, k = 0;
-    while (k < segs.length - 1 && d > segs[k].len) { d -= segs[k].len; k++; }
-    const s = segs[k], t = s.len ? d / s.len : 0;
-    out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t });
+  for (let k = 0; k < count; k++) {
+    let d = Math.min(k * gap, total), i = 0;
+    while (i < segs.length - 1 && d > segs[i].len) { d -= segs[i].len; i++; }
+    const s = segs[i], t = s.len ? d / s.len : 0;
+    out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t, a: s.ang });
   }
   return out;
 }
 
-// How many seats a drawn polyline yields at the given spacing (used live while drawing
-// and at commit, so the preview count matches the result exactly).
+// Seats for a committed segmented row — fixed spacing from the start.
+export function pathRowPositions(row: VObj): Pt[] {
+  const closed = !!row.closed;
+  const verts = closed ? [...row.path!, row.path![0]] : row.path!;
+  const gap = row.seatGap ?? 30;
+  return placeAlong(verts, gap, segRowSeatCount(row.path!, gap, closed));
+}
+
+/** Grow/shrink a seats array to `n`, keeping existing seats + numbering. */
+export function resizeSeats(seats: Seat[], n: number): Seat[] {
+  if (n === seats.length) return seats;
+  if (n < seats.length) return seats.slice(0, n);
+  const out = seats.slice();
+  const base = (seats[seats.length - 1]?.n ?? 100) + 1;
+  for (let i = seats.length; i < n; i++) out.push({ n: base + (i - seats.length), status: 'available' });
+  return out;
+}
+
+// How many seats a polyline yields at spacing `gap` — shared by preview, commit,
+// and rendering so the count never drifts between them.
 export function segRowSeatCount(points: Pt[], gap = 30, closed = false): number {
   if (points.length < (closed ? 3 : 2)) return 0;
   const verts = closed ? [...points, points[0]] : points;
   let total = 0;
   for (let i = 0; i < verts.length - 1; i++) total += Math.hypot(verts[i + 1].x - verts[i].x, verts[i + 1].y - verts[i].y);
-  if (total === 0) return 0;
-  return Math.max(closed ? 3 : 2, Math.round(total / gap) + (closed ? 0 : 1));
+  if (total === 0) return closed ? 3 : 2;
+  return Math.max(closed ? 3 : 2, closed ? Math.round(total / gap) : Math.floor(total / gap) + 1);
 }
 
-// Live seat positions for the drawing preview (north-facing).
+// Live preview seats while drawing (path so far + cursor) — fixed spacing from start.
 export function segRowPreview(points: Pt[], gap = 30, closed = false): Pt[] {
-  const n = segRowSeatCount(points, gap, closed);
-  if (!n) return [];
+  const count = segRowSeatCount(points, gap, closed);
+  if (!count) return [];
   const verts = closed ? [...points, points[0]] : points;
-  const segs = verts.slice(0, -1).map((a, i) => ({ a, b: verts[i + 1], len: Math.hypot(verts[i + 1].x - a.x, verts[i + 1].y - a.y) }));
-  const total = segs.reduce((s, q) => s + q.len, 0);
-  const denom = closed ? n : n - 1;
-  const out: Pt[] = [];
-  for (let i = 0; i < n; i++) {
-    let d = (i / denom) * total, k = 0;
-    while (k < segs.length - 1 && d > segs[k].len) { d -= segs[k].len; k++; }
-    const s = segs[k], t = s.len ? d / s.len : 0;
-    out.push({ x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t });
-  }
-  return out;
+  return placeAlong(verts, gap, count);
 }
 
 export function rowSeatPositions(row: VObj): Pt[] {
@@ -205,7 +212,12 @@ export function objBounds(o: VObj): Box {
     const rad = (o.shape === 'round' ? o.r! : Math.max(o.w || 120, o.h || 50) / 2) + 34;
     return { x1: o.x! - rad, y1: o.y! - rad, x2: o.x! + rad, y2: o.y! + rad };
   }
-  if (o.type === 'label') return { x1: o.x! - 60, y1: o.y! - 16, x2: o.x! + 60, y2: o.y! + 16 };
+  if (o.type === 'label') {
+    const fs = o.size || 18;
+    const w = Math.max(24, (o.text?.length || 1) * fs * 0.58);
+    const h = fs * 1.4;
+    return { x1: o.x! - w / 2, y1: o.y! - h / 2, x2: o.x! + w / 2, y2: o.y! + h / 2 };
+  }
   return { x1: o.x! - 20, y1: o.y! - 24, x2: o.x! + 20, y2: o.y! + 20 }; // marker
 }
 export function venueBounds(objs: VObj[]): Box {

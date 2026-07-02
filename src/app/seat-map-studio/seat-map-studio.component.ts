@@ -10,7 +10,7 @@ import {
 import { IconComponent } from './icon.component';
 import { SeatCanvasComponent } from './seat-canvas.component';
 import {
-  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, segRowSeatCount, tierById, uid, venueBounds,
+  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, resizeSeats, segRowSeatCount, tierById, uid, venueBounds,
 } from './seat-data';
 import {
   DrawHudComponent, HelpComponent, InspectorComponent, ObjectsPanelComponent, OBJ_ICON, TOOLS, Tool, ToolRailComponent,
@@ -61,7 +61,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
     @if (mode() === 'editor') {
       @if (isMobile()) {
         <div class="ed-main mobile">
-          <ed-topbar [venue]="venue()" [scale]="scale()" [gridPx]="gridPx" [showGrid]="showGrid()" [snap]="snap()"
+          <ed-topbar [venue]="venue()" [scale]="scale()" [gridPx]="gridPx()" [showGrid]="showGrid()" [snap]="snap()"
                      [canUndo]="canUndo()" [canRedo]="canRedo()" [isMobile]="true"
                      (undo)="undo()" (redo)="redo()" (zoom)="zoomBy($event)" (fit)="fit()"
                      (menu)="sheet.set(sheet() === 'browser' ? null : 'browser')" (help)="openHelp()"/>
@@ -101,9 +101,9 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
         </div>
       } @else {
         <div class="ed-main">
-          <ed-topbar [venue]="venue()" [scale]="scale()" [gridPx]="gridPx" [showGrid]="showGrid()" [snap]="snap()"
+          <ed-topbar [venue]="venue()" [scale]="scale()" [gridPx]="gridPx()" [showGrid]="showGrid()" [snap]="snap()"
                      [canUndo]="canUndo()" [canRedo]="canRedo()" [isMobile]="false"
-                     (undo)="undo()" (redo)="redo()" (toggleGrid)="toggleGrid()" (toggleSnap)="toggleSnap()"
+                     (undo)="undo()" (redo)="redo()" (cycleGrid)="cycleGrid()" (toggleSnap)="toggleSnap()"
                      (zoom)="zoomBy($event)" (fit)="fit()" (help)="openHelp()"/>
           <div class="ed-cols insp-right">
             <ed-toolrail [active]="activeTool()" (tool)="addObject($event)"/>
@@ -181,7 +181,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
     <!-- ── reusable templates ── -->
     <ng-template #canvasTpl>
       <sms-canvas #canvas [venue]="displayVenue()" [mode]="mode()" [canvasStyle]="canvasStyle" [canvasTheme]="canvasTheme"
-                  [showGrid]="mode() === 'editor' && showGrid()" [snap]="snap()" [selection]="selection()"
+                  [showGrid]="mode() === 'editor' && showGrid()" [grid]="gridPx()" [snap]="snap()" [selection]="selection()"
                   [selectedSeats]="selectedKeys()" [pickedZones]="pickedZones()" [dimUnfocused]="null"
                   [drawMode]="!!draw()" [drawKind]="draw()?.kind || 'polygon'" [drawPoints]="draw()?.points || []" [drawCursor]="draw()?.cursor || null"
                   [placing]="!!placing()" [ghost]="ghostObj()"
@@ -227,7 +227,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   // fixed tweaks
   readonly canvasStyle = 'skeuomorphic';
   readonly canvasTheme = 'light';
-  readonly gridPx = 25;
+  gridPx = signal(25);
+  readonly gridSizes = [10, 25, 50, 100];
   round = Math.round;
   VENUE_META = VENUE_META;
   addTools: Tool[] = TOOLS.filter((t) => t.id !== 'select');
@@ -429,7 +430,16 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   // ── editor ops ───────────────────────────────────────────────────────────────
   patch(id: string, p: Partial<VObj>, sig?: string) {
     this.checkpoint(sig || `${id}:${Object.keys(p)[0]}`);
-    this.venue.update((v) => ({ ...v, objects: v.objects.map((o) => (o.id === id ? { ...o, ...p } : o)) }));
+    this.venue.update((v) => ({ ...v, objects: v.objects.map((o) => {
+      if (o.id !== id) return o;
+      let no: VObj = { ...o, ...p };
+      // A segmented row's seat count is derived from its spacing — keep the seats
+      // array in sync when spacing (or ring state) changes.
+      if (no.type === 'row' && no.path && ('seatGap' in p || 'closed' in p)) {
+        no = { ...no, seats: resizeSeats(no.seats as Seat[], segRowSeatCount(no.path, no.seatGap ?? 30, !!no.closed)) };
+      }
+      return no;
+    }) }));
   }
   onMoveStart() {
     this.checkpoint('move');
@@ -445,7 +455,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   }
   onMove(dx: number, dy: number) {
     const useSnap = this.snap();
-    const snapTo = (n: number) => (useSnap ? Math.round(n / 25) * 25 : n);
+    const g = this.gridPx();
+    const snapTo = (n: number) => (useSnap ? Math.round(n / g) * g : n);
     this.venue.update((v) => ({ ...v, objects: v.objects.map((o) => {
       const s = this.moveSnap?.get(o.id); if (!s) return o;
       if ('points' in s) return { ...o, points: s.points.map((p) => ({ x: snapTo(p.x + dx), y: snapTo(p.y + dy) })) };
@@ -624,6 +635,13 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   fit() { this.canvasRef()?.fit(); }
   toggleGrid() { this.showGrid.update((g) => !g); }
   toggleSnap() { this.snap.update((s) => !s); }
+  /** Cycle the grid: Off → 10 → 25 → 50 → 100 → Off. */
+  cycleGrid() {
+    if (!this.showGrid()) { this.showGrid.set(true); this.gridPx.set(this.gridSizes[0]); return; }
+    const i = this.gridSizes.indexOf(this.gridPx());
+    if (i < 0 || i >= this.gridSizes.length - 1) { this.showGrid.set(false); return; }
+    this.gridPx.set(this.gridSizes[i + 1]);
+  }
 
   // ── keyboard ────────────────────────────────────────────────────────────────────
   private onKey(e: KeyboardEvent) {

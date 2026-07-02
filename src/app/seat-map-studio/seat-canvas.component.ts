@@ -135,9 +135,9 @@ export class SeatComponent {
            (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)"
            (pointerup)="onPointerUp($event)" (pointercancel)="onPointerUp($event)">
         <defs>
-          <pattern id="gp" [attr.width]="G" [attr.height]="G" patternUnits="userSpaceOnUse"
+          <pattern id="gp" [attr.width]="grid()" [attr.height]="grid()" patternUnits="userSpaceOnUse"
                    [attr.patternTransform]="'translate(' + view().tx + ',' + view().ty + ') scale(' + view().s + ')'">
-            <path [attr.d]="'M ' + G + ' 0 L 0 0 0 ' + G" fill="none" [attr.stroke]="pal().grid" [attr.stroke-width]="1 / view().s"/>
+            <path [attr.d]="'M ' + grid() + ' 0 L 0 0 0 ' + grid()" fill="none" [attr.stroke]="pal().grid" [attr.stroke-width]="1 / view().s"/>
           </pattern>
         </defs>
         @if (showGrid()) { <rect x="0" y="0" width="100%" height="100%" fill="url(#gp)"/> }
@@ -323,7 +323,7 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   place = output<Pt>();
   placeCursor = output<Pt>();
 
-  readonly G = 25;
+  grid = input(25);
   view = signal({ s: 0.8, tx: 60, ty: 40 });
   marquee = signal<Box | null>(null);
 
@@ -391,7 +391,14 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       } else if (o.type === 'row') {
         const ps = rowSeatPositions(o);
         const seats = o.seats as Seat[];
-        item.rowSeats = ps.map((p, i): SeatVM => ({ p, angle: -(p.a ?? rowSeatAngle(o, i)), seat: seats[i], key: `${o.id}:${seats[i].n}` }));
+        const along = !!o.path && !!o.faceAlong;
+        item.rowSeats = ps.map((p, i): SeatVM => {
+          // Crash-safe: if the derived seat count outran the stored array (e.g. spacing
+          // just changed), synthesize a seat so rendering never throws.
+          const seat = seats[i] ?? { n: 101 + i, status: 'available' as const };
+          const angle = o.path ? (along ? -(p.a ?? 0) : 0) : -(p.a ?? rowSeatAngle(o, i));
+          return { p, angle, seat, key: `${o.id}:${seat.n}` };
+        });
         item.rowLabelX = ps[0].x - 22; item.rowLabelY = ps[0].y + 4;
         item.showNum = showNum;
       }
