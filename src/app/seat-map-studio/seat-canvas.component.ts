@@ -132,7 +132,7 @@ export class SeatComponent {
     <div #wrap style="position:absolute;inset:0;overflow:hidden;touch-action:none"
          [style.background]="pal().bg">
       <svg #svg width="100%" height="100%" style="display:block"
-           [style.cursor]="drawMode() || placing() ? 'crosshair' : (gesture?.type === 'pan' ? 'grabbing' : 'default')"
+           [style.cursor]="drawMode() || placing() ? 'crosshair' : (gesture?.type === 'pan' ? 'grabbing' : (spaceDown ? 'grab' : 'default'))"
            (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)"
            (pointerup)="onPointerUp($event)" (pointercancel)="onPointerUp($event)">
         <defs>
@@ -439,8 +439,22 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     this.tryFit();
     this.ro = new ResizeObserver(() => this.tryFit());
     this.ro.observe(el);
+    window.addEventListener('keydown', this.onSpace, true);
+    window.addEventListener('keyup', this.onSpace, true);
   }
-  ngOnDestroy() { this.ro?.disconnect(); }
+  ngOnDestroy() {
+    this.ro?.disconnect();
+    window.removeEventListener('keydown', this.onSpace, true);
+    window.removeEventListener('keyup', this.onSpace, true);
+  }
+  // Hold Space to pan (Figma/PowerPoint convention) — ignored while typing in a field.
+  spaceDown = false;
+  private onSpace = (e: KeyboardEvent) => {
+    if (e.code !== 'Space') return;
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    this.spaceDown = e.type === 'keydown';
+  };
 
   private size() { const r = this.wrapRef().nativeElement.getBoundingClientRect(); return { w: r?.width || 800, h: r?.height || 600 }; }
   private toWorld(cx: number, cy: number): Pt {
@@ -539,15 +553,21 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     if (target.closest?.('[data-seat]')) return; // seat handles its own click
     const oid = this.objAt(target);
     const mode = this.mode();
+    const additive = e.shiftKey || e.ctrlKey || e.metaKey; // Windows: Ctrl-click adds/removes
+    // Pan with the middle mouse button or while holding Space (both modes).
+    if (e.button === 1 || this.spaceDown) {
+      this.gesture = { type: 'pan', x: e.clientX, y: e.clientY, v: this.view(), downId: oid, moved: false };
+      return;
+    }
     if (mode === 'editor' && oid) {
-      const already = this.selection()?.has(oid);
-      if (!already && !e.shiftKey) this.select.emit({ ids: [oid], additive: false });
-      else if (e.shiftKey) this.select.emit({ ids: [oid], additive: true });
+      if (additive) { this.select.emit({ ids: [oid], additive: true }); this.gesture = null; return; }
+      if (!this.selection()?.has(oid)) this.select.emit({ ids: [oid], additive: false });
       this.moveStart.emit();
       this.gesture = { type: 'drag', start: this.toWorld(e.clientX, e.clientY), moved: false };
-    } else if (mode === 'editor' && e.shiftKey) {
+    } else if (mode === 'editor') {
+      // Empty canvas → rubber-band marquee (Windows-style; no modifier needed).
       const w = this.toWorld(e.clientX, e.clientY);
-      this.gesture = { type: 'marquee', start: w };
+      this.gesture = { type: 'marquee', start: w, additive };
       this.marquee.set({ x1: w.x, y1: w.y, x2: w.x, y2: w.y });
     } else {
       this.gesture = { type: 'pan', x: e.clientX, y: e.clientY, v: this.view(), downId: oid, moved: false };
@@ -600,9 +620,15 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     }
     if (g?.type === 'marquee') {
       const end = this.toWorld(e.clientX, e.clientY);
-      const m = { x1: Math.min(g.start.x, end.x), x2: Math.max(g.start.x, end.x), y1: Math.min(g.start.y, end.y), y2: Math.max(g.start.y, end.y) };
-      const hit = this.venue().objects.filter((o) => { const b = objBounds(o); return b.x1 < m.x2 && b.x2 > m.x1 && b.y1 < m.y2 && b.y2 > m.y1; }).map((o) => o.id);
-      this.select.emit({ ids: hit, additive: false });
+      const dragged = Math.abs(end.x - g.start.x) > 3 || Math.abs(end.y - g.start.y) > 3;
+      if (dragged) {
+        const m = { x1: Math.min(g.start.x, end.x), x2: Math.max(g.start.x, end.x), y1: Math.min(g.start.y, end.y), y2: Math.max(g.start.y, end.y) };
+        const hit = this.venue().objects.filter((o) => { const b = objBounds(o); return b.x1 < m.x2 && b.x2 > m.x1 && b.y1 < m.y2 && b.y2 > m.y1; }).map((o) => o.id);
+        this.select.emit({ ids: hit, additive: g.additive });
+      } else if (!g.additive) {
+        // A plain click on empty canvas clears the selection.
+        this.select.emit({ ids: [], additive: false });
+      }
       this.marquee.set(null);
     }
     if (this.pointers.size < 2) this.gesture = null;

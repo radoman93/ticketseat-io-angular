@@ -18,7 +18,10 @@
   font-family:"Geist",-apple-system,BlinkMacSystemFont,sans-serif;
   -webkit-font-smoothing:antialiased; line-height:1.5;
   display:flex; flex-direction:column;
+  user-select:none; -webkit-user-select:none;
 }
+/* Keep text editable/selectable in real inputs. */
+.sms input,.sms textarea,.sms [contenteditable="true"]{ user-select:text; -webkit-user-select:text; }
 /* Embedded mode: fill the host's box instead of the full viewport. */
 .sms.sms--embedded{ position:relative; inset:auto; height:100%; width:100%; }
 .sms[data-theme="dark"]{
