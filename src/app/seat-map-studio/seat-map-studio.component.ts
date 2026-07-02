@@ -57,8 +57,8 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           }
         </div>
       }
+      <div style="flex:1"></div>
       @if (mode() === 'editor') {
-        <div style="flex:1"></div>
         <button class="venue-btn" (click)="exportLayout()" title="Export layout as JSON">
           <sms-icon name="Map" [s]="14"/><span class="venue-name">Export</span>
         </button>
@@ -67,6 +67,11 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           <input type="file" accept="application/json,.json" hidden (change)="onImportPick($event)">
         </label>
       }
+      <button class="venue-btn" (click)="setMode(mode() === 'editor' ? 'viewer' : 'editor')"
+              [title]="mode() === 'editor' ? 'Preview and select seats' : 'Back to editing'">
+        <sms-icon [name]="mode() === 'editor' ? 'Eye' : 'Edit'" [s]="14"/>
+        <span class="venue-name">{{ mode() === 'editor' ? 'Preview' : 'Edit' }}</span>
+      </button>
     </header>
     }
 
@@ -199,7 +204,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
                   [drawMode]="!!draw()" [drawKind]="draw()?.kind || 'polygon'" [drawPoints]="draw()?.points || []" [drawCursor]="draw()?.cursor || null"
                   [placing]="!!placing()" [ghost]="ghostObj()"
                   (drawAddPoint)="drawAddPoint($event)" (drawCursorChange)="drawCursor($event)" (drawCommit)="commitDraw()" (drawClose)="drawClose()"
-                  (place)="placeObject($event)" (placeCursor)="placeCursorAt($event)"
+                  (place)="placeObject($event)" (placeCursor)="placeCursorAt($event)" (rotate)="rotateObject($event)"
                   (select)="selectObjs($event.ids, $event.additive)" (moveStart)="onMoveStart()" (move)="onMove($event.dx, $event.dy)"
                   (seatClick)="pickSeat($event.row, $event.seat, $event.tier)" (zonePick)="pickZone($event)"
                   (scaleChange)="scale.set($event)"/>
@@ -523,6 +528,7 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     switch (toolId) {
       case 'stage': return { id: id ?? uid('stage'), type: 'stage', x, y, w: 480, h: 80, label: 'STAGE', shape: 'arc' };
       case 'table': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'round', r: 30, seats: 8, label: 'T' + (this.venue().objects.filter((q) => q.type === 'table').length + 1), tier: 'standard' };
+      case 'table-long': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'rect', w: 140, h: 54, up: 4, down: 4, seats: 8, label: 'T' + (this.venue().objects.filter((q) => q.type === 'table').length + 1), tier: 'standard' };
       case 'label': return { id: id ?? uid('lbl'), type: 'label', x, y, text: 'New label', size: 18 };
       default: return { id: id ?? uid('mk'), type: 'marker', x, y, kind: 'entrance', label: 'Entrance' };
     }
@@ -536,6 +542,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.selection.set(new Set([o.id])); this.placing.set(null); this.activeTool.set('select');
   }
   cancelPlacing() { this.placing.set(null); this.activeTool.set('select'); }
+  /** Live rotation from the on-canvas handle (dedup'd into one undo step per drag). */
+  rotateObject(e: { id: string; deg: number }) { this.patch(e.id, { rotation: e.deg }, 'rotate:' + e.id); }
 
   // ── polygon drawing ──────────────────────────────────────────────────────────
   drawAddPoint(p: Pt) { this.draw.update((d) => (d ? { ...d, points: [...d.points, p] } : d)); }

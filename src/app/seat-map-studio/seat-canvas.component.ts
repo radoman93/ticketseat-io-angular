@@ -254,6 +254,17 @@ export class SeatComponent {
                   }
                 }
               }
+
+              <!-- Drag-to-rotate handle (single point-based object, editor). Lives inside
+                   the rotated group so it always sticks out the object's current top. -->
+              @if (selection().size === 1 && item.selected && mode() === 'editor'
+                   && item.o.x != null && item.o.y != null
+                   && item.o.type !== 'row' && item.o.type !== 'polygon' && item.o.type !== 'line') {
+                <line [attr.x1]="item.o.x" [attr.y1]="item.bounds.y1 - 4" [attr.x2]="item.o.x" [attr.y2]="item.bounds.y1 - 24"
+                      stroke="#6668ee" [attr.stroke-width]="1.6" style="pointer-events:none"/>
+                <circle data-rot-handle="1" [attr.cx]="item.o.x" [attr.cy]="item.bounds.y1 - 28" [attr.r]="6.5"
+                        fill="#fff" stroke="#6668ee" [attr.stroke-width]="2" style="cursor:grab"/>
+              }
             </g>
           }
 
@@ -323,6 +334,7 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   drawClose = output<void>();
   place = output<Pt>();
   placeCursor = output<Pt>();
+  rotate = output<{ id: string; deg: number }>();
 
   grid = input(25);
   view = signal({ s: 0.8, tx: 60, ty: 40 });
@@ -518,6 +530,12 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       this.drawAddPoint.emit(w); this.gesture = null; return;
     }
     const target = e.target as Element;
+    // Drag-to-rotate: the handle carries data-rot-handle; rotate about the object centre.
+    if (this.mode() === 'editor' && target.closest?.('[data-rot-handle]')) {
+      const rid = this.objAt(target);
+      const ro = this.venue().objects.find((o) => o.id === rid);
+      if (rid && ro && ro.x != null && ro.y != null) { this.gesture = { type: 'rotate', id: rid, cx: ro.x, cy: ro.y }; return; }
+    }
     if (target.closest?.('[data-seat]')) return; // seat handles its own click
     const oid = this.objAt(target);
     const mode = this.mode();
@@ -562,6 +580,12 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     } else if (g.type === 'marquee') {
       const w = this.toWorld(e.clientX, e.clientY);
       this.marquee.set({ x1: g.start.x, y1: g.start.y, x2: w.x, y2: w.y });
+    } else if (g.type === 'rotate') {
+      const w = this.toWorld(e.clientX, e.clientY);
+      let deg = (Math.atan2(w.y - g.cy, w.x - g.cx) * 180) / Math.PI + 90; // handle is at the object's local top
+      deg = ((deg % 360) + 360) % 360;
+      deg = this.snap() ? Math.round(deg / 15) * 15 : Math.round(deg);
+      this.rotate.emit({ id: g.id, deg });
     }
   }
 

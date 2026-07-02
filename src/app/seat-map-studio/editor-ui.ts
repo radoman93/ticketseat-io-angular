@@ -79,7 +79,8 @@ export const TOOLS: Tool[] = [
   { id: 'stage', name: 'Stage', icon: 'Stage' },
   { id: 'row', name: 'Row of seats', icon: 'Row', wizard: true },
   { id: 'segrow', name: 'Segmented row', icon: 'Segrow' },
-  { id: 'table', name: 'Table', icon: 'Table' },
+  { id: 'table', name: 'Round table', icon: 'Table' },
+  { id: 'table-long', name: 'Long table', icon: 'TableLong' },
   { id: 'zone', name: 'GA zone', icon: 'Zone', wizard: true },
   { id: 'polygon', name: 'Polygon section', icon: 'Polygon' },
   { id: 'line', name: 'Line', icon: 'Line' },
@@ -286,7 +287,6 @@ export class TierManagerComponent {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeStage" (change)="P(o, { shape: $any($event) })"/></ed-field>
             <ed-field label="Width"><ed-slide [value]="o.w!" [min]="160" [max]="800" [step]="10" (valueChange)="P(o, { w: $event })"/></ed-field>
             <ed-field label="Depth"><ed-slide [value]="o.h!" [min]="40" [max]="180" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
-            <ed-field label="Rotation"><ed-slide [value]="o.rotation || 0" [min]="0" [max]="345" [step]="15" unit="°" (valueChange)="P(o, { rotation: $event })"/></ed-field>
           }
           @case ('table') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeTable" (change)="P(o, { shape: $any($event) })"/></ed-field>
@@ -303,7 +303,6 @@ export class TierManagerComponent {
               <ed-field label="Length"><ed-slide [value]="o.w || 120" [min]="70" [max]="220" [step]="5" (valueChange)="P(o, { w: $event })"/></ed-field>
               <ed-field label="Width"><ed-slide [value]="o.h || 50" [min]="36" [max]="90" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
             }
-            <ed-field label="Rotation"><ed-slide [value]="o.rotation || 0" [min]="0" [max]="345" [step]="15" unit="°" (valueChange)="P(o, { rotation: $event })"/></ed-field>
           }
           @case ('zone') {
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
