@@ -5,7 +5,7 @@ export type ObjType = 'stage' | 'row' | 'table' | 'zone' | 'polygon' | 'label' |
 export type SeatStatus = 'available' | 'sold' | 'held';
 
 export interface Seat { n: number; status: SeatStatus; }
-export interface Pt { x: number; y: number; a?: number; }
+export interface Pt { x: number; y: number; a?: number; open?: boolean; }
 export interface Tier { id: string; name: string; color: string; price: number; }
 
 export interface VObj {
@@ -164,13 +164,13 @@ export function tableSeatPositions(t: VObj): Pt[] {
   const n = t.seats as number;
   if (t.shape === 'round') {
     const R = (t.r ?? 30) + 17;
-    // Render only `n - openSpaces` chairs, keeping them in the first slots of the
-    // `n` evenly-spaced ring positions so a single contiguous gap appears.
+    // All `n` ring positions render. The last `openSpaces` slots are "open" — drawn as
+    // dashed outlines (no physical chair) but still bookable, so they form one gap arc.
     const open = Math.max(0, Math.min(n - 1, t.openSpaces ?? 0));
     const shown = n - open;
-    for (let i = 0; i < shown; i++) {
+    for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      out.push({ x: (t.x ?? 0) + R * Math.cos(a), y: (t.y ?? 0) + R * Math.sin(a), a: (a * 180) / Math.PI - 90 });
+      out.push({ x: (t.x ?? 0) + R * Math.cos(a), y: (t.y ?? 0) + R * Math.sin(a), a: (a * 180) / Math.PI - 90, open: i >= shown });
     }
   } else {
     const w = t.w || 120, h = t.h || 50;
@@ -346,12 +346,12 @@ export const VENUE_META = [
 ];
 
 // helper: count seats for a tier (used in TierManager)
-/** Effective chair count for a table — honours per-side counts and round open spaces. */
+/** Bookable spot count for a table. Round open spaces are chairless but still
+ *  selectable, so they count; per-side long tables sum their four edges. */
 export function tableSeats(o: VObj): number {
   const hasSides = o.up != null || o.down != null || o.left != null || o.right != null;
   if (o.shape !== 'round' && hasSides) return (o.up ?? 0) + (o.down ?? 0) + (o.left ?? 0) + (o.right ?? 0);
-  const n = (o.seats as number) || 0;
-  return o.shape === 'round' ? Math.max(0, n - (o.openSpaces ?? 0)) : n;
+  return (o.seats as number) || 0;
 }
 
 export function seatCountForTier(venue: Venue, id: string): number {

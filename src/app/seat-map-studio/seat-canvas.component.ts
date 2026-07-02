@@ -23,7 +23,7 @@ export const SeatPalette: Record<string, Pal> = {
     stage: '#4b4b55', stageText: '#f3f3f5', marker: '#22222a', markerStroke: '#3a3a44', markerInk: '#b6b6c0' },
 };
 
-interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; }
+interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; open?: boolean; }
 interface CanvasItem {
   o: VObj; selected: boolean; dim: boolean; tier: Tier; bounds: Box;
   cx: number; cy: number;   // rotation pivot = bounds centre (works for path shapes too)
@@ -54,7 +54,11 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
         @if (selected()) {
           <svg:circle [attr.r]="13" fill="none" [attr.stroke]="color()" [attr.stroke-width]="2" [attr.opacity]="0.32"/>
         }
-        @if (seatStyle() === 'minimal') {
+        @if (open() && !selected()) {
+          <!-- Open space: chairless dashed placeholder — visible and still selectable. -->
+          <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
+                    fill="none" [attr.stroke]="color()" [attr.stroke-width]="1.4" stroke-dasharray="3 2.4" [attr.opacity]="0.9"/>
+        } @else if (seatStyle() === 'minimal') {
           <svg:rect [attr.x]="-5.5" [attr.y]="-5.5" [attr.width]="11" [attr.height]="11" [attr.rx]="3.4"
                     [attr.fill]="minFill" [attr.stroke]="minStroke" [attr.stroke-width]="1.5" [attr.opacity]="sold ? 0.55 : 1"/>
         } @else {
@@ -81,6 +85,7 @@ export class SeatComponent {
   showNum = input(false);
   selected = input(false);
   interactive = input(false);
+  open = input(false);
   dim = input(false);
   pal = input.required<Pal>();
   down = output<PointerEvent>();
@@ -210,7 +215,7 @@ export class SeatComponent {
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                   @for (c of item.chairs!; track $index) {
                     <g sms-seat [p]="c.p" [angle]="c.angle" [color]="item.tier.color" status="available"
-                       [seatStyle]="canvasStyle()" [num]="c.seat.n" [showNum]="false"
+                       [seatStyle]="canvasStyle()" [num]="c.seat.n" [showNum]="false" [open]="!!c.open"
                        [selected]="!!selectedSeats()?.has(c.key)" [interactive]="mode() === 'viewer'"
                        [dim]="item.dim" [pal]="pal()" (down)="seatClick.emit({ row: item.o, seat: c.seat, tier: item.tier })"></g>
                   }
@@ -395,7 +400,7 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
         item.polyFill = `color-mix(in srgb, ${tier.color} ${picked ? 42 : 15}%, transparent)`;
       } else if (o.type === 'table') {
         item.tableFill = `color-mix(in srgb, ${tier.color} 12%, ${pal.bg})`;
-        item.chairs = tableSeatPositions(o).map((c, i): SeatVM => ({ p: c, angle: c.a || 0, seat: { n: i + 1, status: 'available' }, key: `${o.id}:${i + 1}` }));
+        item.chairs = tableSeatPositions(o).map((c, i): SeatVM => ({ p: c, angle: c.a || 0, seat: { n: i + 1, status: 'available' }, key: `${o.id}:${i + 1}`, open: !!c.open }));
       } else if (o.type === 'marker') {
         item.markerGlyph = MARKER_GLYPHS[o.kind || ''] || '•';
         item.markerFontSize = o.kind === 'bar' ? 8 : 13;
