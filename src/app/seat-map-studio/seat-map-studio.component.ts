@@ -65,7 +65,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
         <button class="icon-btn" (click)="importInput.click()" title="Import layout from JSON" aria-label="Import layout from JSON">
           <sms-icon name="Upload" [s]="18"/>
         </button>
-        <input #importInput type="file" accept="application/json,.json" hidden (change)="onImportPick($event)">
+        <input #importInput type="file" accept=".ticketseat,application/json,.json" hidden (change)="onImportPick($event)">
       }
       <button class="venue-btn" (click)="setMode(mode() === 'editor' ? 'viewer' : 'editor')"
               [title]="mode() === 'editor' ? 'Preview and select seats' : 'Back to editing'">
@@ -224,7 +224,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
           <button [class.on]="leftTab() === 'tiers'" (click)="leftTab.set('tiers')">Pricing</button>
         </div>
         @if (leftTab() === 'objects') {
-          <ed-objects [venue]="venue()" [selection]="selection()" (select)="selectObjs($event.ids, $event.additive)"/>
+          <ed-objects [venue]="venue()" [selection]="selection()" (select)="selectObjs($event.ids, $event.additive)" (reorder)="reorderObjects($event)"/>
         } @else {
           <ed-tiers [venue]="venue()" [currency]="currency()" (add)="addTier()" (patch)="patchTier($event.id, $event.p)" (del)="deleteTier($event)"/>
         }
@@ -564,6 +564,16 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   cancelPlacing() { this.placing.set(null); this.activeTool.set('select'); }
   /** Live rotation from the on-canvas handle (dedup'd into one undo step per drag). */
   rotateObject(e: { id: string; deg: number }) { this.patch(e.id, { rotation: e.deg }, 'rotate:' + e.id); }
+  /** Restack objects from the Objects list drag-reorder. `ids` is the new paint order
+   *  (earlier = further back). One undo step. */
+  reorderObjects(ids: string[]) {
+    this.checkpoint('reorder');
+    this.venue.update((v) => {
+      const byId = new Map(v.objects.map((o) => [o.id, o]));
+      const next = ids.map((id) => byId.get(id)!).filter(Boolean);
+      return next.length === v.objects.length ? { ...v, objects: next } : v;
+    });
+  }
 
   // ── polygon drawing ──────────────────────────────────────────────────────────
   drawAddPoint(p: Pt) { this.draw.update((d) => (d ? { ...d, points: [...d.points, p] } : d)); }

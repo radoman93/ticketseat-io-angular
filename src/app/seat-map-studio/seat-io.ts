@@ -51,7 +51,8 @@ export function downloadVenue(venue: Venue, filename?: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename ?? `${slugify(venue.name) || 'venue'}.json`;
+  // Seat maps carry the .ticketseat extension (JSON payload) so they're recognisable as ours.
+  a.download = filename ?? `${slugify(venue.name) || 'venue'}.ticketseat`;
   document.body.appendChild(a);
   a.click();
   a.remove();

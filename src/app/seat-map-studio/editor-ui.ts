@@ -147,8 +147,13 @@ export class TopBarComponent {
     <div class="obj-list">
       <div class="panel-head"><span>Objects</span><b class="mono">{{ venue().objects.length }}</b></div>
       <div class="obj-scroll">
-        @for (o of venue().objects; track o.id) {
-          <button class="obj-row" [class.on]="selection().has(o.id)" (click)="select.emit({ ids: [o.id], additive: $event.shiftKey })">
+        @for (o of venue().objects; track o.id; let i = $index) {
+          <button class="obj-row" [class.on]="selection().has(o.id)"
+                  [class.dragging]="dragI() === i" [class.drop-into]="overI() === i && dragI() !== null && dragI() !== i"
+                  draggable="true" (dragstart)="onDragStart(i, $event)" (dragover)="onDragOver(i, $event)"
+                  (drop)="onDrop(i, $event)" (dragend)="onDragEnd()"
+                  (click)="select.emit({ ids: [o.id], additive: $event.shiftKey })">
+            <span class="obj-grip" title="Drag to restack"><sms-icon name="Drag" [s]="14"/></span>
             <span class="obj-ic"><sms-icon [name]="iconFor(o)" [s]="16"/></span>
             <span class="obj-name">{{ nameFor(o) }}</span>
             <span class="obj-sub mono">{{ subFor(o) }}</span>
@@ -160,6 +165,30 @@ export class TopBarComponent {
 export class ObjectsPanelComponent {
   venue = input.required<Venue>(); selection = input<Set<string>>(new Set());
   select = output<{ ids: string[]; additive: boolean }>();
+  /** Emits the new full object order (ids, back-to-front) after a drag-reorder. */
+  reorder = output<string[]>();
+  dragI = signal<number | null>(null);
+  overI = signal<number | null>(null);
+  onDragStart(i: number, e: DragEvent) {
+    this.dragI.set(i);
+    if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch {} }
+  }
+  onDragOver(i: number, e: DragEvent) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    this.overI.set(i);
+  }
+  onDrop(to: number, e: DragEvent) {
+    e.preventDefault();
+    const from = this.dragI();
+    this.onDragEnd();
+    if (from == null || from === to) return;
+    const ids = this.venue().objects.map((o) => o.id);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    this.reorder.emit(ids);
+  }
+  onDragEnd() { this.dragI.set(null); this.overI.set(null); }
   iconFor(o: VObj) { return OBJ_ICON[o.type] || 'Marker'; }
   nameFor(o: VObj) { return o.label || o.text || (o.type[0].toUpperCase() + o.type.slice(1)); }
   subFor(o: VObj) {
@@ -332,6 +361,10 @@ export class TierManagerComponent {
             <p class="insp-note">{{ o.path!.length }} points · drag the line on the canvas to reposition it.</p>
           }
         }
+
+        <ed-field label="Rotation">
+          <ed-slide [value]="o.rotation || 0" [min]="0" [max]="359" [step]="1" unit="°" (valueChange)="P(o, { rotation: $event })"/>
+        </ed-field>
 
         <div class="insp-actions">
           <button class="ed-btn ghost" (click)="dup.emit()"><sms-icon name="Copy" [s]="15"/> Duplicate</button>
