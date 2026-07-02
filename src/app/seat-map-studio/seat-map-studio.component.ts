@@ -19,6 +19,7 @@ import {
 import {
   OrderLine, OrderPanelComponent, TierLegendComponent, ViewerBarComponent, tierStats,
 } from './viewer-ui';
+import { downloadVenue, parseVenueJSON } from './seat-io';
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -37,23 +38,35 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
   styleUrl: './seat-map-studio.component.css',
   template: `
     <!-- ── header ── -->
-    @if (showVenueSwitcher()) {
+    @if (showVenueSwitcher() || mode() === 'editor') {
     <header class="st-header">
-      <div class="st-venue">
-        <button class="venue-btn" (click)="venueMenu.set(!venueMenu())">
-          <span class="venue-name">{{ venue().name }}</span>
-          <sms-icon name="Add" [s]="14" [animate]="true" [rot]="venueMenu() ? 45 : 0"/>
+      @if (showVenueSwitcher()) {
+        <div class="st-venue">
+          <button class="venue-btn" (click)="venueMenu.set(!venueMenu())">
+            <span class="venue-name">{{ venue().name }}</span>
+            <sms-icon name="Add" [s]="14" [animate]="true" [rot]="venueMenu() ? 45 : 0"/>
+          </button>
+          @if (venueMenu()) {
+            <div class="venue-menu" (mouseleave)="venueMenu.set(false)">
+              @for (v of VENUE_META; track v.id) {
+                <button class="venue-item" [class.on]="venueKey() === v.id" (click)="loadVenue(v.id)">
+                  <b>{{ v.name }}</b><span>{{ v.sub }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (mode() === 'editor') {
+        <div style="flex:1"></div>
+        <button class="venue-btn" (click)="exportLayout()" title="Export layout as JSON">
+          <sms-icon name="Map" [s]="14"/><span class="venue-name">Export</span>
         </button>
-        @if (venueMenu()) {
-          <div class="venue-menu" (mouseleave)="venueMenu.set(false)">
-            @for (v of VENUE_META; track v.id) {
-              <button class="venue-item" [class.on]="venueKey() === v.id" (click)="loadVenue(v.id)">
-                <b>{{ v.name }}</b><span>{{ v.sub }}</span>
-              </button>
-            }
-          </div>
-        }
-      </div>
+        <label class="venue-btn" title="Import layout from JSON">
+          <sms-icon name="Layers" [s]="14"/><span class="venue-name">Import</span>
+          <input type="file" accept="application/json,.json" hidden (change)="onImportPick($event)">
+        </label>
+      }
     </header>
     }
 
@@ -425,6 +438,30 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.checkpoint('load'); this.venueKey.set(key); this.venue.set(VENUES[key]());
     this.selection.set(new Set()); this.order.set([]); this.focusTier.set(null); this.venueMenu.set(false);
     setTimeout(() => this.canvasRef()?.fit(), 60);
+  }
+
+  // ── import / export ────────────────────────────────────────────────────────────
+  /** Download the current layout as a JSON file. */
+  exportLayout() { downloadVenue(this.venue()); }
+  /** Load a layout from a picked JSON file (checkpointed for undo). */
+  async importLayout(file: File) {
+    try {
+      const parsed = parseVenueJSON(await file.text());
+      this.checkpoint('import');
+      this.venue.set(parsed);
+      this.selection.set(new Set());
+      this.order.set([]);
+      setTimeout(() => this.canvasRef()?.fit(), 60);
+    } catch (err) {
+      console.error('[SeatMapStudio] import failed:', err);
+    }
+  }
+  /** <input type="file"> change handler: grab the file, import it, reset the input. */
+  onImportPick(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.importLayout(file);
+    input.value = '';
   }
 
   // ── editor ops ───────────────────────────────────────────────────────────────

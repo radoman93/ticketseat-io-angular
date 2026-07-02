@@ -145,7 +145,8 @@ export class SeatComponent {
           @for (item of items(); track item.o.id) {
             <g [attr.data-oid]="item.o.id" [attr.opacity]="item.ghost ? 0.5 : (item.dim ? 0.28 : 1)"
                [style.pointer-events]="item.ghost ? 'none' : null"
-               [style.cursor]="mode() === 'editor' ? 'move' : 'default'">
+               [style.cursor]="mode() === 'editor' ? 'move' : 'default'"
+               [attr.transform]="item.o.rotation && item.o.x != null && item.o.y != null ? ('rotate(' + item.o.rotation + ' ' + item.o.x + ' ' + item.o.y + ')') : null">
 
               @if (item.selected && item.o.type !== 'row' && item.o.type !== 'polygon' && item.o.type !== 'line') {
                 <rect [attr.x]="item.bounds.x1 - 4" [attr.y]="item.bounds.y1 - 4"

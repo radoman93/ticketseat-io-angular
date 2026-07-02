@@ -1,7 +1,7 @@
 // editor-ui.ts — editor chrome components. Port of editor/seat-editor.jsx.
 import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation, computed, input, output, signal } from '@angular/core';
 import { IconComponent } from './icon.component';
-import { Seat, TIERS, TIER_COLORS, Tier, VObj, Venue, seatCountForTier, tierById } from './seat-data';
+import { Seat, TIERS, TIER_COLORS, Tier, VObj, Venue, seatCountForTier, tableSeats, tierById } from './seat-data';
 
 const DISPLAY_CONTENTS = ':host{display:contents;}';
 // Panel hosts must be real flex columns (not display:contents) so their inner
@@ -162,7 +162,7 @@ export class ObjectsPanelComponent {
   nameFor(o: VObj) { return o.label || o.text || (o.type[0].toUpperCase() + o.type.slice(1)); }
   subFor(o: VObj) {
     if (o.type === 'row') return `${(o.seats as Seat[]).length} seats`;
-    if (o.type === 'table') return `${o.seats as number} seats`;
+    if (o.type === 'table') return `${tableSeats(o)} seats`;
     if (o.type === 'zone' || o.type === 'polygon') return o.capacity ? `cap ${o.capacity}` : 'no limit';
     if (o.type === 'line') return `${o.path?.length || 0} points`;
     return o.type;
@@ -285,17 +285,24 @@ export class TierManagerComponent {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeStage" (change)="P(o, { shape: $any($event) })"/></ed-field>
             <ed-field label="Width"><ed-slide [value]="o.w!" [min]="160" [max]="800" [step]="10" (valueChange)="P(o, { w: $event })"/></ed-field>
             <ed-field label="Depth"><ed-slide [value]="o.h!" [min]="40" [max]="180" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
+            <ed-field label="Rotation"><ed-slide [value]="o.rotation || 0" [min]="0" [max]="345" [step]="15" unit="°" (valueChange)="P(o, { rotation: $event })"/></ed-field>
           }
           @case ('table') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeTable" (change)="P(o, { shape: $any($event) })"/></ed-field>
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>
-            <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
             @if (o.shape === 'round') {
+              <ed-field [label]="'Seats · ' + (o.seats || 0)"><ed-stepper [value]="$any(o.seats)" [min]="2" [max]="14" (change)="P(o, { seats: $event })"/></ed-field>
+              <ed-field label="Open spaces"><ed-stepper [value]="o.openSpaces || 0" [min]="0" [max]="($any(o.seats) || 8) - 1" (change)="P(o, { openSpaces: $event })"/></ed-field>
               <ed-field label="Size"><ed-slide [value]="o.r!" [min]="20" [max]="48" (valueChange)="P(o, { r: $event })"/></ed-field>
             } @else {
+              <ed-field label="Top"><ed-stepper [value]="o.up || 0" [min]="0" [max]="12" (change)="P(o, { up: $event })"/></ed-field>
+              <ed-field label="Bottom"><ed-stepper [value]="o.down || 0" [min]="0" [max]="12" (change)="P(o, { down: $event })"/></ed-field>
+              <ed-field label="Left"><ed-stepper [value]="o.left || 0" [min]="0" [max]="12" (change)="P(o, { left: $event })"/></ed-field>
+              <ed-field label="Right"><ed-stepper [value]="o.right || 0" [min]="0" [max]="12" (change)="P(o, { right: $event })"/></ed-field>
               <ed-field label="Length"><ed-slide [value]="o.w || 120" [min]="70" [max]="220" [step]="5" (valueChange)="P(o, { w: $event })"/></ed-field>
               <ed-field label="Width"><ed-slide [value]="o.h || 50" [min]="36" [max]="90" [step]="2" (valueChange)="P(o, { h: $event })"/></ed-field>
             }
+            <ed-field label="Rotation"><ed-slide [value]="o.rotation || 0" [min]="0" [max]="345" [step]="15" unit="°" (valueChange)="P(o, { rotation: $event })"/></ed-field>
           }
           @case ('zone') {
             <ed-field label="Price"><ed-tierpick [value]="o.tier!" [tiers]="venue().tiers" [currency]="currency()" (change)="P(o, { tier: $event })"/></ed-field>

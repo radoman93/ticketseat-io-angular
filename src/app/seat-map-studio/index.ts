@@ -22,3 +22,6 @@ export {
 // Viewer order/availability types + helper.
 export type { OrderLine, TierStat } from './viewer-ui';
 export { tierStats } from './viewer-ui';
+
+// Layout import/export helpers (save/load a Venue as JSON).
+export { exportVenueJSON, parseVenueJSON, downloadVenue } from './seat-io';

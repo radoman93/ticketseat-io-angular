@@ -32,6 +32,12 @@ export interface VObj {
   closed?: boolean;            // segmented row: join last vertex back to first (ring of seats)
   faceAlong?: boolean;         // segmented row: rotate chairs to follow the line (else face front)
   kind?: string;
+  openSpaces?: number;         // round table: leave a contiguous gap of N chairs in the ring
+  rotation?: number;           // point-based objects: rotation about own x,y (degrees)
+  up?: number;                 // rect table: chairs on top edge
+  down?: number;               // rect table: chairs on bottom edge
+  left?: number;               // rect table: chairs on left edge
+  right?: number;              // rect table: chairs on right edge
 }
 
 export interface Venue { name: string; kind: string; objects: VObj[]; tiers: Tier[]; }
@@ -158,19 +164,41 @@ export function tableSeatPositions(t: VObj): Pt[] {
   const n = t.seats as number;
   if (t.shape === 'round') {
     const R = (t.r ?? 30) + 17;
-    for (let i = 0; i < n; i++) {
+    // Render only `n - openSpaces` chairs, keeping them in the first slots of the
+    // `n` evenly-spaced ring positions so a single contiguous gap appears.
+    const open = Math.max(0, Math.min(n - 1, t.openSpaces ?? 0));
+    const shown = n - open;
+    for (let i = 0; i < shown; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
       out.push({ x: (t.x ?? 0) + R * Math.cos(a), y: (t.y ?? 0) + R * Math.sin(a), a: (a * 180) / Math.PI - 90 });
     }
   } else {
     const w = t.w || 120, h = t.h || 50;
-    const per = Math.ceil(n / 2);
-    const gap = w / per;
-    for (let i = 0; i < n; i++) {
-      const top = i < per;
-      const k = top ? i : i - per;
-      const x = (t.x ?? 0) - w / 2 + gap * (k + 0.5);
-      out.push({ x, y: (t.y ?? 0) + (top ? -(h / 2 + 15) : h / 2 + 15), a: top ? 180 : 0 });
+    const cx = t.x ?? 0, cy = t.y ?? 0;
+    const hasSides = t.up != null || t.down != null || t.left != null || t.right != null;
+    if (hasSides) {
+      // Per-side chairs: evenly spaced along each edge, facing outward.
+      const edge = (count: number, horiz: boolean, sign: number, a: number) => {
+        const m = count || 0;
+        for (let k = 0; k < m; k++) {
+          const f = (k + 0.5) / m; // even spacing along the edge
+          if (horiz) out.push({ x: cx - w / 2 + w * f, y: cy + sign * (h / 2 + 15), a });
+          else out.push({ x: cx + sign * (w / 2 + 15), y: cy - h / 2 + h * f, a });
+        }
+      };
+      edge(t.up ?? 0, true, -1, 180);    // top edge, facing up
+      edge(t.down ?? 0, true, 1, 0);     // bottom edge, facing down
+      edge(t.left ?? 0, false, -1, 90);  // left edge, facing left
+      edge(t.right ?? 0, false, 1, -90); // right edge, facing right
+    } else {
+      const per = Math.ceil(n / 2);
+      const gap = w / per;
+      for (let i = 0; i < n; i++) {
+        const top = i < per;
+        const k = top ? i : i - per;
+        const x = cx - w / 2 + gap * (k + 0.5);
+        out.push({ x, y: cy + (top ? -(h / 2 + 15) : h / 2 + 15), a: top ? 180 : 0 });
+      }
     }
   }
   return out;
@@ -318,11 +346,19 @@ export const VENUE_META = [
 ];
 
 // helper: count seats for a tier (used in TierManager)
+/** Effective chair count for a table — honours per-side counts and round open spaces. */
+export function tableSeats(o: VObj): number {
+  const hasSides = o.up != null || o.down != null || o.left != null || o.right != null;
+  if (o.shape !== 'round' && hasSides) return (o.up ?? 0) + (o.down ?? 0) + (o.left ?? 0) + (o.right ?? 0);
+  const n = (o.seats as number) || 0;
+  return o.shape === 'round' ? Math.max(0, n - (o.openSpaces ?? 0)) : n;
+}
+
 export function seatCountForTier(venue: Venue, id: string): number {
   return venue.objects.reduce((n, o) => {
     if (o.tier !== id) return n;
     if (o.type === 'row') return n + (o.seats as Seat[]).length;
-    if (o.type === 'table') return n + (o.seats as number);
+    if (o.type === 'table') return n + tableSeats(o);
     if (o.type === 'zone' || o.type === 'polygon') return n + (o.capacity || 0);
     return n;
   }, 0);
