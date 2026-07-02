@@ -44,6 +44,16 @@
 .sms .venue-btn{display:flex;align-items:center;gap:9px;height:38px;padding:0 8px 0 14px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--ink);}
 .sms .venue-btn:hover{border-color:var(--ink-2);}
 .sms .venue-name{font-size:14px;font-weight:600;letter-spacing:-0.01em;}
+/* Square icon-only header buttons (Export / Import). */
+.sms .icon-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex-shrink:0;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;transition:border-color .12s,background .12s;}
+.sms .icon-btn:hover{border-color:var(--ink-2);background:var(--page);}
+.sms .icon-btn:active{transform:translateY(1px);}
+.sms .icon-btn:focus-visible{outline:2px solid #6668ee;outline-offset:2px;}
+/* Transient confirmation / error toast. */
+.sms .sms-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:120;display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:12px;background:var(--ink);color:var(--card);font-size:14px;font-weight:600;letter-spacing:-0.01em;box-shadow:0 8px 30px rgba(0,0,0,.22);animation:sms-toast-in .18s ease-out;}
+.sms .sms-toast.err{background:#e5484d;color:#fff;}
+@keyframes sms-toast-in{from{opacity:0;transform:translate(-50%,8px);}to{opacity:1;transform:translate(-50%,0);}}
+@media (prefers-reduced-motion:reduce){.sms .sms-toast{animation:none;}}
 .sms .venue-menu{position:absolute;top:46px;left:0;width:240px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-lg);padding:6px;z-index:50;display:flex;flex-direction:column;gap:2px;}
 .sms .venue-item{display:flex;flex-direction:column;gap:1px;align-items:flex-start;padding:9px 12px;border:none;background:transparent;border-radius:var(--r-sm);text-align:left;color:var(--ink);}
 .sms .venue-item:hover{background:var(--line-2);}

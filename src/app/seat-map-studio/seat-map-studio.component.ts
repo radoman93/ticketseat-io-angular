@@ -59,13 +59,13 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
       }
       <div style="flex:1"></div>
       @if (mode() === 'editor') {
-        <button class="venue-btn" (click)="exportLayout()" title="Export layout as JSON">
-          <sms-icon name="Map" [s]="14"/><span class="venue-name">Export</span>
+        <button class="icon-btn" (click)="exportLayout()" title="Export layout as JSON" aria-label="Export layout as JSON">
+          <sms-icon name="Download" [s]="18"/>
         </button>
-        <label class="venue-btn" title="Import layout from JSON">
-          <sms-icon name="Layers" [s]="14"/><span class="venue-name">Import</span>
-          <input type="file" accept="application/json,.json" hidden (change)="onImportPick($event)">
-        </label>
+        <button class="icon-btn" (click)="importInput.click()" title="Import layout from JSON" aria-label="Import layout from JSON">
+          <sms-icon name="Upload" [s]="18"/>
+        </button>
+        <input #importInput type="file" accept="application/json,.json" hidden (change)="onImportPick($event)">
       }
       <button class="venue-btn" (click)="setMode(mode() === 'editor' ? 'viewer' : 'editor')"
               [title]="mode() === 'editor' ? 'Preview and select seats' : 'Back to editing'">
@@ -73,6 +73,13 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
         <span class="venue-name">{{ mode() === 'editor' ? 'Preview' : 'Edit' }}</span>
       </button>
     </header>
+    }
+
+    @if (toast(); as t) {
+      <div class="sms-toast" [class.err]="t.kind === 'error'" role="status" aria-live="polite">
+        <sms-icon [name]="t.kind === 'error' ? 'Help' : 'Check'" [s]="15"/>
+        <span>{{ t.msg }}</span>
+      </div>
     }
 
     <!-- ── editor / viewer ── -->
@@ -446,8 +453,20 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   }
 
   // ── import / export ────────────────────────────────────────────────────────────
+  /** Transient status message (bottom-centre toast). */
+  toast = signal<{ msg: string; kind: 'ok' | 'error' } | null>(null);
+  private toastTimer: any = null;
+  private flash(msg: string, kind: 'ok' | 'error' = 'ok') {
+    this.toast.set({ msg, kind });
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.toast.set(null), kind === 'error' ? 4000 : 2400);
+  }
   /** Download the current layout as a JSON file. */
-  exportLayout() { downloadVenue(this.venue()); }
+  exportLayout() {
+    const v = this.venue();
+    downloadVenue(v);
+    this.flash(`Exported “${v.name}”`);
+  }
   /** Load a layout from a picked JSON file (checkpointed for undo). */
   async importLayout(file: File) {
     try {
@@ -457,8 +476,9 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
       this.selection.set(new Set());
       this.order.set([]);
       setTimeout(() => this.canvasRef()?.fit(), 60);
+      this.flash(`Imported “${parsed.name}”`);
     } catch (err) {
-      console.error('[SeatMapStudio] import failed:', err);
+      this.flash(err instanceof Error ? err.message : 'Couldn’t read that file.', 'error');
     }
   }
   /** <input type="file"> change handler: grab the file, import it, reset the input. */
