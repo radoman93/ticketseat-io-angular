@@ -46,27 +46,42 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
+  styles: [`
+    g.sms-seat-body{ transform-box: fill-box; transform-origin: center; }
+    g.sms-seat-body rect{ transition: fill .18s ease, stroke .18s ease, opacity .18s ease; }
+    /* Picking a seat: a springy pop that reads as "yes, got it". */
+    g.sms-seat-body.sms-picked{ animation: smsPick .34s cubic-bezier(.34,1.56,.64,1); }
+    /* A seat becoming taken: a firmer settle that reads as "locked in". */
+    g.sms-seat-body.sms-taken{ animation: smsTake .44s ease both; }
+    circle.sms-seat-ring{ transform-box: fill-box; transform-origin: center; animation: smsRing .34s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes smsPick{ 0%{transform:scale(.68)} 55%{transform:scale(1.22)} 100%{transform:scale(1)} }
+    @keyframes smsRing{ 0%{transform:scale(.2);opacity:0} 100%{transform:scale(1)} }
+    @keyframes smsTake{ 0%{transform:scale(1)} 24%{transform:scale(1.18)} 50%{transform:scale(.9)} 74%{transform:scale(1.05)} 100%{transform:scale(1)} }
+    @media (prefers-reduced-motion: reduce){ g.sms-seat-body, circle.sms-seat-ring{ animation: none !important; } }
+  `],
   template: `
     <ng-container>
       <svg:g [attr.transform]="'translate(' + p().x + ',' + p().y + ') rotate(' + angle() + ')'"
              [attr.opacity]="dim() ? 0.3 : 1" [style.cursor]="cursor"
              [attr.data-seat]="interactive() ? '1' : null" (pointerdown)="onDown($event)">
         @if (selected()) {
-          <svg:circle [attr.r]="13" fill="none" [attr.stroke]="color()" [attr.stroke-width]="2" [attr.opacity]="0.32"/>
+          <svg:circle class="sms-seat-ring" [attr.r]="13" fill="none" [attr.stroke]="color()" [attr.stroke-width]="2" [attr.opacity]="0.32"/>
         }
-        @if (open() && !selected()) {
-          <!-- Open space: chairless dashed placeholder — visible and still selectable. -->
-          <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
-                    fill="none" [attr.stroke]="color()" [attr.stroke-width]="1.4" stroke-dasharray="3 2.4" [attr.opacity]="0.9"/>
-        } @else if (seatStyle() === 'minimal') {
-          <svg:rect [attr.x]="-5.5" [attr.y]="-5.5" [attr.width]="11" [attr.height]="11" [attr.rx]="3.4"
-                    [attr.fill]="minFill" [attr.stroke]="minStroke" [attr.stroke-width]="1.5" [attr.opacity]="sold ? 0.55 : 1"/>
-        } @else {
-          <svg:rect [attr.x]="-7.4" [attr.y]="1.5" [attr.width]="14.8" [attr.height]="6.5" [attr.rx]="3.25"
-                    [attr.fill]="back" [attr.opacity]="selected() ? 0.55 : 1"/>
-          <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
-                    [attr.fill]="pad" [attr.stroke]="line ? edge : 'none'" [attr.stroke-width]="1.4"/>
-        }
+        <svg:g class="sms-seat-body" [class.sms-picked]="selected()" [class.sms-taken]="animateTake()">
+          @if (open() && !selected()) {
+            <!-- Open space: chairless dashed placeholder — visible and still selectable. -->
+            <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
+                      fill="none" [attr.stroke]="color()" [attr.stroke-width]="1.4" stroke-dasharray="3 2.4" [attr.opacity]="0.9"/>
+          } @else if (seatStyle() === 'minimal') {
+            <svg:rect [attr.x]="-5.5" [attr.y]="-5.5" [attr.width]="11" [attr.height]="11" [attr.rx]="3.4"
+                      [attr.fill]="minFill" [attr.stroke]="minStroke" [attr.stroke-width]="1.5" [attr.opacity]="sold ? 0.55 : 1"/>
+          } @else {
+            <svg:rect [attr.x]="-7.4" [attr.y]="1.5" [attr.width]="14.8" [attr.height]="6.5" [attr.rx]="3.25"
+                      [attr.fill]="back" [attr.opacity]="selected() ? 0.55 : 1"/>
+            <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
+                      [attr.fill]="pad" [attr.stroke]="line ? edge : 'none'" [attr.stroke-width]="1.4"/>
+          }
+        </svg:g>
         @if (showNum() && !sold && seatStyle() !== 'minimal') {
           <svg:text [attr.y]="-0.5" text-anchor="middle" [attr.font-size]="6.4" [attr.font-weight]="600" [attr.fill]="ink"
                     style="pointer-events:none;font-family:'Geist Mono',monospace">{{ num() }}</svg:text>
@@ -89,6 +104,25 @@ export class SeatComponent {
   dim = input(false);
   pal = input.required<Pal>();
   down = output<PointerEvent>();
+
+  // Play the "taken" pulse only when a seat actually transitions into sold/held —
+  // never on first render, so a chart of pre-sold seats doesn't storm on load.
+  private _animateTake = signal(false);
+  animateTake = this._animateTake.asReadonly();
+  constructor() {
+    let prev: string | null = null;
+    effect(() => {
+      const s = this.status();
+      const wasTaken = prev === 'sold' || prev === 'held';
+      const nowTaken = s === 'sold' || s === 'held';
+      const first = prev === null;
+      prev = s;
+      if (!first && nowTaken && !wasTaken) {
+        this._animateTake.set(true);
+        setTimeout(() => this._animateTake.set(false), 480);
+      }
+    });
+  }
 
   get sold() { return this.status() === 'sold'; }
   get held() { return this.status() === 'held'; }
