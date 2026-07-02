@@ -53,10 +53,11 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
     g.sms-seat-body.sms-picked{ animation: smsPickPulse 1.35s ease-in-out infinite; }
     /* Seat turning taken: a firmer settle that reads as "locked in". */
     g.sms-seat-body.sms-taken{ animation: smsTake .44s ease both; }
-    /* The halo ring breathes in sync with the seat for a clear pulsating cue. */
-    circle.sms-seat-ring{ transform-box: fill-box; transform-origin: center; animation: smsRingPulse 1.35s ease-in-out infinite; }
+    /* The halo ring breathes in sync with the seat. Animating the radius (not a
+       transform) keeps it perfectly centred on the seat as it pulses. */
+    circle.sms-seat-ring{ animation: smsRingPulse 1.35s ease-in-out infinite; }
     @keyframes smsPickPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.14)} }
-    @keyframes smsRingPulse{ 0%,100%{transform:scale(1);opacity:.34} 50%{transform:scale(1.26);opacity:.1} }
+    @keyframes smsRingPulse{ 0%,100%{ r:12.5px; opacity:.34 } 50%{ r:16.5px; opacity:.1 } }
     @keyframes smsTake{ 0%{transform:scale(1)} 24%{transform:scale(1.18)} 50%{transform:scale(.9)} 74%{transform:scale(1.05)} 100%{transform:scale(1)} }
     @media (prefers-reduced-motion: reduce){ g.sms-seat-body, circle.sms-seat-ring{ animation: none !important; } }
   `],
@@ -265,7 +266,8 @@ export class SeatComponent {
                         [attr.fill]="pal().subtext" style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                 }
                 @case ('label') {
-                  <text [attr.x]="item.o.x" [attr.y]="item.o.y" text-anchor="middle" [attr.font-size]="item.o.size || 18"
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y" text-anchor="middle" dominant-baseline="central"
+                        [attr.font-size]="item.o.size || 18"
                         [attr.font-weight]="600" [attr.fill]="item.o.color || pal().text" style="font-family:Geist,sans-serif">{{ item.o.text }}</text>
                 }
                 @case ('line') {
