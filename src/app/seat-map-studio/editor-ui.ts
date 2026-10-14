@@ -1,7 +1,7 @@
 // editor-ui.ts — editor chrome components. Port of editor/seat-editor.jsx.
 import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation, computed, input, output, signal } from '@angular/core';
 import { IconComponent } from './icon.component';
-import { Seat, TIERS, TIER_COLORS, Tier, VObj, Venue, seatCountForTier, tableSeats, tierById } from './seat-data';
+import { Seat, TIERS, TIER_COLORS, Tier, VObj, Venue, renumberSeats, resizeSeats, rowNumbering, seatCountForTier, tableSeats, tierById } from './seat-data';
 
 const DISPLAY_CONTENTS = ':host{display:contents;}';
 // Panel hosts must be real flex columns (not display:contents) so their inner
@@ -314,6 +314,15 @@ export class TierManagerComponent {
               <ed-field label="Seat spacing"><ed-slide [value]="o.seatGap || 30" [min]="22" [max]="48" unit="px" (valueChange)="P(o, { seatGap: $event })"/></ed-field>
               <ed-field label="Curve"><ed-slide [value]="o.arc || 0" [min]="0" [max]="60" unit="°" (valueChange)="P(o, { arc: $event })"/></ed-field>
             }
+            <ed-field label="First seat number">
+              <input type="number" class="ed-input" min="1" max="9999" [value]="numbering(o).start"
+                     (change)="renumber(o, +$any($event.target).value, numbering(o).reverse)"/>
+            </ed-field>
+            <ed-field label="Numbering runs">
+              <ed-seg [value]="numbering(o).reverse ? 'end' : 'start'" [options]="numberDirs"
+                      (change)="renumber(o, numbering(o).start, $event === 'end')"/>
+            </ed-field>
+            <p class="insp-note">Seat {{ numbering(o).start }} is the {{ numbering(o).reverse ? 'last' : 'first' }} chair of the row. Ticket labels read “{{ o.label || 'Row' }}, Seat {{ numbering(o).start }}”. Renumber before you sell: tickets already sold keep their old number.</p>
           }
           @case ('stage') {
             <ed-field label="Shape"><ed-seg [value]="o.shape!" [options]="shapeStage" (change)="P(o, { shape: $any($event) })"/></ed-field>
@@ -387,6 +396,7 @@ export class InspectorComponent {
   shapeStage =[{ v: 'arc', label: 'Arc' }, { v: 'rect', label: 'Rect' }];
   markerKinds = [{ v: 'entrance', label: 'Entry' }, { v: 'exit', label: 'Exit' }, { v: 'bar', label: 'Bar' }];
   rowFacing = [{ v: 'front', label: 'Face front' }, { v: 'along', label: 'Follow line' }];
+  numberDirs = [{ v: 'start', label: 'From first chair' }, { v: 'end', label: 'From last chair' }];
   // Quick-pick swatches for label text colour (lowercase — compared against o.color).
   LABEL_COLORS = ['#111827', '#ffffff', '#6668ee', '#0c9d6e', '#d83a3a', '#b9750a'];
   LINE_COLORS = ['#94a3b8', '#111827', '#6668ee', '#0c9d6e', '#d83a3a', '#b9750a'];
@@ -405,9 +415,13 @@ export class InspectorComponent {
   /** Custom GA capacity: 0 (no limit) up to 100,000. */
   clampCap(v: string) { return Math.max(0, Math.min(100000, Math.round(Number(v) || 0))); }
   setRowSeats(o: VObj, n: number) {
-    const seats = (o.seats as Seat[]).slice(0, n);
-    while (seats.length < n) seats.push({ n: (seats.at(-1)?.n ?? 100) + 1, status: 'available' });
-    this.patch.emit({ id: o.id, p: { seats } });
+    // Never renumber here: existing chairs keep their numbers (their ticket ids). Use
+    // "First seat number" / "Numbering runs" to renumber on purpose, before selling.
+    this.patch.emit({ id: o.id, p: { seats: resizeSeats(o.seats as Seat[], n) } });
+  }
+  numbering(o: VObj) { return rowNumbering(o.seats as Seat[]); }
+  renumber(o: VObj, start: number, reverse: boolean) {
+    this.patch.emit({ id: o.id, p: { seats: renumberSeats(o.seats as Seat[], start, reverse) } });
   }
   applyTier(tier: string) {
     const v = this.venue();

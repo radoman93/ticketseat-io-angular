@@ -60,7 +60,18 @@ const freshTiers = (): Tier[] => TIERS.map((t) => ({ ...t }));
 
 // ── ID factory ───────────────────────────────────────────────────────────────
 let _seq = 0;
-export const uid = (p = 'o') => `${p}_${(_seq++).toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+/** Random part of an id. The counter restarts on every page load (and is the same in
+ *  every buyer's browser), so uniqueness has to come from here: 12 base-36 characters
+ *  from crypto when available, instead of 4 from Math.random. */
+function randomPart(): string {
+  const c = (globalThis as any).crypto;
+  if (c?.getRandomValues) {
+    const b = new Uint32Array(2); c.getRandomValues(b);
+    return (b[0].toString(36) + b[1].toString(36)).padStart(12, '0').slice(-12);
+  }
+  return (Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8)).padEnd(12, '0');
+}
+export const uid = (p = 'o') => `${p}_${(_seq++).toString(36)}_${randomPart()}`;
 
 // ── Geometry ─────────────────────────────────────────────────────────────────
 /** Segment metadata for a polyline: endpoints, length, and tangent angle (deg). */
@@ -116,14 +127,44 @@ export function pathRowPositions(row: VObj): Pt[] {
   return placeAlong(verts, row.seatGap ?? 30, count);
 }
 
-/** Grow/shrink a seats array to `n`, keeping existing seats + numbering. */
+/** Grow/shrink a seats array to `n`. Existing chairs keep their numbers, because a
+ *  seat's number is its ticket id ("rowId:n"); new chairs take numbers above the
+ *  highest one in the row, so no number is ever reused or shifted. */
 export function resizeSeats(seats: Seat[], n: number): Seat[] {
   if (n === seats.length) return seats;
   if (n < seats.length) return seats.slice(0, n);
   const out = seats.slice();
-  const base = (seats[seats.length - 1]?.n ?? 100) + 1;
-  for (let i = seats.length; i < n; i++) out.push({ n: base + (i - seats.length), status: 'available' });
+  const top = seats.reduce((m, s) => Math.max(m, s.n), 0);
+  for (let i = seats.length; i < n; i++) out.push({ n: top + (i - seats.length + 1), status: 'available' });
   return out;
+}
+
+/** Seat numbers run `start, start+1, ...` along the row, or the other way round when
+ *  `reverse` is set. Statuses stay with the chair in the same position. */
+export function renumberSeats(seats: Seat[], start: number, reverse: boolean): Seat[] {
+  const n = seats.length;
+  const first = Math.max(1, Math.round(start) || 1);
+  return seats.map((s, i) => ({ ...s, n: first + (reverse ? n - 1 - i : i) }));
+}
+
+/** First number and direction of a row's numbering (what the inspector shows). */
+export function rowNumbering(seats: Seat[]): { start: number; reverse: boolean } {
+  if (!seats.length) return { start: 1, reverse: false };
+  const reverse = seats.length >= 2 && seats[0].n > seats[seats.length - 1].n;
+  return { start: Math.min(...seats.map((s) => s.n)), reverse };
+}
+
+// ── Rotation ─────────────────────────────────────────────────────────────────
+/** Normalise degrees into [0, 360). */
+export const normDeg = (d: number) => ((d % 360) + 360) % 360;
+
+/** Rotation that keeps text readable inside something turned by `deg`: text that
+ *  would read upside down (between 90° and 270°) is flipped half a turn. */
+export const readableFlip = (deg: number) => { const d = normDeg(deg); return d > 90 && d < 270 ? 180 : 0; };
+
+function rotatePt(x: number, y: number, cx: number, cy: number, deg: number): Pt {
+  const r = (deg * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+  return { x: cx + (x - cx) * c - (y - cy) * s, y: cy + (x - cx) * s + (y - cy) * c };
 }
 
 // How many seats a polyline yields at spacing `gap` — shared by preview, commit,
@@ -147,7 +188,7 @@ export function segRowPreview(points: Pt[], gap = 30, closed = false): Pt[] {
 
 export function rowSeatPositions(row: VObj): Pt[] {
   if (row.path && row.path.length >= 2) return pathRowPositions(row);
-  const seats = row.seats as Seat[];
+  const seats = Array.isArray(row.seats) ? row.seats : [];
   const n = seats.length;
   const gap = row.seatGap ?? 30;
   const arc = row.arc ?? 0;
@@ -226,11 +267,50 @@ export function tableSeatPositions(t: VObj): Pt[] {
 }
 
 export interface RowSpec { label: string; x: number; y: number; count: number; gap?: number; arc?: number; tier?: string; startNum?: number; }
-export function makeRow({ label, x, y, count, gap = 30, arc = 0, tier = 'standard', startNum = 101 }: RowSpec): VObj {
+export function makeRow({ label, x, y, count, gap = 30, arc = 0, tier = 'standard', startNum = 1 }: RowSpec): VObj {
   return {
     id: uid('row'), type: 'row', label, x, y, seatGap: gap, arc, tier,
     seats: Array.from({ length: count }, (_, i): Seat => ({ n: startNum + i, status: 'available' })),
   };
+}
+
+// ── Names ─────────────────────────────────────────────────────────────────────
+// Ticket labels are "<object name>, Seat <n>", so two rows called "Row A" would print
+// the same label for two different seats. New objects take the next free name.
+
+/** 0 → A, 25 → Z, 26 → AA, 27 → AB … (spreadsheet-style column letters). */
+export function rowLetters(i: number): string {
+  let s = '', n = i + 1;
+  while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+function lettersIndex(s: string): number {
+  let n = 0;
+  for (const ch of s) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+}
+/** The next `count` row names ("Row A", "Row B"…) after the highest one already used. */
+export function nextRowLabels(objects: VObj[], count: number): string[] {
+  let max = -1;
+  for (const o of objects) {
+    const m = o.type === 'row' ? /^Row ([A-Z]+)$/.exec((o.label || '').trim()) : null;
+    if (m) max = Math.max(max, lettersIndex(m[1]));
+  }
+  return Array.from({ length: count }, (_, i) => `Row ${rowLetters(max + 1 + i)}`);
+}
+/** The next table name ("T1", "T2"…) not already taken. */
+export function nextTableLabel(objects: VObj[]): string {
+  let max = 0;
+  for (const o of objects) {
+    const m = o.type === 'table' ? /^T(\d+)$/.exec((o.label || '').trim()) : null;
+    if (m) max = Math.max(max, +m[1]);
+  }
+  return `T${max + 1}`;
+}
+/** Price level for new objects: 'standard' when it exists, else the first level. */
+export function defaultTierId(tiers: Tier[] | undefined): string {
+  if (!tiers || !tiers.length) return 'standard';
+  return (tiers.find((t) => t.id === 'standard') || tiers[0]).id;
 }
 
 export function makeTier(existing: Tier[] = []): Tier {
@@ -254,12 +334,23 @@ export function objBounds(o: VObj): Box {
   }
   if (o.type === 'row') {
     const ps = rowSeatPositions(o);
+    if (!ps.length) { // a row left with no seats (imported or hand-edited data) still needs a box
+      const a = o.path?.[0] ?? { x: o.x ?? 0, y: o.y ?? 0 };
+      return { x1: a.x - 16, y1: a.y - 16, x2: a.x + 16, y2: a.y + 16 };
+    }
     const xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
     return { x1: Math.min(...xs) - 16, y1: Math.min(...ys) - 16, x2: Math.max(...xs) + 16, y2: Math.max(...ys) + 16 };
   }
   if (o.type === 'table') {
-    const rad = (o.shape === 'round' ? o.r! : Math.max(o.w || 120, o.h || 50) / 2) + 34;
-    return { x1: o.x! - rad, y1: o.y! - rad, x2: o.x! + rad, y2: o.y! + rad };
+    if (o.shape === 'round') {
+      const rad = o.r! + 34;
+      return { x1: o.x! - rad, y1: o.y! - rad, x2: o.x! + rad, y2: o.y! + rad };
+    }
+    // Long table: its own width and length plus room for chairs on each side, so the
+    // selection hugs the table instead of a square sized by its longest side. The box
+    // stays centred on x/y, so the rotation pivot does not move.
+    const hw = (o.w || 120) / 2 + 26, hh = (o.h || 50) / 2 + 26;
+    return { x1: o.x! - hw, y1: o.y! - hh, x2: o.x! + hw, y2: o.y! + hh };
   }
   if (o.type === 'label') {
     const fs = o.size || 18;
@@ -269,9 +360,21 @@ export function objBounds(o: VObj): Box {
   }
   return { x1: o.x! - 20, y1: o.y! - 24, x2: o.x! + 20, y2: o.y! + 20 }; // marker
 }
+/** Where an object really sits on the canvas: its box turned by `rotation` about the
+ *  box centre (the same pivot the canvas rotates it around). Use this for hit tests,
+ *  marquee selection and fitting; `objBounds` stays the unrotated, local box. */
+export function objWorldBounds(o: VObj): Box {
+  const b = objBounds(o);
+  if (!o.rotation) return b;
+  const cx = (b.x1 + b.x2) / 2, cy = (b.y1 + b.y2) / 2;
+  const ps = [rotatePt(b.x1, b.y1, cx, cy, o.rotation), rotatePt(b.x2, b.y1, cx, cy, o.rotation),
+    rotatePt(b.x2, b.y2, cx, cy, o.rotation), rotatePt(b.x1, b.y2, cx, cy, o.rotation)];
+  const xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
+  return { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+}
 export function venueBounds(objs: VObj[]): Box {
   if (!objs.length) return { x1: 0, y1: 0, x2: 1200, y2: 800 };
-  const b = objs.map(objBounds);
+  const b = objs.map(objWorldBounds);
   return {
     x1: Math.min(...b.map((q) => q.x1)), y1: Math.min(...b.map((q) => q.y1)),
     x2: Math.max(...b.map((q) => q.x2)), y2: Math.max(...b.map((q) => q.y2)),

@@ -1,7 +1,7 @@
 // viewer-ui.ts — viewer chrome components. Port of editor/seat-viewer.jsx.
 import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, input, output } from '@angular/core';
 import { IconComponent } from './icon.component';
-import { Seat, TIERS, Tier, VObj, Venue, tierById } from './seat-data';
+import { Seat, TIERS, Tier, VObj, Venue, tableSeats, tierById } from './seat-data';
 
 const DISPLAY_CONTENTS = ':host{display:contents;}';
 const fmt = (n: number) => '$' + n.toLocaleString();
@@ -16,8 +16,9 @@ export function tierStats(venue: Venue): TierStat[] {
   tiers.forEach((t) => (m[t.id] = { tier: t, seats: 0, avail: 0, zoneCap: 0 }));
   venue.objects.forEach((o) => {
     if (o.type === 'row') (o.seats as Seat[]).forEach((s) => { const k = m[o.tier!] || fallback(); if (!k) return; k.seats++; if (s.status === 'available') k.avail++; });
-    if (o.type === 'zone') { const k = m[o.tier!] || fallback(); if (k) k.zoneCap += o.capacity || 0; }
-    if (o.type === 'table') { const k = m[o.tier!] || fallback(); if (k) { k.seats += o.seats as number; k.avail += o.seats as number; } }
+    if (o.type === 'zone' || o.type === 'polygon') { const k = m[o.tier!] || fallback(); if (k) k.zoneCap += o.capacity || 0; }
+    // Long tables count their four sides (and open spaces), not the legacy `seats` number.
+    if (o.type === 'table') { const k = m[o.tier!] || fallback(); if (k) { const n = tableSeats(o); k.seats += n; k.avail += n; } }
   });
   return tiers.map((t) => m[t.id]).filter((x) => x.seats || x.zoneCap);
 }
@@ -84,15 +85,14 @@ export class TierLegendComponent {
         </div>
       }
       <div class="order-foot">
+        <!-- Seat prices only. The panel used to add a made-up 12% "service fee" and promise a
+             10:00 hold; neither matches what the store charges or holds. -->
         <div class="order-sums">
-          <div class="sum-row"><span>Subtotal</span><span class="mono">{{ fmt(sub()) }}</span></div>
-          <div class="sum-row muted"><span>Service fee</span><span class="mono">{{ fmt(sub() ? fee() : 0) }}</span></div>
-          <div class="sum-row total"><span>Total</span><span class="mono">{{ fmt(total()) }}</span></div>
+          <div class="sum-row total"><span>Seats</span><span class="mono">{{ fmt(total()) }}</span></div>
         </div>
         <button class="vw-cta" [disabled]="!order().length" (click)="checkout.emit()">
           <sms-icon name="Check" [s]="16"/> {{ order().length ? 'Checkout · ' + fmt(total()) : 'Select seats' }}
         </button>
-        <div class="order-trust mono"><sms-icon name="Check" [s]="12"/> Secure checkout · seats held 10:00</div>
       </div>
     </div>`,
 })
@@ -102,9 +102,7 @@ export class OrderPanelComponent {
   remove = output<string>(); checkout = output<void>();
   currency = input<string>('$');
   fmt = (n: number) => this.currency() + n.toLocaleString();
-  sub = computed(() => this.order().reduce((n, l) => n + l.price, 0));
-  fee = computed(() => Math.round(this.sub() * 0.12));
-  total = computed(() => this.sub() + (this.sub() ? this.fee() : 0));
+  total = computed(() => this.order().reduce((n, l) => n + l.price, 0));
   tier(l: OrderLine) { return tierById(this.venue().tiers, l.tierId); }
 }
 
@@ -170,5 +168,5 @@ export class ViewerBarComponent {
   open = output<void>();
   currency = input<string>('$');
   fmt = (n: number) => this.currency() + n.toLocaleString();
-  total = computed(() => { const sub = this.order().reduce((n, l) => n + l.price, 0); return sub + (sub ? Math.round(sub * 0.12) : 0); });
+  total = computed(() => this.order().reduce((n, l) => n + l.price, 0));
 }

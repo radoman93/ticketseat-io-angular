@@ -5,7 +5,7 @@ import {
   ViewEncapsulation, computed, effect, input, output, signal, viewChild,
 } from '@angular/core';
 import {
-  Box, Pt, Seat, Tier, VObj, Venue, objBounds, polyCentroid, rowSeatAngle,
+  Box, Pt, Seat, Tier, VObj, Venue, normDeg, objBounds, objWorldBounds, polyCentroid, readableFlip, rowSeatAngle,
   rowSeatPositions, segRowPreview, tableSeatPositions, tierById, venueBounds,
 } from './seat-data';
 
@@ -23,10 +23,12 @@ export const SeatPalette: Record<string, Pal> = {
     stage: '#4b4b55', stageText: '#f3f3f5', marker: '#22222a', markerStroke: '#3a3a44', markerInk: '#b6b6c0' },
 };
 
-interface SeatVM { p: Pt; angle: number; seat: Seat; key: string; open?: boolean; }
+interface SeatVM { p: Pt; angle: number; textRot: number; seat: Seat; key: string; open?: boolean; }
 interface CanvasItem {
   o: VObj; selected: boolean; dim: boolean; tier: Tier; bounds: Box;
   cx: number; cy: number;   // rotation pivot = bounds centre (works for path shapes too)
+  rot: number;              // the object's rotation, 0..359
+  flip: boolean;            // centred captions turned half a turn so they never read upside down
   ghost?: boolean;
   picked?: boolean; pickCount?: number;
   stagePath?: string | null; zoneFill?: string;
@@ -70,7 +72,7 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
           <svg:circle class="sms-seat-ring" [attr.r]="13" fill="none" [attr.stroke]="color()" [attr.stroke-width]="2" [attr.opacity]="0.32"/>
         }
         <svg:g class="sms-seat-body" [class.sms-picked]="selected()" [class.sms-taken]="animateTake()">
-          @if (open() && !selected()) {
+          @if (open() && !selected() && !taken) {
             <!-- Open space: chairless dashed placeholder — visible and still selectable. -->
             <svg:rect [attr.x]="-7" [attr.y]="-7.5" [attr.width]="14" [attr.height]="12" [attr.rx]="4.4"
                       fill="none" [attr.stroke]="color()" [attr.stroke-width]="1.4" stroke-dasharray="3 2.4" [attr.opacity]="0.9"/>
@@ -84,8 +86,11 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
                       [attr.fill]="pad" [attr.stroke]="line ? edge : 'none'" [attr.stroke-width]="1.4"/>
           }
         </svg:g>
-        @if (showNum() && !sold && seatStyle() !== 'minimal') {
-          <svg:text [attr.y]="-0.5" text-anchor="middle" [attr.font-size]="6.4" [attr.font-weight]="600" [attr.fill]="ink"
+        @if (showNum() && !sold && !open() && seatStyle() !== 'minimal') {
+          <!-- Turned back by the seat's own angle plus its object's rotation, about the
+               pad centre, so the number always reads upright. -->
+          <svg:text [attr.y]="-1.5" text-anchor="middle" dominant-baseline="central" [attr.font-size]="6.4" [attr.font-weight]="600" [attr.fill]="ink"
+                    [attr.transform]="textRot() ? 'rotate(' + textRot() + ' 0 -1.5)' : null"
                     style="pointer-events:none;font-family:'Geist Mono',monospace">{{ num() }}</svg:text>
         }
       </svg:g>
@@ -95,6 +100,8 @@ const MARKER_GLYPHS: Record<string, string> = { entrance: '→', exit: '→', ba
 export class SeatComponent {
   p = input.required<Pt>();
   angle = input(0);
+  /** Rotation applied to the seat number so it stays upright on screen. */
+  textRot = input(0);
   color = input('#6668ee');
   status = input<string>('available');
   seatStyle = input<string>('skeuomorphic');
@@ -207,6 +214,7 @@ export class SeatComponent {
                   }
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 4" text-anchor="middle" [attr.font-size]="15"
                         [attr.font-weight]="700" [attr.letter-spacing]="3" [attr.fill]="pal().stageText"
+                        [attr.transform]="item.flip ? 'rotate(180 ' + item.o.x + ' ' + (item.o.y! - 1) + ')' : null"
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                 }
                 @case ('zone') {
@@ -214,23 +222,27 @@ export class SeatComponent {
                         [attr.width]="item.o.w" [attr.height]="item.o.h" [attr.rx]="14" [attr.fill]="item.zoneFill"
                         [attr.stroke]="item.tier.color" [attr.stroke-width]="item.picked ? 4 : (item.selected ? 3 : 2)"
                         [attr.stroke-dasharray]="item.picked ? null : '7 6'"/>
+                  <g [attr.transform]="item.flip ? 'rotate(180 ' + item.o.x + ' ' + (item.o.y! + 4) + ')' : null">
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y! - 4" text-anchor="middle" [attr.font-size]="17"
                         [attr.font-weight]="700" [attr.fill]="item.tier.color"
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 16" text-anchor="middle" [attr.font-size]="item.picked ? 12 : 11"
                         [attr.font-weight]="item.picked ? 700 : 400" [attr.fill]="item.picked ? item.tier.color : pal().subtext"
                         style="pointer-events:none;font-family:'Geist Mono',monospace">{{ item.picked ? item.pickCount + (item.pickCount === 1 ? ' spot held' : ' spots held') : (item.o.capacity ? 'CAP ' + item.o.capacity : 'No limit') }}</text>
+                  </g>
                 }
                 @case ('polygon') {
                   <polygon [attr.points]="item.polyPoints" [attr.fill]="item.polyFill" [attr.stroke]="item.tier.color"
                            [attr.stroke-width]="item.picked ? 4 : (item.selected ? 3 : 2)"
                            [attr.stroke-dasharray]="item.picked ? null : '7 6'" stroke-linejoin="round"/>
+                  <g [attr.transform]="item.flip ? 'rotate(180 ' + item.polyCx + ' ' + (item.polyCy! + 4) + ')' : null">
                   <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! - 3" text-anchor="middle" [attr.font-size]="16"
                         [attr.font-weight]="700" [attr.fill]="item.tier.color"
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                   <text [attr.x]="item.polyCx" [attr.y]="item.polyCy! + 15" text-anchor="middle" [attr.font-size]="item.picked ? 12 : 11"
                         [attr.font-weight]="item.picked ? 700 : 400" [attr.fill]="item.picked ? item.tier.color : pal().subtext"
                         style="pointer-events:none;font-family:'Geist Mono',monospace">{{ item.picked ? item.pickCount + (item.pickCount === 1 ? ' spot held' : ' spots held') : (item.o.capacity ? 'CAP ' + item.o.capacity : 'No limit') }}</text>
+                  </g>
                   @if (item.selected) {
                     @for (p of item.o.points!; track $index) {
                       <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="4" [attr.fill]="pal().bg" [attr.stroke]="item.tier.color" [attr.stroke-width]="2"/>
@@ -246,12 +258,14 @@ export class SeatComponent {
                           [attr.width]="item.o.w || 120" [attr.height]="item.o.h || 50" [attr.rx]="10"
                           [attr.fill]="item.tableFill" [attr.stroke]="item.tier.color" [attr.stroke-width]="1.6"/>
                   }
-                  <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 4" text-anchor="middle" [attr.font-size]="13"
+                  <!-- Table name stays level on screen whatever the table's rotation. -->
+                  <text [attr.x]="item.o.x" [attr.y]="item.o.y" text-anchor="middle" dominant-baseline="central" [attr.font-size]="13"
                         [attr.font-weight]="700" [attr.fill]="pal().text"
+                        [attr.transform]="item.rot ? 'rotate(' + -item.rot + ' ' + item.o.x + ' ' + item.o.y + ')' : null"
                         style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                   @for (c of item.chairs!; track $index) {
-                    <g sms-seat [p]="c.p" [angle]="c.angle" [color]="item.tier.color" status="available"
-                       [seatStyle]="canvasStyle()" [num]="c.seat.n" [showNum]="false" [open]="!!c.open"
+                    <g sms-seat [p]="c.p" [angle]="c.angle" [textRot]="c.textRot" [color]="item.tier.color" [status]="c.seat.status"
+                       [seatStyle]="canvasStyle()" [num]="c.seat.n" [showNum]="item.showNum ?? false" [open]="!!c.open"
                        [selected]="!!selectedSeats()?.has(c.key)" [interactive]="mode() === 'viewer'"
                        [dim]="item.dim" [pal]="pal()" (down)="seatClick.emit({ row: item.o, seat: c.seat, tier: item.tier })"></g>
                   }
@@ -262,7 +276,9 @@ export class SeatComponent {
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 4" text-anchor="middle" [attr.font-size]="item.markerFontSize"
                         [attr.font-weight]="700" [attr.fill]="pal().markerInk"
                         style="pointer-events:none;font-family:'Geist Mono',monospace">{{ item.markerGlyph }}</text>
+                  <!-- The arrow turns with the marker; its caption stays level, below it on screen. -->
                   <text [attr.x]="item.o.x" [attr.y]="item.o.y! + 30" text-anchor="middle" [attr.font-size]="11"
+                        [attr.transform]="item.rot ? 'rotate(' + -item.rot + ' ' + item.o.x + ' ' + item.o.y + ')' : null"
                         [attr.fill]="pal().subtext" style="pointer-events:none;font-family:Geist,sans-serif">{{ item.o.label }}</text>
                 }
                 @case ('label') {
@@ -286,11 +302,14 @@ export class SeatComponent {
                           [attr.width]="item.bounds.x2 - item.bounds.x1 + 4" [attr.height]="item.bounds.y2 - item.bounds.y1 + 4"
                           [attr.rx]="14" fill="none" stroke="#6668ee" [attr.stroke-width]="2" stroke-dasharray="5 4"/>
                   }
-                  <text [attr.x]="item.rowLabelX" [attr.y]="item.rowLabelY" text-anchor="end" [attr.font-size]="12"
+                  <!-- Row name sits just before the first seat, in line with the row, and stays
+                       level on screen however the row is turned or bent. -->
+                  <text [attr.x]="item.rowLabelX" [attr.y]="item.rowLabelY" text-anchor="middle" dominant-baseline="central" [attr.font-size]="12"
                         [attr.font-weight]="600" [attr.fill]="pal().text"
+                        [attr.transform]="item.rot ? 'rotate(' + -item.rot + ' ' + item.rowLabelX + ' ' + item.rowLabelY + ')' : null"
                         style="font-family:Geist,sans-serif;pointer-events:none">{{ item.o.label }}</text>
                   @for (rs of item.rowSeats!; track $index) {
-                    <g sms-seat [p]="rs.p" [angle]="rs.angle" [color]="item.tier.color" [status]="rs.seat.status"
+                    <g sms-seat [p]="rs.p" [angle]="rs.angle" [textRot]="rs.textRot" [color]="item.tier.color" [status]="rs.seat.status"
                        [seatStyle]="canvasStyle()" [num]="rs.seat.n" [showNum]="item.showNum ?? false"
                        [selected]="!!selectedSeats()?.has(rs.key)" [interactive]="mode() === 'viewer'"
                        [dim]="item.dim" [pal]="pal()" (down)="seatClick.emit({ row: item.o, seat: rs.seat, tier: item.tier })"></g>
@@ -301,10 +320,12 @@ export class SeatComponent {
               <!-- Drag-to-rotate handle (single selected object, editor). Lives inside the
                    rotated group so it always sticks out the object's current top. -->
               @if (selection().size === 1 && item.selected && mode() === 'editor') {
-                <line [attr.x1]="item.cx" [attr.y1]="item.bounds.y1 - 4" [attr.x2]="item.cx" [attr.y2]="item.bounds.y1 - 24"
-                      stroke="#6668ee" [attr.stroke-width]="1.6" style="pointer-events:none"/>
-                <circle data-rot-handle="1" [attr.cx]="item.cx" [attr.cy]="item.bounds.y1 - 28" [attr.r]="6.5"
-                        fill="#fff" stroke="#6668ee" [attr.stroke-width]="2" style="cursor:grab"/>
+                <!-- Sized in screen pixels (divided by zoom) so the handle stays easy to grab
+                     when zoomed out; at 30% zoom it used to shrink to a few pixels. -->
+                <line [attr.x1]="item.cx" [attr.y1]="item.bounds.y1 - 4" [attr.x2]="item.cx" [attr.y2]="item.bounds.y1 - 4 - 20 / view().s"
+                      stroke="#6668ee" [attr.stroke-width]="1.6 / view().s" style="pointer-events:none"/>
+                <circle data-rot-handle="1" [attr.cx]="item.cx" [attr.cy]="item.bounds.y1 - 4 - 27 / view().s" [attr.r]="7 / view().s"
+                        fill="#fff" stroke="#6668ee" [attr.stroke-width]="2 / view().s" style="cursor:grab"/>
               }
             </g>
           }
@@ -351,6 +372,8 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   snap = input(false);
   selection = input<Set<string>>(new Set());
   selectedSeats = input<Set<string>>(new Set());
+  /** Seat keys ("objectId:number") sold or held elsewhere; used for table chairs. */
+  takenSeats = input<Set<string> | null>(null);
   /** GA zone/polygon id → picked-spot count (rendered as picked, with the count shown). */
   pickedZones = input<Map<string, number>>(new Map());
   dimUnfocused = input<Set<string> | null>(null);
@@ -392,6 +415,9 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
   min = Math.min; abs = Math.abs;
 
   pal = computed<Pal>(() => SeatPalette[this.canvasTheme()] || SeatPalette['light']);
+  /** Seat numbers appear past this zoom. A separate computed so `items` (every seat on the
+   *  map) is rebuilt only when the threshold is crossed, not on every pan/zoom tick. */
+  showNums = computed(() => this.view().s > 1.45);
 
   constructor() {
     // emit scale changes
@@ -413,7 +439,7 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
     const sel = this.selection();
     const picks = this.pickedZones();
     const dimSet = this.dimUnfocused();
-    const showNum = this.view().s > 1.45;
+    const showNum = this.showNums();
     const pal = this.pal();
     {
       const selected = !!sel?.has(o.id);
@@ -422,7 +448,8 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       const dim = !!(dimSet && dimSet.size && !dimSet.has(o.id));
       const tier = tierById(v.tiers, o.tier);
       const bounds = objBounds(o);
-      const item: CanvasItem = { o, selected, picked, pickCount, dim, tier, bounds, cx: (bounds.x1 + bounds.x2) / 2, cy: (bounds.y1 + bounds.y2) / 2 };
+      const rot = normDeg(o.rotation || 0);
+      const item: CanvasItem = { o, selected, picked, pickCount, dim, tier, bounds, cx: (bounds.x1 + bounds.x2) / 2, cy: (bounds.y1 + bounds.y2) / 2, rot, flip: readableFlip(rot) === 180 };
       if (o.type === 'stage') {
         const { x, y, w, h } = o as Required<Pick<VObj, 'x' | 'y' | 'w' | 'h'>>;
         item.stagePath = o.shape === 'arc'
@@ -437,7 +464,14 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
         item.polyFill = `color-mix(in srgb, ${tier.color} ${picked ? 42 : 15}%, transparent)`;
       } else if (o.type === 'table') {
         item.tableFill = `color-mix(in srgb, ${tier.color} 12%, ${pal.bg})`;
-        item.chairs = tableSeatPositions(o).map((c, i): SeatVM => ({ p: c, angle: c.a || 0, seat: { n: i + 1, status: 'available' }, key: `${o.id}:${i + 1}`, open: !!c.open }));
+        // Table chairs have no stored seat list, so seats sold or held elsewhere come in
+        // through `takenSeats` (same "objectId:number" keys) and draw as taken.
+        const taken = this.takenSeats();
+        item.chairs = tableSeatPositions(o).map((c, i): SeatVM => {
+          const key = `${o.id}:${i + 1}`;
+          return { p: c, angle: c.a || 0, textRot: -((c.a || 0) + rot), seat: { n: i + 1, status: taken?.has(key) ? 'sold' : 'available' }, key, open: !!c.open };
+        });
+        item.showNum = showNum;
       } else if (o.type === 'marker') {
         item.markerGlyph = MARKER_GLYPHS[o.kind || ''] || '•';
         item.markerFontSize = o.kind === 'bar' ? 8 : 13;
@@ -450,11 +484,21 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
         item.rowSeats = ps.map((p, i): SeatVM => {
           // Crash-safe: if the derived seat count outran the stored array (e.g. spacing
           // just changed), synthesize a seat so rendering never throws.
-          const seat = seats[i] ?? { n: 101 + i, status: 'available' as const };
-          const angle = o.path ? (along ? -(p.a ?? 0) : 0) : -(p.a ?? rowSeatAngle(o, i));
-          return { p, angle, seat, key: `${o.id}:${seat.n}` };
+          const seat = seats[i] ?? { n: i + 1, status: 'available' as const };
+          // A chair turned "along" a segmented row takes the segment's own direction
+          // (+angle); the old minus sign mirrored it, so diagonal rows faced sideways.
+          const angle = o.path ? (along ? (p.a ?? 0) : 0) : -(p.a ?? rowSeatAngle(o, i));
+          return { p, angle, textRot: -(angle + rot), seat, key: `${o.id}:${seat.n}` };
         });
-        item.rowLabelX = ps[0].x - 22; item.rowLabelY = ps[0].y + 4;
+        // Row name goes before the first seat, continuing the row's line backwards. Its
+        // distance allows for the (level) text's width in the row's on-screen direction.
+        const p0 = ps[0] ?? o.path?.[0] ?? { x: o.x ?? 0, y: o.y ?? 0 }, p1 = ps[1];
+        const dl = p1 ? Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1 : 1;
+        const ux = p1 ? (p1.x - p0.x) / dl : 1, uy = p1 ? (p1.y - p0.y) / dl : 0;
+        const screen = Math.atan2(uy, ux) + (rot * Math.PI) / 180;
+        const halfW = ((o.label || '').length * 12 * 0.56) / 2;
+        const d = 14 + halfW * Math.abs(Math.cos(screen)) + 8 * Math.abs(Math.sin(screen));
+        item.rowLabelX = p0.x - ux * d; item.rowLabelY = p0.y - uy * d;
         item.showNum = showNum;
       }
       return item;
@@ -665,7 +709,8 @@ export class SeatCanvasComponent implements AfterViewInit, OnDestroy {
       const dragged = Math.abs(end.x - g.start.x) > 3 || Math.abs(end.y - g.start.y) > 3;
       if (dragged) {
         const m = { x1: Math.min(g.start.x, end.x), x2: Math.max(g.start.x, end.x), y1: Math.min(g.start.y, end.y), y2: Math.max(g.start.y, end.y) };
-        const hit = this.venue().objects.filter((o) => { const b = objBounds(o); return b.x1 < m.x2 && b.x2 > m.x1 && b.y1 < m.y2 && b.y2 > m.y1; }).map((o) => o.id);
+        // Test against where each object really is (rotation included), not its unrotated box.
+        const hit = this.venue().objects.filter((o) => { const b = objWorldBounds(o); return b.x1 < m.x2 && b.x2 > m.x1 && b.y1 < m.y2 && b.y2 > m.y1; }).map((o) => o.id);
         this.select.emit({ ids: hit, additive: g.additive });
       } else if (!g.additive) {
         // A plain click on empty canvas clears the selection.

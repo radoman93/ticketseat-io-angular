@@ -10,7 +10,8 @@ import {
 import { IconComponent } from './icon.component';
 import { SeatCanvasComponent } from './seat-canvas.component';
 import {
-  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, makeRow, makeTier, segRowSeatCount, tierById, uid, venueBounds,
+  Pt, Seat, Tier, VObj, Venue, VENUES, VENUE_META, defaultTierId, makeRow, makeTier, nextRowLabels, nextTableLabel,
+  segRowSeatCount, tableSeatPositions, tierById, uid, venueBounds,
 } from './seat-data';
 import {
   DrawHudComponent, HelpComponent, InspectorComponent, ObjectsPanelComponent, OBJ_ICON, TOOLS, Tool, ToolRailComponent,
@@ -207,7 +208,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
     <ng-template #canvasTpl>
       <sms-canvas #canvas [venue]="displayVenue()" [mode]="mode()" [canvasStyle]="canvasStyle" [canvasTheme]="canvasTheme"
                   [showGrid]="mode() === 'editor' && showGrid()" [grid]="gridPx()" [snap]="snap()" [selection]="selection()"
-                  [selectedSeats]="selectedKeys()" [pickedZones]="pickedZones()" [dimUnfocused]="null"
+                  [selectedSeats]="selectedKeys()" [takenSeats]="takenKeys()" [pickedZones]="pickedZones()" [dimUnfocused]="null"
                   [drawMode]="!!draw()" [drawKind]="draw()?.kind || 'polygon'" [drawPoints]="draw()?.points || []" [drawCursor]="draw()?.cursor || null"
                   [placing]="!!placing()" [ghost]="ghostObj()"
                   (drawAddPoint)="drawAddPoint($event)" (drawCursorChange)="drawCursor($event)" (drawCommit)="commitDraw()" (drawClose)="drawClose()"
@@ -328,6 +329,7 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
   canUndo = computed(() => this.histPast().length > 0);
   canRedo = computed(() => this.histFuture().length > 0);
 
+  private moveCheckpointed = false;
   private moveSnap: Map<string, { x: number; y: number } | { points: Pt[] } | { path: Pt[] }> | null = null;
   private mq?: MediaQueryList;
   private mqHandler?: (e: MediaQueryListEvent) => void;
@@ -373,6 +375,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     };
   });
   stats = computed(() => tierStats(this.displayVenue()));
+  /** Externally reserved seat keys, for chairs that have no stored seat list (tables). */
+  takenKeys = computed(() => { const ids = this.reservedIds(); return ids && ids.length ? new Set(ids) : null; });
 
   // ── lifecycle ────────────────────────────────────────────────────────────────
   constructor() {
@@ -501,8 +505,11 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     }) }));
   }
   onMoveStart() {
-    this.checkpoint('move');
-    const m = new Map<string, { x: number; y: number } | { points: Pt[] } | { path: Pt[] }>();
+    // The undo step is taken on the first real movement (see onMove): every plain click
+    // on an object starts a "move", and checkpointing here filled the history with
+    // no-op steps, so Ctrl+Z appeared to do nothing.
+    this.moveCheckpointed = false;
+    const m =new Map<string, { x: number; y: number } | { points: Pt[] } | { path: Pt[] }>();
     const sel = this.selection();
     this.venue().objects.forEach((o) => {
       if (!sel.has(o.id)) return;
@@ -513,14 +520,22 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.moveSnap = m;
   }
   onMove(dx: number, dy: number) {
-    const useSnap = this.snap();
-    const g = this.gridPx();
-    const snapTo = (n: number) => (useSnap ? Math.round(n / g) * g : n);
+    if (!this.moveCheckpointed) { this.checkpoint(); this.moveCheckpointed = true; }
+    // Snap one anchor (the first selected object's position or first vertex) to the grid
+    // and move everything by that same offset. Snapping every vertex on its own bent
+    // polygons, lines and segmented rows, and pulled multi-selections out of line.
+    if (this.snap() && this.moveSnap?.size) {
+      const g = this.gridPx();
+      const first = this.moveSnap.values().next().value!;
+      const a = 'points' in first ? first.points[0] : 'path' in first ? first.path[0] : first;
+      dx = Math.round((a.x + dx) / g) * g - a.x;
+      dy = Math.round((a.y + dy) / g) * g - a.y;
+    }
     this.venue.update((v) => ({ ...v, objects: v.objects.map((o) => {
       const s = this.moveSnap?.get(o.id); if (!s) return o;
-      if ('points' in s) return { ...o, points: s.points.map((p) => ({ x: snapTo(p.x + dx), y: snapTo(p.y + dy) })) };
-      if ('path' in s) return { ...o, path: s.path.map((p) => ({ x: snapTo(p.x + dx), y: snapTo(p.y + dy) })) };
-      return { ...o, x: snapTo(s.x + dx), y: snapTo(s.y + dy) };
+      if ('points' in s) return { ...o, points: s.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
+      if ('path' in s) return { ...o, path: s.path.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
+      return { ...o, x: s.x + dx, y: s.y + dy };
     }) }));
   }
 
@@ -544,8 +559,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     const { x, y } = pt;
     switch (toolId) {
       case 'stage': return { id: id ?? uid('stage'), type: 'stage', x, y, w: 480, h: 80, label: 'STAGE', shape: 'arc' };
-      case 'table': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'round', r: 30, seats: 8, label: 'T' + (this.venue().objects.filter((q) => q.type === 'table').length + 1), tier: 'standard' };
-      case 'table-long': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'rect', w: 140, h: 54, up: 4, down: 4, seats: 8, label: 'T' + (this.venue().objects.filter((q) => q.type === 'table').length + 1), tier: 'standard' };
+      case 'table': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'round', r: 30, seats: 8, label: nextTableLabel(this.venue().objects), tier: defaultTierId(this.venue().tiers) };
+      case 'table-long': return { id: id ?? uid('tab'), type: 'table', x, y, shape: 'rect', w: 140, h: 54, up: 4, down: 4, seats: 8, label: nextTableLabel(this.venue().objects), tier: defaultTierId(this.venue().tiers) };
       case 'label': return { id: id ?? uid('lbl'), type: 'label', x, y, text: 'New label', size: 18 };
       default: return { id: id ?? uid('mk'), type: 'marker', x, y, kind: 'entrance', label: 'Entrance' };
     }
@@ -581,7 +596,7 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     if (d.kind === 'segrow') return this.commitSegRow(d.points);
     if (d.kind === 'line') return this.commitLine(d.points);
     if (d.points.length < 3) return;
-    const o: VObj = { id: uid('poly'), type: 'polygon', points: d.points.map((p) => ({ ...p })), tier: 'standard', label: 'Section', capacity: 200 };
+    const o: VObj = { id: uid('poly'), type: 'polygon', points: d.points.map((p) => ({ ...p })), tier: defaultTierId(this.venue().tiers), label: 'Section', capacity: 200 };
     this.checkpoint('add');
     this.venue.update((v) => ({ ...v, objects: [...v.objects, o] }));
     this.selection.set(new Set([o.id])); this.draw.set(null); this.activeTool.set('select');
@@ -601,8 +616,8 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     const gap = 30;
     const n = segRowSeatCount(points, gap, closed);
     if (!n) return;
-    const seats: Seat[] = Array.from({ length: n }, (_, i) => ({ n: 101 + i, status: 'available' as const }));
-    const o: VObj = { id: uid('row'), type: 'row', label: 'Row', path: points.map((p) => ({ x: p.x, y: p.y })), closed: closed || undefined, seatGap: gap, tier: 'standard', seats };
+    const seats: Seat[] = Array.from({ length: n }, (_, i) => ({ n: 1 + i, status: 'available' as const }));
+    const o: VObj = { id: uid('row'), type: 'row', label: nextRowLabels(this.venue().objects, 1)[0], path: points.map((p) => ({ x: p.x, y: p.y })), closed: closed || undefined, seatGap: gap, tier: defaultTierId(this.venue().tiers), seats };
     this.checkpoint('add');
     this.venue.update((v) => ({ ...v, objects: [...v.objects, o] }));
     this.selection.set(new Set([o.id])); this.draw.set(null); this.activeTool.set('select');
@@ -614,7 +629,9 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.checkpoint('add'); const added: VObj[] = [];
     if (this.wizard() === 'row') {
       const r = cfg as RowWizardCfg;
-      for (let i = 0; i < r.n; i++) added.push(makeRow({ label: `Row ${String.fromCharCode(65 + i)}`, x: c.x, y: c.y - ((r.n - 1) * 60) / 2 + i * 60, count: r.count, gap: r.gap, arc: r.arc, tier: r.tier }));
+      // Continue after the rows already on the map (a second batch starts at the next letter).
+      const names = nextRowLabels(this.venue().objects, r.n);
+      for (let i = 0; i < r.n; i++) added.push(makeRow({ label: names[i], x: c.x, y: c.y - ((r.n - 1) * 60) / 2 + i * 60, count: r.count, gap: r.gap, arc: r.arc, tier: r.tier }));
     } else {
       const z = cfg as ZoneWizardCfg;
       added.push({ id: uid('z'), type: 'zone', x: c.x, y: c.y, w: 360, h: 200, label: 'GA Zone', tier: z.tier, capacity: z.cap });
@@ -636,6 +653,10 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     this.venue().objects.forEach((o) => {
       if (sel.has(o.id)) {
         const c: VObj = { ...clone(o), id: uid(o.type) };
+        // A copied row or table gets its own name, or two seats would share a ticket label.
+        const known = [...this.venue().objects, ...copies];
+        if (o.type === 'row') c.label = nextRowLabels(known, 1)[0];
+        if (o.type === 'table') c.label = nextTableLabel(known);
         if (o.type === 'polygon') c.points = o.points!.map((p) => ({ x: p.x + 36, y: p.y + 36 }));
         else if (o.path) c.path = o.path.map((p) => ({ x: p.x + 36, y: p.y + 36 }));
         else { c.x = o.x! + 36; c.y = o.y! + 36; }
@@ -674,12 +695,17 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
     const key = `${row.id}:${seat.n}`;
     const isDeselect = this.order().some((l) => l.id === key);
     if (!isDeselect) {
+      // Same count as pickZone (seats + GA spots); counting seats only let a pick through
+      // that the seatLimit effect then silently dropped, with no "limit reached".
       const lim = this.seatLimit();
-      if (lim > 0 && this.order().filter((l) => l.kind === 'seat').length >= lim) { this.limitReached.emit(lim); return; }
+      if (lim > 0 && this.order().filter((l) => l.kind === 'seat' || l.kind === 'ga').length >= lim) { this.limitReached.emit(lim); return; }
     }
+    // A table's open space has no chair: say so, rather than calling it a seat.
+    const open = row.type === 'table' && !!tableSeatPositions(row)[seat.n - 1]?.open;
+    const name = row.label || (row.type === 'table' ? 'Table' : 'Row');
     this.order.update((o) => isDeselect
       ? o.filter((l) => l.id !== key)
-      : [...o, { id: key, kind: 'seat', label: `${row.label || row.type} · ${row.type === 'table' ? 'Seat' : ''} ${seat.n}`.replace(/\s+/g, ' ').trim(), tierId: tier.id, price: tier.price }]);
+      : [...o, { id: key, kind: 'seat', label: open ? `${name} · Open space ${seat.n}` : `${name} · Seat ${seat.n}`, tierId: tier.id, price: tier.price }]);
   }
   pickZone(zone: VObj) {
     if (this.readonly()) return;
@@ -717,11 +743,20 @@ export class SeatMapStudioComponent implements OnInit, OnDestroy {
 
   // ── keyboard ────────────────────────────────────────────────────────────────────
   private onKey(e: KeyboardEvent) {
-    const tag = (e.target as HTMLElement)?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? this.redo() : this.undo(); }
+    // The listener is on window, so it also hears the host page (the admin). Never act
+    // on keys typed into any editable control there.
+    const el = e.target as HTMLElement | null;
+    const tag = el?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+    // Undo/redo only while editing: in preview (and the store's viewer) it would silently
+    // change a layout nobody is looking at.
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { if (this.mode() !== 'editor') return; e.preventDefault(); e.shiftKey ? this.redo() : this.undo(); }
     else if (e.key === 'Enter' && this.draw()) { e.preventDefault(); this.commitDraw(); }
-    else if (this.mode() === 'editor' && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); this.deleteSel(); }
+    else if (this.mode() === 'editor' && (e.key === 'Delete' || e.key === 'Backspace')) {
+      // Not while a dialog is open: the selection behind it would vanish unseen.
+      if (this.wizard() || this.helpOpen()) return;
+      e.preventDefault(); this.deleteSel();
+    }
     else if (e.key === 'Escape') { if (this.helpOpen()) { this.closeHelp(); return; } if (this.draw()) this.cancelDraw(); if (this.placing()) this.cancelPlacing(); this.selection.set(new Set()); this.wizard.set(null); this.sheet.set(null); }
   }
 }
